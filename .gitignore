@@ -1,5 +1,5 @@
 COMMON-AGENTS.md
-spotify-apks/
+service-apks/
 .gradle/
 .idea/
 local.properties

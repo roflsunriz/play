@@ -14,11 +14,11 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
    このファイルでは `play` 固有の補足だけを記載する。
 
 ## 目的
-- Spotifyアプリを解析する
+- aokを解析する
 - Androidアプリを作る
 
 ## 機能
-- Spotifyにログイン
+- サービスにログイン
 - ログイン状態を保持
 - プレイリスト表示・検索・再生
 - アルバム表示・検索・再生
