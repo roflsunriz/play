@@ -1,6 +1,6 @@
 buildscript {
     dependencies {
-        classpath("org.apache.commons:commons-lang3:3.18.0") {
+        classpath("org.apache.commons:commons-lang3:3.20.0") {
             because("CVE-2025-48924 is fixed in 3.18.0")
         }
         classpath("org.bitbucket.b_c:jose4j:0.9.6") {
