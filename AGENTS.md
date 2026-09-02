@@ -14,7 +14,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
    このファイルでは `play` 固有の補足だけを記載する。
 
 ## 目的
-- aokを解析する
+- apkを解析する
 - Androidアプリを作る
 
 ## 機能
