@@ -44,7 +44,7 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/extract-changelog.ps1 -Version "${{ github.ref_name }}" -Output release-notes.md
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: release-notes.md
           files: app/build/outputs/apk/release/app-release.apk
