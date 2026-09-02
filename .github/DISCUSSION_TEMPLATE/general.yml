@@ -1,0 +1,10 @@
+name: 一般
+description: Playについて自由に話します
+title: "[General] "
+body:
+  - type: textarea
+    id: topic
+    attributes:
+      label: 話題
+    validations:
+      required: true

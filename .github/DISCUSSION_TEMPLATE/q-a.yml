@@ -1,0 +1,10 @@
+name: 質問
+description: 使い方や設計について質問します
+title: "[Q&A] "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: 質問
+    validations:
+      required: true

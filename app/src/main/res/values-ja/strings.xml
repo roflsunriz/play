@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Play</string>
+    <string name="setup_title">Spotifyアカウントを接続</string>
+    <string name="setup_description">PlayはSpotify Web APIを使ってライブラリを表示し、使用中のSpotifyデバイスを操作します。</string>
+    <string name="client_id">Spotify Client ID</string>
+    <string name="client_id_help">Spotify for Developersでアプリを作成し、リダイレクトURIに http://127.0.0.1 を登録してください。</string>
+    <string name="open_dashboard">Spotify Dashboardを開く</string>
+    <string name="login">Spotifyでログイン</string>
+    <string name="premium_required">再生操作にはSpotify Premiumが必要です。開発モードのアプリにはSpotifyのアカウント制限があります。</string>
+    <string name="playlists">プレイリスト</string>
+    <string name="albums">アルバム</string>
+    <string name="tracks">楽曲</string>
+    <string name="search">検索</string>
+    <string name="search_hint">プレイリスト、アルバム、楽曲を検索</string>
+    <string name="search_action">検索</string>
+    <string name="refresh">更新</string>
+    <string name="logout">ログアウト</string>
+    <string name="empty_library">表示する項目がありません。</string>
+    <string name="previous">前の曲</string>
+    <string name="next">次の曲</string>
+    <string name="play">再生</string>
+    <string name="pause">一時停止</string>
+    <string name="shuffle">ランダム再生</string>
+    <string name="repeat_off">リピートなし</string>
+    <string name="repeat_context">プレイリストリピート</string>
+    <string name="repeat_track">1曲リピート</string>
+    <string name="no_active_device">Spotifyを開いてデバイス上で再生を開始してから、もう一度お試しください。</string>
+    <string name="settings">設定</string>
+    <string name="supplied_by_spotify">Spotify提供コンテンツ</string>
+    <string name="open_on_spotify">Spotifyで開く</string>
+    <string name="login_failed">Spotifyへのログインに失敗しました。</string>
+    <string name="request_failed">Spotifyへのリクエストに失敗しました。</string>
+    <string name="error_title">エラーが発生しました</string>
+    <string name="dismiss">閉じる</string>
+    <string name="artwork_cache_note">アートワークは最大128 MBのLRUキャッシュへ保存します。音源はSpotifyが管理します。</string>
+    <string name="client_id_required">Spotify Client IDを入力してください。</string>
+</resources>

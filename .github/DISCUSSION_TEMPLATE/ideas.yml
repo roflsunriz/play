@@ -1,0 +1,16 @@
+name: アイデア
+description: 利用者価値のある提案を共有します
+title: "[Idea] "
+body:
+  - type: textarea
+    id: value
+    attributes:
+      label: 利用者への価値
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: アイデア
+    validations:
+      required: true

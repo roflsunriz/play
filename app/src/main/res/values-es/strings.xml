@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Play</string>
+    <string name="setup_title">Conecta tu cuenta de Spotify</string>
+    <string name="setup_description">Play usa Spotify Web API para mostrar tu biblioteca y controlar la reproducción en tu dispositivo Spotify activo.</string>
+    <string name="client_id">ID de cliente de Spotify</string>
+    <string name="client_id_help">Crea una aplicación en Spotify for Developers y registra http://127.0.0.1 como URI de redirección.</string>
+    <string name="open_dashboard">Abrir Spotify Dashboard</string>
+    <string name="login">Iniciar sesión con Spotify</string>
+    <string name="premium_required">El control de reproducción requiere Spotify Premium. Las aplicaciones en modo de desarrollo están sujetas a los límites de cuenta de Spotify.</string>
+    <string name="playlists">Playlists</string>
+    <string name="albums">Álbumes</string>
+    <string name="tracks">Canciones</string>
+    <string name="search">Buscar</string>
+    <string name="search_hint">Buscar playlists, álbumes y canciones</string>
+    <string name="search_action">Buscar</string>
+    <string name="refresh">Actualizar</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="empty_library">Todavía no hay nada que mostrar.</string>
+    <string name="previous">Anterior</string>
+    <string name="next">Siguiente</string>
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausar</string>
+    <string name="shuffle">Reproducción aleatoria</string>
+    <string name="repeat_off">Repetición desactivada</string>
+    <string name="repeat_context">Repetir playlist</string>
+    <string name="repeat_track">Repetir una canción</string>
+    <string name="no_active_device">Abre Spotify e inicia la reproducción en un dispositivo; luego vuelve a intentarlo.</string>
+    <string name="settings">Ajustes</string>
+    <string name="supplied_by_spotify">Contenido proporcionado por Spotify</string>
+    <string name="open_on_spotify">Abrir en Spotify</string>
+    <string name="login_failed">No se pudo iniciar sesión en Spotify.</string>
+    <string name="request_failed">Falló la solicitud a Spotify.</string>
+    <string name="error_title">Se produjo un error</string>
+    <string name="dismiss">Cerrar</string>
+    <string name="artwork_cache_note">Las portadas se guardan en una caché LRU de 128 MB. Spotify administra el audio.</string>
+    <string name="client_id_required">Introduce tu ID de cliente de Spotify.</string>
+</resources>

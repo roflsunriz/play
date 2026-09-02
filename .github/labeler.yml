@@ -1,0 +1,9 @@
+android:
+  - changed-files:
+      - any-glob-to-any-file: ["app/**", "gradle/**", "*.gradle.kts"]
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ["**/*.md"]
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/workflows/**"]

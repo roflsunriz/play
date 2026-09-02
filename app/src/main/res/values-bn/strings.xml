@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Play</string>
+    <string name="setup_title">আপনার Spotify অ্যাকাউন্ট সংযুক্ত করুন</string>
+    <string name="setup_description">Play আপনার লাইব্রেরি দেখাতে এবং সক্রিয় Spotify ডিভাইসে প্লেব্যাক নিয়ন্ত্রণ করতে Spotify Web API ব্যবহার করে।</string>
+    <string name="client_id">Spotify ক্লায়েন্ট ID</string>
+    <string name="client_id_help">Spotify for Developers-এ একটি অ্যাপ তৈরি করুন এবং http://127.0.0.1-কে রিডাইরেক্ট URI হিসেবে নিবন্ধন করুন।</string>
+    <string name="open_dashboard">Spotify Dashboard খুলুন</string>
+    <string name="login">Spotify দিয়ে লগ ইন করুন</string>
+    <string name="premium_required">প্লেব্যাক নিয়ন্ত্রণের জন্য Spotify Premium প্রয়োজন। ডেভেলপমেন্ট মোড অ্যাপ Spotify অ্যাকাউন্ট সীমার অধীন।</string>
+    <string name="playlists">প্লেলিস্ট</string>
+    <string name="albums">অ্যালবাম</string>
+    <string name="tracks">গান</string>
+    <string name="search">অনুসন্ধান</string>
+    <string name="search_hint">প্লেলিস্ট, অ্যালবাম ও গান খুঁজুন</string>
+    <string name="search_action">অনুসন্ধান</string>
+    <string name="refresh">রিফ্রেশ</string>
+    <string name="logout">লগ আউট</string>
+    <string name="empty_library">এখনও দেখানোর মতো কিছু নেই।</string>
+    <string name="previous">আগের</string>
+    <string name="next">পরের</string>
+    <string name="play">চালান</string>
+    <string name="pause">বিরতি</string>
+    <string name="shuffle">এলোমেলো</string>
+    <string name="repeat_off">রিপিট বন্ধ</string>
+    <string name="repeat_context">প্লেলিস্ট রিপিট</string>
+    <string name="repeat_track">একটি গান রিপিট</string>
+    <string name="no_active_device">Spotify খুলে কোনো ডিভাইসে প্লেব্যাক শুরু করুন, তারপর আবার চেষ্টা করুন।</string>
+    <string name="settings">সেটিংস</string>
+    <string name="supplied_by_spotify">Spotify সরবরাহকৃত কনটেন্ট</string>
+    <string name="open_on_spotify">Spotify-তে খুলুন</string>
+    <string name="login_failed">Spotify লগইন ব্যর্থ হয়েছে।</string>
+    <string name="request_failed">Spotify অনুরোধ ব্যর্থ হয়েছে।</string>
+    <string name="error_title">একটি সমস্যা হয়েছে</string>
+    <string name="dismiss">বন্ধ করুন</string>
+    <string name="artwork_cache_note">আর্টওয়ার্ক 128 MB LRU ক্যাশে রাখা হয়। অডিও Spotify পরিচালনা করে।</string>
+    <string name="client_id_required">আপনার Spotify ক্লায়েন্ট ID লিখুন।</string>
+</resources>

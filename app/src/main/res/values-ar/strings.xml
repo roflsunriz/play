@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Play</string>
+    <string name="setup_title">اربط حساب Spotify</string>
+    <string name="setup_description">يستخدم Play واجهة Spotify Web API لعرض مكتبتك والتحكم في التشغيل على جهاز Spotify النشط.</string>
+    <string name="client_id">معرّف عميل Spotify</string>
+    <string name="client_id_help">أنشئ تطبيقًا في Spotify for Developers وسجّل http://127.0.0.1 كعنوان URI لإعادة التوجيه.</string>
+    <string name="open_dashboard">فتح Spotify Dashboard</string>
+    <string name="login">تسجيل الدخول باستخدام Spotify</string>
+    <string name="premium_required">يتطلب التحكم في التشغيل Spotify Premium. تخضع تطبيقات وضع التطوير لحدود حساب Spotify.</string>
+    <string name="playlists">قوائم التشغيل</string>
+    <string name="albums">الألبومات</string>
+    <string name="tracks">الأغاني</string>
+    <string name="search">بحث</string>
+    <string name="search_hint">ابحث عن قوائم التشغيل والألبومات والأغاني</string>
+    <string name="search_action">بحث</string>
+    <string name="refresh">تحديث</string>
+    <string name="logout">تسجيل الخروج</string>
+    <string name="empty_library">لا يوجد شيء لعرضه بعد.</string>
+    <string name="previous">السابق</string>
+    <string name="next">التالي</string>
+    <string name="play">تشغيل</string>
+    <string name="pause">إيقاف مؤقت</string>
+    <string name="shuffle">تشغيل عشوائي</string>
+    <string name="repeat_off">إيقاف التكرار</string>
+    <string name="repeat_context">تكرار قائمة التشغيل</string>
+    <string name="repeat_track">تكرار أغنية واحدة</string>
+    <string name="no_active_device">افتح Spotify وابدأ التشغيل على جهاز ثم حاول مرة أخرى.</string>
+    <string name="settings">الإعدادات</string>
+    <string name="supplied_by_spotify">المحتوى مقدّم من Spotify</string>
+    <string name="open_on_spotify">فتح في Spotify</string>
+    <string name="login_failed">فشل تسجيل الدخول إلى Spotify.</string>
+    <string name="request_failed">فشل طلب Spotify.</string>
+    <string name="error_title">حدث خطأ</string>
+    <string name="dismiss">إغلاق</string>
+    <string name="artwork_cache_note">تُحفظ الصور في ذاكرة LRU مؤقتة بحد 128 ميغابايت. يدير Spotify الصوت.</string>
+    <string name="client_id_required">أدخل معرّف عميل Spotify.</string>
+</resources>

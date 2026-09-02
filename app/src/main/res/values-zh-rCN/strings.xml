@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Play</string>
+    <string name="setup_title">连接你的 Spotify 帐户</string>
+    <string name="setup_description">Play 使用 Spotify Web API 显示你的音乐库，并控制当前 Spotify 设备上的播放。</string>
+    <string name="client_id">Spotify 客户端 ID</string>
+    <string name="client_id_help">在 Spotify for Developers 中创建应用，并将 http://127.0.0.1 注册为重定向 URI。</string>
+    <string name="open_dashboard">打开 Spotify Dashboard</string>
+    <string name="login">使用 Spotify 登录</string>
+    <string name="premium_required">播放控制需要 Spotify Premium。开发模式应用受 Spotify 帐户限制。</string>
+    <string name="playlists">播放列表</string>
+    <string name="albums">专辑</string>
+    <string name="tracks">歌曲</string>
+    <string name="search">搜索</string>
+    <string name="search_hint">搜索播放列表、专辑和歌曲</string>
+    <string name="search_action">搜索</string>
+    <string name="refresh">刷新</string>
+    <string name="logout">退出登录</string>
+    <string name="empty_library">暂无可显示的内容。</string>
+    <string name="previous">上一首</string>
+    <string name="next">下一首</string>
+    <string name="play">播放</string>
+    <string name="pause">暂停</string>
+    <string name="shuffle">随机播放</string>
+    <string name="repeat_off">关闭循环</string>
+    <string name="repeat_context">循环播放列表</string>
+    <string name="repeat_track">单曲循环</string>
+    <string name="no_active_device">请打开 Spotify 并在设备上开始播放，然后重试。</string>
+    <string name="settings">设置</string>
+    <string name="supplied_by_spotify">内容由 Spotify 提供</string>
+    <string name="open_on_spotify">在 Spotify 中打开</string>
+    <string name="login_failed">Spotify 登录失败。</string>
+    <string name="request_failed">Spotify 请求失败。</string>
+    <string name="error_title">出现错误</string>
+    <string name="dismiss">关闭</string>
+    <string name="artwork_cache_note">封面保存在最大 128 MB 的 LRU 缓存中。音频由 Spotify 管理。</string>
+    <string name="client_id_required">请输入 Spotify 客户端 ID。</string>
+</resources>

@@ -1,2 +1,8 @@
 COMMON-AGENTS.md
 spotify-apks/
+.gradle/
+.idea/
+local.properties
+**/build/
+captures/
+*.iml

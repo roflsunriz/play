@@ -1,0 +1,18 @@
+name: 設定の問題
+description: OAuthや端末設定に関する問題を報告します
+body:
+  - type: markdown
+    attributes:
+      value: Client ID、トークン、Cookie、個人情報は投稿しないでください。
+  - type: textarea
+    id: setup
+    attributes:
+      label: 秘密情報を除いた設定と手順
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 表示されたエラー
+    validations:
+      required: true

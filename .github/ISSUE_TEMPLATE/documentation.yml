@@ -1,0 +1,15 @@
+name: ドキュメント
+description: 説明の不足や誤りを報告します
+body:
+  - type: input
+    id: location
+    attributes:
+      label: 対象ページ・見出し
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 問題と修正案
+    validations:
+      required: true
