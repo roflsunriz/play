@@ -1,4 +1,4 @@
-package io.github.playmusic.data.auth
+﻿package io.github.playmusic.data.auth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -11,36 +11,94 @@ class SpotifyLogin5Client(
     private val clientTokenClient: SpotifyClientTokenClient,
 ) {
     suspend fun acquireClientToken(deviceId: String): GrantedClientToken =
-        clientTokenClient.acquire(clientId = AppConstants.CLIENT_TOKEN_CLIENT_ID, deviceId = deviceId)
+        clientTokenClient.acquire(clientId = AppConstants.SPOTIFY_CLIENT_ID, deviceId = deviceId)
 
-    data class LoginSuccess(
-        val username: String,
-        val accessToken: String,
-        val accessTokenExpiresIn: Int,
-        val storedCredential: ByteArray?,
-    )
+    sealed class LoginOutcome {
+        data class Success(
+            val username: String,
+            val accessToken: String,
+            val accessTokenExpiresIn: Int,
+            val storedCredential: ByteArray?,
+        ) : LoginOutcome()
 
-    suspend fun loginWithPassword(username: String, password: String, deviceId: String): LoginSuccess =
+        data class CodeChallengeRequired(
+            val loginContext: ByteArray,
+            val maskedTarget: String,
+        ) : LoginOutcome()
+    }
+
+    suspend fun loginWithPassword(username: String, password: String, deviceId: String): LoginOutcome =
         authenticate(
             loginRequest = LoginRequest(
                 clientInfo = ClientInfo(clientId, deviceId),
                 password = LoginPassword(username, password),
+                authFlow = newAuthFlow(),
+                clientRequestId = newClientRequestId(),
             ),
             deviceId = deviceId,
         )
 
-    suspend fun loginWithStoredCredential(username: String, storedCredential: ByteArray, deviceId: String): LoginSuccess =
+    suspend fun loginWithStoredCredential(username: String, storedCredential: ByteArray, deviceId: String): LoginOutcome =
         authenticate(
             loginRequest = LoginRequest(
                 clientInfo = ClientInfo(clientId, deviceId),
                 storedCredential = LoginStoredCredential(username, storedCredential),
+                authFlow = newAuthFlow(),
+                clientRequestId = newClientRequestId(),
             ),
             deviceId = deviceId,
         )
 
-    private suspend fun authenticate(loginRequest: LoginRequest, deviceId: String): LoginSuccess =
+    suspend fun loginWithCode(
+        username: String,
+        password: String,
+        deviceId: String,
+        code: String,
+        loginContext: ByteArray,
+    ): LoginOutcome = authenticate(
+        loginRequest = LoginRequest(
+            clientInfo = ClientInfo(clientId, deviceId),
+            loginContext = loginContext,
+            challengeSolutions = listOf(
+                ChallengeSolution(code = CodeSolution(code)),
+            ),
+            password = LoginPassword(username, password),
+            authFlow = newAuthFlow(),
+            clientRequestId = newClientRequestId(),
+        ),
+        deviceId = deviceId,
+    )
+
+    suspend fun loginWithStoredCredentialAndCode(
+        username: String,
+        storedCredential: ByteArray,
+        deviceId: String,
+        code: String,
+        loginContext: ByteArray,
+    ): LoginOutcome = authenticate(
+        loginRequest = LoginRequest(
+            clientInfo = ClientInfo(clientId, deviceId),
+            loginContext = loginContext,
+            challengeSolutions = listOf(
+                ChallengeSolution(code = CodeSolution(code)),
+            ),
+            storedCredential = LoginStoredCredential(username, storedCredential),
+            authFlow = newAuthFlow(),
+            clientRequestId = newClientRequestId(),
+        ),
+        deviceId = deviceId,
+    )
+
+    private fun newAuthFlow(): LoginAuthFlow = LoginAuthFlow(
+        redirectUri = AUTH_CALLBACK_URL,
+        callbackUuid = java.util.UUID.randomUUID().toString(),
+    )
+
+    private fun newClientRequestId(): String = java.util.UUID.randomUUID().toString()
+
+    private suspend fun authenticate(loginRequest: LoginRequest, deviceId: String): LoginOutcome =
         withContext(Dispatchers.IO) {
-            val clientToken = clientTokenClient.acquire(AppConstants.CLIENT_TOKEN_CLIENT_ID, deviceId).token
+            val clientToken = clientTokenClient.acquire(AppConstants.SPOTIFY_CLIENT_ID, deviceId).token
             var currentRequest = loginRequest
             var response = post(currentRequest, clientToken)
             var attempt = 0
@@ -61,6 +119,12 @@ class SpotifyLogin5Client(
                     }
                 }
                 if (response.ok != null) break
+                val codeChallenge = response.challenges.firstOrNull { it.code != null }
+                if (codeChallenge != null) {
+                    val context = response.loginContext
+                        ?: throw SpotifyAuthException("Spotify login challenge is missing login context")
+                    return@withContext LoginOutcome.CodeChallengeRequired(context, codeChallenge.code?.maskedTarget.orEmpty())
+                }
                 if (response.challenges.isNotEmpty()) {
                     currentRequest = solveChallenges(response, currentRequest)
                 }
@@ -68,7 +132,7 @@ class SpotifyLogin5Client(
                 attempt++
             }
             val success = response.ok ?: throw SpotifyAuthException("Spotify login timed out")
-            LoginSuccess(
+            LoginOutcome.Success(
                 username = success.username,
                 accessToken = success.accessToken,
                 accessTokenExpiresIn = success.accessTokenExpiresIn,
@@ -114,7 +178,7 @@ class SpotifyLogin5Client(
                 val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
                     ?.use { it.readBytes() }
                     ?: ByteArray(0)
-                android.util.Log.w("SpotifyLogin5", "status=$status body=${responseBody.take(256).joinToString("") { "%02x".format(it) }}")
+                android.util.Log.w("SpotifyLogin5", "status=$status body=${responseBody.joinToString("") { "%02x".format(it) }}")
                 if (status !in 200..299) {
                     throw SpotifyAuthException("Spotify login request failed ($status)")
                 }
@@ -128,11 +192,12 @@ class SpotifyLogin5Client(
         }
 
     private companion object {
-        const val LOGIN_ENDPOINT = "https://login5.spotify.com/v3/login"
-        const val USER_AGENT = "Spotify/9.1.78.2218 Android/37 (Android 16)"
+        const val LOGIN_ENDPOINT = "https://login5.spotify.com/v4/login"
+        const val USER_AGENT = AppConstants.SPOTIFY_USER_AGENT
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 20_000
         const val LOGIN_TIMEOUT_MS = 3_000L
         const val MAX_LOGIN_TRIES = 3
+        const val AUTH_CALLBACK_URL = "https://auth-callback.spotify.com/r/android/music/login"
     }
 }

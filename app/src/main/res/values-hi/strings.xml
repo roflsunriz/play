@@ -35,4 +35,9 @@
     <string name="dismiss">बंद करें</string>
     <string name="artwork_cache_note">आर्टवर्क 128 MB की LRU कैश में रखा जाता है। ऑडियो Spotify संभालता है।</string>
     <string name="credentials_required">अपना Spotify उपयोगकर्ता नाम और पासवर्ड दर्ज करें।</string>
+    <string name="verification_code">सत्यापन कोड</string>
+    <string name="verify">सत्यापित करें</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="code_challenge_description">%1$s पर भेजा गया कोड दर्ज करें</string>
+    <string name="code_challenge_description_generic">अपने ईमेल पर भेजा गया कोड दर्ज करें</string>
 </resources>

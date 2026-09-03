@@ -35,4 +35,9 @@
     <string name="dismiss">إغلاق</string>
     <string name="artwork_cache_note">تُحفظ الصور في ذاكرة LRU مؤقتة بحد 128 ميغابايت. يدير Spotify الصوت.</string>
     <string name="credentials_required">أدخل اسم مستخدم وكلمة مرور Spotify.</string>
+    <string name="verification_code">رمز التحقق</string>
+    <string name="verify">تحقق</string>
+    <string name="cancel">إلغاء</string>
+    <string name="code_challenge_description">أدخل الرمز المرسل إلى %1$s</string>
+    <string name="code_challenge_description_generic">أدخل الرمز المرسل إلى بريدك الإلكتروني</string>
 </resources>

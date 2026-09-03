@@ -35,4 +35,9 @@
     <string name="dismiss">关闭</string>
     <string name="artwork_cache_note">封面保存在最大 128 MB 的 LRU 缓存中。音频由 Spotify 管理。</string>
     <string name="credentials_required">请输入你的 Spotify 用户名和密码。</string>
+    <string name="verification_code">验证码</string>
+    <string name="verify">验证</string>
+    <string name="cancel">取消</string>
+    <string name="code_challenge_description">输入发送至 %1$s 的验证码</string>
+    <string name="code_challenge_description_generic">输入发送至您邮箱的验证码</string>
 </resources>

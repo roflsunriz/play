@@ -35,4 +35,9 @@
     <string name="dismiss">بند کریں</string>
     <string name="artwork_cache_note">آرٹ ورک 128 MB کی LRU کیش میں رکھا جاتا ہے۔ آڈیو Spotify سنبھالتا ہے۔</string>
     <string name="credentials_required">اپنا Spotify صارف نام اور پاس ورڈ درج کریں۔</string>
+    <string name="verification_code">تصدیقی کوڈ</string>
+    <string name="verify">تصدیق کریں</string>
+    <string name="cancel">منسوخ</string>
+    <string name="code_challenge_description">%1$s پر بھیجا گیا کوڈ درج کریں</string>
+    <string name="code_challenge_description_generic">اپنی ای میل پر بھیجا گیا کوڈ درج کریں</string>
 </resources>

@@ -1,4 +1,4 @@
-package io.github.playmusic.data.auth
+﻿package io.github.playmusic.data.auth
 
 import java.io.ByteArrayOutputStream
 
@@ -7,6 +7,8 @@ object ProtoWire {
     private const val WIRE_FIXED64 = 1
     private const val WIRE_LENGTH_DELIMITED = 2
     private const val WIRE_FIXED32 = 5
+    private const val WIRE_START_GROUP = 3
+    private const val WIRE_END_GROUP = 4
 
     fun varint(value: Int): ByteArray {
         var remaining = value
@@ -79,6 +81,7 @@ object ProtoWire {
                 result = result or ((byte and 0x7F).toLong() shl shift)
                 if (byte and 0x80 == 0) return result
                 shift += 7
+                if (position >= data.size) throw ProtoParseException("Unexpected end of data in varint")
                 if (shift >= 64) throw ProtoParseException("Varint too long")
             }
         }
@@ -99,7 +102,25 @@ object ProtoWire {
                 WIRE_FIXED64 -> position += 8
                 WIRE_LENGTH_DELIMITED -> position += readVarint().toInt()
                 WIRE_FIXED32 -> position += 4
+                WIRE_START_GROUP -> skipGroup()
+                WIRE_END_GROUP -> Unit
                 else -> throw ProtoParseException("Unsupported wire type $wireType")
+            }
+        }
+
+        private fun skipGroup() {
+            var depth = 1
+            while (depth > 0) {
+                val tag = readTag()
+                when (wireType(tag)) {
+                    WIRE_START_GROUP -> depth++
+                    WIRE_END_GROUP -> depth--
+                    WIRE_VARINT -> readVarint()
+                    WIRE_FIXED64 -> position += 8
+                    WIRE_LENGTH_DELIMITED -> position += readVarint().toInt()
+                    WIRE_FIXED32 -> position += 4
+                    else -> throw ProtoParseException("Unsupported wire type ${wireType(tag)} in group")
+                }
             }
         }
     }

@@ -35,4 +35,9 @@
     <string name="dismiss">Cerrar</string>
     <string name="artwork_cache_note">Las portadas se guardan en una caché LRU de 128 MB. Spotify administra el audio.</string>
     <string name="credentials_required">Introduce tu nombre de usuario y contraseña de Spotify.</string>
+    <string name="verification_code">Código de verificación</string>
+    <string name="verify">Verificar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="code_challenge_description">Introduce el código enviado a %1$s</string>
+    <string name="code_challenge_description_generic">Introduce el código enviado a tu correo</string>
 </resources>

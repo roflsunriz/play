@@ -55,12 +55,45 @@ data class HashcashSolution(
     }
 }
 
+data class CodeSolution(
+    val code: String,
+) {
+    fun encode(): ByteArray = java.io.ByteArrayOutputStream().apply {
+        write(ProtoWire.fieldString(1, code))
+    }.toByteArray()
+}
+
 data class ChallengeSolution(
     val hashcash: HashcashSolution? = null,
+    val code: CodeSolution? = null,
 ) {
     fun encode(): ByteArray {
         val out = java.io.ByteArrayOutputStream()
         hashcash?.let { out.write(ProtoWire.fieldMessage(1, it.encode())) }
+        code?.let { out.write(ProtoWire.fieldMessage(2, it.encode())) }
+        return out.toByteArray()
+    }
+}
+
+data class LoginAuthFlow(
+    val redirectUri: String,
+    val callbackUuid: String,
+    val language: String = "ja",
+) {
+    fun encode(): ByteArray {
+        val inner = java.io.ByteArrayOutputStream().apply {
+            write(ProtoWire.fieldVarint(1, 1))
+            write(ProtoWire.fieldString(2, redirectUri))
+            write(ProtoWire.fieldString(3, callbackUuid))
+            write(ProtoWire.fieldVarint(4, 1))
+        }.toByteArray()
+        val languageField = java.io.ByteArrayOutputStream().apply {
+            write(ProtoWire.fieldString(1, language))
+        }.toByteArray()
+        val out = java.io.ByteArrayOutputStream()
+        out.write(ProtoWire.fieldBytes(1, byteArrayOf(0x01)))
+        out.write(ProtoWire.fieldMessage(2, inner))
+        out.write(ProtoWire.fieldMessage(3, languageField))
         return out.toByteArray()
     }
 }
@@ -71,6 +104,8 @@ data class LoginRequest(
     val challengeSolutions: List<ChallengeSolution> = emptyList(),
     val storedCredential: LoginStoredCredential? = null,
     val password: LoginPassword? = null,
+    val authFlow: LoginAuthFlow? = null,
+    val clientRequestId: String? = null,
 ) {
     fun encode(): ByteArray {
         val out = java.io.ByteArrayOutputStream()
@@ -82,8 +117,10 @@ data class LoginRequest(
             }.toByteArray()
             out.write(ProtoWire.fieldMessage(3, solutions))
         }
+        authFlow?.let { out.write(ProtoWire.fieldMessage(4, it.encode())) }
+        clientRequestId?.let { out.write(ProtoWire.fieldString(6, it)) }
         storedCredential?.let { out.write(ProtoWire.fieldMessage(100, it.encode())) }
-        password?.let { out.write(ProtoWire.fieldMessage(101, it.encode())) }
+        password?.let { out.write(ProtoWire.fieldMessage(111, it.encode())) }
         return out.toByteArray()
     }
 }
@@ -100,8 +137,28 @@ data class HashcashChallenge(
     val length: Int,
 )
 
+data class CodeChallenge(
+    val maskedTarget: String = "",
+) {
+    companion object {
+        fun parse(data: ByteArray): CodeChallenge {
+            val reader = Reader(data)
+            var maskedTarget = ""
+            while (reader.hasNext()) {
+                val tag = reader.readTag()
+                when (reader.fieldNumber(tag)) {
+                    5 -> maskedTarget = reader.readString()
+                    else -> reader.skip(reader.wireType(tag))
+                }
+            }
+            return CodeChallenge(maskedTarget)
+        }
+    }
+}
+
 data class Challenge(
     val hashcash: HashcashChallenge? = null,
+    val code: CodeChallenge? = null,
 )
 
 data class LoginResponse(
@@ -124,6 +181,8 @@ data class LoginResponse(
                     2 -> error = reader.readVarint().toInt()
                     3 -> challenges.addAll(parseChallenges(reader.readBytes()))
                     5 -> loginContext = reader.readBytes()
+                    8 -> reader.readBytes() // flow id (uuid)
+                    9 -> reader.readBytes() // flow id (uuid)
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
@@ -165,6 +224,7 @@ data class LoginResponse(
         private fun parseChallenge(data: ByteArray): Challenge {
             val reader = Reader(data)
             var hashcash: HashcashChallenge? = null
+            var code: CodeChallenge? = null
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
@@ -182,10 +242,11 @@ data class LoginResponse(
                         }
                         if (prefix != null) hashcash = HashcashChallenge(prefix, length)
                     }
+                    2 -> code = CodeChallenge.parse(reader.readBytes())
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
-            return Challenge(hashcash)
+            return Challenge(hashcash, code)
         }
     }
 }

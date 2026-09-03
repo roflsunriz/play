@@ -35,4 +35,9 @@
     <string name="dismiss">Закрыть</string>
     <string name="artwork_cache_note">Обложки хранятся в LRU-кэше до 128 МБ. Аудио управляется Spotify.</string>
     <string name="credentials_required">Введите имя пользователя и пароль Spotify.</string>
+    <string name="verification_code">Код подтверждения</string>
+    <string name="verify">Подтвердить</string>
+    <string name="cancel">Отмена</string>
+    <string name="code_challenge_description">Введите код, отправленный на %1$s</string>
+    <string name="code_challenge_description_generic">Введите код, отправленный на вашу почту</string>
 </resources>

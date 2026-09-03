@@ -1,4 +1,4 @@
-package io.github.playmusic.ui
+﻿package io.github.playmusic.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -30,6 +30,14 @@ enum class ErrorKind {
 
 data class UiError(val kind: ErrorKind, val detail: String? = null)
 
+data class LoginPending(
+    val username: String,
+    val password: String,
+    val deviceId: String,
+    val loginContext: ByteArray,
+    val maskedTarget: String,
+)
+
 data class PlayUiState(
     val username: String = "",
     val isLoggedIn: Boolean = false,
@@ -39,14 +47,7 @@ data class PlayUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val error: UiError? = null,
-    val diagnosticsReport: String? = null,
-)
-
-private data class Combo(
-    val label: String,
-    val clientId: String,
-    val userAgent: String,
-    val clientVersion: String,
+    val loginPending: LoginPending? = null,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -71,24 +72,24 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         mutableState.value = mutableState.value.copy(username = normalizedUsername, isLoading = true, error = null)
         viewModelScope.launch {
             try {
-                val success = container.login5Client.loginWithPassword(
-                    username = normalizedUsername,
-                    password = password,
-                    deviceId = container.sessionStore.loadDeviceId(),
-                )
-                val session = io.github.playmusic.data.model.AuthSession(
-                    username = success.username,
-                    accessToken = success.accessToken,
-                    storedCredential = success.storedCredential,
-                    expiresAtEpochMs = System.currentTimeMillis() + success.accessTokenExpiresIn * 1_000L,
-                )
-                container.sessionStore.saveSession(session)
-                mutableState.value = mutableState.value.copy(
-                    username = success.username,
-                    isLoggedIn = true,
-                    isLoading = false,
-                )
-                refreshAll()
+                val deviceId = container.sessionStore.loadDeviceId()
+                when (val outcome = container.login5Client.loginWithPassword(normalizedUsername, password, deviceId)) {
+                    is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success -> {
+                        completeLogin(outcome)
+                    }
+                    is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> {
+                        mutableState.value = mutableState.value.copy(
+                            isLoading = false,
+                            loginPending = LoginPending(
+                                username = normalizedUsername,
+                                password = password,
+                                deviceId = deviceId,
+                                loginContext = outcome.loginContext,
+                                maskedTarget = outcome.maskedTarget,
+                            ),
+                        )
+                    }
+                }
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 mutableState.value = mutableState.value.copy(
@@ -97,6 +98,66 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 )
             }
         }
+    }
+
+    fun submitCode(code: String) {
+        val pending = mutableState.value.loginPending ?: return
+        val trimmed = code.trim()
+        if (trimmed.isBlank()) return
+        mutableState.value = mutableState.value.copy(isLoading = true, error = null)
+        viewModelScope.launch {
+            try {
+                val outcome = container.login5Client.loginWithCode(
+                    username = pending.username,
+                    password = pending.password,
+                    deviceId = pending.deviceId,
+                    code = trimmed,
+                    loginContext = pending.loginContext,
+                )
+                when (outcome) {
+                    is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success -> completeLogin(outcome)
+                    is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> {
+                        mutableState.value = mutableState.value.copy(
+                            isLoading = false,
+                            loginPending = pending.copy(
+                                loginContext = outcome.loginContext,
+                                maskedTarget = outcome.maskedTarget,
+                            ),
+                            error = UiError(ErrorKind.LOGIN, "確認コードが正しくありません。新しいコードを入力してください。"),
+                        )
+                    }
+                }
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                mutableState.value = mutableState.value.copy(
+                    isLoading = false,
+                    error = UiError(ErrorKind.LOGIN, exception.message),
+                )
+            }
+        }
+    }
+
+    fun cancelLogin() {
+        mutableState.value = mutableState.value.copy(loginPending = null, isLoading = false)
+    }
+
+    private fun completeLogin(
+        success: io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success,
+    ) {
+        val session = io.github.playmusic.data.model.AuthSession(
+            username = success.username,
+            accessToken = success.accessToken,
+            storedCredential = success.storedCredential,
+            expiresAtEpochMs = System.currentTimeMillis() + success.accessTokenExpiresIn * 1_000L,
+        )
+        container.sessionStore.saveSession(session)
+        mutableState.value = mutableState.value.copy(
+            username = success.username,
+            isLoggedIn = true,
+            isLoading = false,
+            loginPending = null,
+        )
+        refreshAll()
     }
 
     fun selectSection(section: LibrarySection) {
@@ -168,53 +229,6 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
 
     fun reportLoginFailure(message: String?) {
         mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.LOGIN, message))
-    }
-
-    fun runDiagnostics() {
-        mutableState.value = mutableState.value.copy(diagnosticsReport = "Running diagnostics...", isLoading = true)
-        viewModelScope.launch {
-            val report = buildString {
-                appendLine("== Play Diagnostics ==")
-                val deviceId = container.sessionStore.loadDeviceId()
-                appendLine("deviceId=$deviceId")
-                val combos = listOf(
-                    Combo("android-id+android-ua", AppContainer.SPOTIFY_CLIENT_ID, "Spotify/9.1.78.2218 Android/37 (Android 16)", "9.1.78.2218"),
-                    Combo("keymaster-id+spotcontrol-ua+ver", AppContainer.CLIENT_TOKEN_CLIENT_ID, "spotcontrol/0.0.0 Go/1.0", "0.0.0"),
-                    Combo("keymaster-id+spotcontrol-ua+realver", AppContainer.CLIENT_TOKEN_CLIENT_ID, "spotcontrol/0.0.0 Go/1.0", "9.1.78.2218"),
-                    Combo("keymaster-id+android-ua", AppContainer.CLIENT_TOKEN_CLIENT_ID, "Spotify/9.1.78.2218 Android/37 (Android 16)", "9.1.78.2218"),
-                )
-                for ((label, clientId, userAgent, clientVersion) in combos) {
-                    appendLine("-- client token ($label) --")
-                    val result = runCatching {
-                        container.acquireClientTokenWithUserAgent(clientId, deviceId, userAgent, clientVersion)
-                    }
-                    result.onSuccess {
-                        appendLine("$label OK: ${it.token.take(24)}...")
-                    }.onFailure {
-                        appendLine("$label FAIL: ${it.message}")
-                    }
-                }
-                appendLine("-- login5 (dummy credentials) --")
-                val login = runCatching {
-                    container.login5Client.loginWithPassword(
-                        username = "dummyuser123",
-                        password = "dummypass456",
-                        deviceId = deviceId,
-                    )
-                }
-                login.onSuccess {
-                    appendLine("login5 OK: user=${it.username} token=${it.accessToken.take(24)}...")
-                }.onFailure {
-                    appendLine("login5 FAIL: ${it.message}")
-                    appendLine(it.stackTraceToString())
-                }
-            }
-            android.util.Log.w("PlayDiagnostics", report)
-            mutableState.value = mutableState.value.copy(
-                diagnosticsReport = report,
-                isLoading = false,
-            )
-        }
     }
 
     private fun loadLibrary(section: LibrarySection) {

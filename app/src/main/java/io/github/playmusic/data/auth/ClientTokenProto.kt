@@ -1,13 +1,23 @@
-package io.github.playmusic.data.auth
+﻿package io.github.playmusic.data.auth
 
 import io.github.playmusic.data.auth.ProtoWire.Reader
+
+internal fun ByteArray.toUppercaseHex(): String = joinToString("") { "%02X".format(it) }
+
+internal fun String.hexToBytes(): ByteArray {
+    require(length % 2 == 0) { "Hex string must have even length" }
+    return ByteArray(length / 2) { index ->
+        substring(index * 2, index * 2 + 2).toInt(16).toByte()
+    }
+}
 
 data class ClientTokenRequest(
     val clientId: String,
     val clientVersion: String,
     val deviceId: String,
+    val androidData: NativeAndroidData = NativeAndroidData(),
 ) {
-    fun encode(): ByteArray = encodeClientData(NativeAndroidData())
+    fun encode(): ByteArray = encodeClientData(androidData)
 
     private fun encodeClientData(androidData: NativeAndroidData): ByteArray {
         val connectivity = java.io.ByteArrayOutputStream().apply {
@@ -33,12 +43,9 @@ data class ClientTokenRequest(
             write(ProtoWire.fieldVarint(1, ChallengeType.HASH_CASH.code))
             write(ProtoWire.fieldMessage(4, answer.encode()))
         }.toByteArray()
-        val answers = java.io.ByteArrayOutputStream().apply {
-            write(ProtoWire.fieldMessage(1, challengeAnswer))
-        }.toByteArray()
         val challengeAnswers = java.io.ByteArrayOutputStream().apply {
             write(ProtoWire.fieldString(1, state))
-            write(ProtoWire.fieldMessage(2, answers))
+            write(ProtoWire.fieldMessage(2, challengeAnswer))
         }.toByteArray()
         val out = java.io.ByteArrayOutputStream()
         out.write(ProtoWire.fieldVarint(1, ClientTokenRequestType.CHALLENGE_ANSWERS_REQUEST.code))
@@ -51,97 +58,55 @@ data class HashCashAnswer(
     val suffix: ByteArray,
 ) {
     fun encode(): ByteArray = java.io.ByteArrayOutputStream().apply {
-        write(ProtoWire.fieldBytes(1, suffix))
+        // The server expects an uppercase ASCII hex string of the raw suffix.
+        write(ProtoWire.fieldString(1, suffix.toUppercaseHex()))
     }.toByteArray()
 }
 
+/**
+ * NativeAndroidData as captured from the official Spotify Android app.
+ * Field layout matches the real device traffic byte-for-byte.
+ */
 data class NativeAndroidData(
-    val majorVersion: Int = 0,
-    val minorVersion: Int = 0,
-    val patchVersion: Int = 0,
-    val apiVersion: Int = 0,
-    val deviceName: String = "",
-    val deviceManufacturer: String = "",
-    val deviceBrand: String = "",
-    val deviceModel: String = "",
-    val deviceArch: String = "",
-    val screenWidth: Int = 0,
-    val screenHeight: Int = 0,
-    val screenDensity: Int = 0,
+    val sdkVersion: AndroidSdkVersion = AndroidSdkVersion(),
+    val field2: Int = 22,
+    val field3: Int = 36,
+    val deviceModel: String = "SH-R80P",
+    val deviceName: String = "SH-R80P",
+    val manufacturer: String = "SHARP",
+    val brand: String = "SHARP",
+    val field8: Int = 32,
+    val appSignature: String = "",
+    val installer: String = "",
 ) {
     fun encode(): ByteArray = java.io.ByteArrayOutputStream().apply {
-        if (majorVersion != 0) write(ProtoWire.fieldVarint(1, majorVersion))
-        if (minorVersion != 0) write(ProtoWire.fieldVarint(2, minorVersion))
-        if (patchVersion != 0) write(ProtoWire.fieldVarint(3, patchVersion))
-        if (apiVersion != 0) write(ProtoWire.fieldVarint(4, apiVersion))
+        write(ProtoWire.fieldMessage(1, sdkVersion.encode()))
+        if (field2 != 0) write(ProtoWire.fieldVarint(2, field2))
+        if (field3 != 0) write(ProtoWire.fieldVarint(3, field3))
+        if (deviceModel.isNotEmpty()) write(ProtoWire.fieldString(4, deviceModel))
         if (deviceName.isNotEmpty()) write(ProtoWire.fieldString(5, deviceName))
-        if (deviceManufacturer.isNotEmpty()) write(ProtoWire.fieldString(6, deviceManufacturer))
-        if (deviceBrand.isNotEmpty()) write(ProtoWire.fieldString(7, deviceBrand))
-        if (deviceModel.isNotEmpty()) write(ProtoWire.fieldString(8, deviceModel))
-        if (deviceArch.isNotEmpty()) write(ProtoWire.fieldString(9, deviceArch))
-        if (screenWidth != 0 || screenHeight != 0 || screenDensity != 0) {
-            val screen = java.io.ByteArrayOutputStream().apply {
-                if (screenWidth != 0) write(ProtoWire.fieldVarint(1, screenWidth))
-                if (screenHeight != 0) write(ProtoWire.fieldVarint(2, screenHeight))
-                if (screenDensity != 0) write(ProtoWire.fieldVarint(3, screenDensity))
-            }.toByteArray()
-            write(ProtoWire.fieldMessage(10, screen))
-        }
+        if (manufacturer.isNotEmpty()) write(ProtoWire.fieldString(6, manufacturer))
+        if (brand.isNotEmpty()) write(ProtoWire.fieldString(7, brand))
+        if (field8 != 0) write(ProtoWire.fieldVarint(8, field8))
+        if (appSignature.isNotEmpty()) write(ProtoWire.fieldString(9, appSignature))
+        if (installer.isNotEmpty()) write(ProtoWire.fieldString(10, installer))
     }.toByteArray()
 }
 
-enum class ClientTokenRequestType(val code: Int) {
-    REQUEST_UNKNOWN(0),
-    CLIENT_DATA_REQUEST(1),
-    CHALLENGE_ANSWERS_REQUEST(2),
-}
-
-enum class ClientTokenResponseType(val code: Int) {
-    RESPONSE_UNKNOWN(0),
-    GRANTED_TOKEN_RESPONSE(1),
-    CHALLENGES_RESPONSE(2),
-}
-
-enum class ChallengeType(val code: Int) {
-    CHALLENGE_UNKNOWN(0),
-    CLIENT_SECRET_HMAC(1),
-    EVALUATE_JS(2),
-    HASH_CASH(3),
-}
-
-data class HashCashChallengeParameters(
-    val length: Int,
-    val prefix: ByteArray,
-)
-
-data class ClientTokenChallenge(
-    val type: ChallengeType,
-    val hashCash: HashCashChallengeParameters? = null,
-)
-
-data class GrantedClientToken(
-    val token: String,
-    val expiresAfterSeconds: Int,
-    val refreshAfterSeconds: Int,
+data class AndroidSdkVersion(
+    val major: Int = 16,
+    val minor: Int = 0,
+    val patch: Int = 0,
+    val apiLevel: Int = 36,
+    val extra1: Int = 36,
 ) {
-    companion object {
-        fun parse(data: ByteArray): GrantedClientToken {
-            val reader = Reader(data)
-            var token = ""
-            var expires = 0
-            var refresh = 0
-            while (reader.hasNext()) {
-                val tag = reader.readTag()
-                when (reader.fieldNumber(tag)) {
-                    1 -> token = reader.readString()
-                    2 -> expires = reader.readVarint().toInt()
-                    3 -> refresh = reader.readVarint().toInt()
-                    else -> reader.skip(reader.wireType(tag))
-                }
-            }
-            return GrantedClientToken(token, expires, refresh)
-        }
-    }
+    fun encode(): ByteArray = java.io.ByteArrayOutputStream().apply {
+        write(ProtoWire.fieldVarint(1, major))
+        write(ProtoWire.fieldVarint(2, minor))
+        write(ProtoWire.fieldVarint(3, patch))
+        write(ProtoWire.fieldVarint(4, apiLevel))
+        write(ProtoWire.fieldVarint(5, extra1))
+    }.toByteArray()
 }
 
 data class ClientTokenChallengesResponse(
@@ -185,18 +150,72 @@ data class ClientTokenChallengesResponse(
         private fun parseHashCash(data: ByteArray): HashCashChallengeParameters? {
             val reader = Reader(data)
             var length = 0
-            var prefix: ByteArray? = null
+            var prefixHex: String? = null
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
                     1 -> length = reader.readVarint().toInt()
-                    2 -> prefix = reader.readBytes()
+                    2 -> prefixHex = reader.readString()
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
-            return prefix?.let { HashCashChallengeParameters(length, it) }
+            return prefixHex?.let { HashCashChallengeParameters(length, it.hexToBytes()) }
         }
     }
+}
+
+data class ClientTokenChallenge(
+    val type: ChallengeType,
+    val hashCash: HashCashChallengeParameters? = null,
+)
+
+data class HashCashChallengeParameters(
+    val length: Int,
+    val prefix: ByteArray,
+)
+
+data class GrantedClientToken(
+    val token: String,
+    val expiresAfterSeconds: Int,
+    val refreshAfterSeconds: Int,
+) {
+    companion object {
+        fun parse(data: ByteArray): GrantedClientToken {
+            val reader = Reader(data)
+            var token = ""
+            var expires = 0
+            var refresh = 0
+            while (reader.hasNext()) {
+                val tag = reader.readTag()
+                when (reader.fieldNumber(tag)) {
+                    1 -> token = reader.readString()
+                    2 -> expires = reader.readVarint().toInt()
+                    3 -> refresh = reader.readVarint().toInt()
+                    else -> reader.skip(reader.wireType(tag))
+                }
+            }
+            return GrantedClientToken(token, expires, refresh)
+        }
+    }
+}
+
+enum class ClientTokenRequestType(val code: Int) {
+    REQUEST_UNKNOWN(0),
+    CLIENT_DATA_REQUEST(1),
+    CHALLENGE_ANSWERS_REQUEST(2),
+}
+
+enum class ClientTokenResponseType(val code: Int) {
+    RESPONSE_UNKNOWN(0),
+    GRANTED_TOKEN_RESPONSE(1),
+    CHALLENGES_RESPONSE(2),
+}
+
+enum class ChallengeType(val code: Int) {
+    CHALLENGE_UNKNOWN(0),
+    CLIENT_SECRET_HMAC(1),
+    EVALUATE_JS(2),
+    HASH_CASH(3),
 }
 
 data class ClientTokenResponse(

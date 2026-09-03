@@ -35,4 +35,9 @@
     <string name="dismiss">Fechar</string>
     <string name="artwork_cache_note">As capas ficam em um cache LRU de 128 MB. O áudio é gerenciado pelo Spotify.</string>
     <string name="credentials_required">Digite seu nome de usuário e senha do Spotify.</string>
+    <string name="verification_code">Código de verificação</string>
+    <string name="verify">Verificar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="code_challenge_description">Insira o código enviado para %1$s</string>
+    <string name="code_challenge_description_generic">Insira o código enviado para o seu e-mail</string>
 </resources>

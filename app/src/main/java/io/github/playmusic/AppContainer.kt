@@ -1,4 +1,4 @@
-package io.github.playmusic
+﻿package io.github.playmusic
 
 import android.content.Context
 import io.github.playmusic.data.api.SessionManager
@@ -21,15 +21,7 @@ class AppContainer(context: Context) {
         SpotifyApiClient(SessionManager(sessionStore, login5Client, clientTokenClient)),
     )
 
-    suspend fun acquireClientTokenWithUserAgent(
-        clientId: String,
-        deviceId: String,
-        userAgent: String,
-        clientVersion: String = "9.1.78.2218",
-    ) = SpotifyClientTokenClient(userAgent, clientVersion).acquire(clientId, deviceId)
-
     companion object {
         const val SPOTIFY_CLIENT_ID = AppConstants.SPOTIFY_CLIENT_ID
-        const val CLIENT_TOKEN_CLIENT_ID = AppConstants.CLIENT_TOKEN_CLIENT_ID
     }
 }

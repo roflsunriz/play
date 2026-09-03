@@ -1,4 +1,4 @@
-package io.github.playmusic.data.auth
+﻿package io.github.playmusic.data.auth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,7 +46,7 @@ class SpotifyClientTokenClient(
             val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
                 ?.use { it.readBytes() }
                 ?: ByteArray(0)
-            android.util.Log.w("SpotifyClientToken", "req=${android.util.Base64.encodeToString(body, android.util.Base64.NO_WRAP)} status=$status resp=${android.util.Base64.encodeToString(responseBody, android.util.Base64.NO_WRAP).take(120)}")
+            android.util.Log.w("SpotifyClientToken", "status=$status resp=${responseBody.joinToString("") { "%02x".format(it) }}")
             if (status !in 200..299) {
                 throw SpotifyAuthException("Spotify client token request failed ($status)")
             }
@@ -61,9 +61,8 @@ class SpotifyClientTokenClient(
 
     private companion object {
         const val CLIENT_TOKEN_ENDPOINT = "https://clienttoken.spotify.com/v1/clienttoken"
-        const val CLIENT_VERSION = "9.1.78.2218"
-        const val DEFAULT_USER_AGENT = "Spotify/9.1.78.2218 Android/37 (Android 16)"
-        const val SPOTCONTROL_USER_AGENT = "spotcontrol/0.0.0 Go/1.0"
+        const val CLIENT_VERSION = AppConstants.CLIENT_VERSION
+        const val DEFAULT_USER_AGENT = AppConstants.SPOTIFY_USER_AGENT
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 20_000
     }

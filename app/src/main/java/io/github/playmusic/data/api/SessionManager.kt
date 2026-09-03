@@ -1,4 +1,4 @@
-package io.github.playmusic.data.api
+﻿package io.github.playmusic.data.api
 
 import io.github.playmusic.data.auth.SpotifyAuthException
 import io.github.playmusic.data.auth.SpotifyClientTokenClient
@@ -25,7 +25,8 @@ class SessionManager(
             username = session.username,
             storedCredential = storedCredential,
             deviceId = store.loadDeviceId(),
-        )
+        ) as? io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success
+            ?: throw SpotifyAuthException("Spotify token refresh requires a verification code")
         store.saveSession(
             session.copy(
                 accessToken = refreshed.accessToken,
@@ -40,7 +41,7 @@ class SessionManager(
         val cached = cachedClientToken
         if (!forceRefresh && cached != null) return@withLock cached
         val token = clientTokenClient.acquire(
-            clientId = io.github.playmusic.data.auth.AppConstants.CLIENT_TOKEN_CLIENT_ID,
+            clientId = io.github.playmusic.data.auth.AppConstants.SPOTIFY_CLIENT_ID,
             deviceId = store.loadDeviceId(),
         ).token
         cachedClientToken = token

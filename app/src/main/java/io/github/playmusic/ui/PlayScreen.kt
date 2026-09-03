@@ -53,7 +53,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -111,13 +110,21 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onPreview = viewModel::preview,
         )
     } else {
-        SetupScreen(
-            initialUsername = state.username,
-            isLoading = state.isLoading,
-            onLogin = viewModel::beginLogin,
-            onRunDiagnostics = viewModel::runDiagnostics,
-            diagnosticsReport = state.diagnosticsReport,
-        )
+        val pending = state.loginPending
+        if (pending != null) {
+            CodeChallengeScreen(
+                maskedTarget = pending.maskedTarget,
+                isLoading = state.isLoading,
+                onSubmit = viewModel::submitCode,
+                onCancel = viewModel::cancelLogin,
+            )
+        } else {
+            SetupScreen(
+                initialUsername = state.username,
+                isLoading = state.isLoading,
+                onLogin = viewModel::beginLogin,
+            )
+        }
     }
     state.error?.let { ErrorDialog(it, viewModel::clearError) }
 }
@@ -127,8 +134,6 @@ private fun SetupScreen(
     initialUsername: String,
     isLoading: Boolean,
     onLogin: (String, String) -> Unit,
-    onRunDiagnostics: () -> Unit,
-    diagnosticsReport: String?,
 ) {
     var username by remember(initialUsername) { mutableStateOf(initialUsername) }
     var password by remember { mutableStateOf("") }
@@ -178,21 +183,64 @@ private fun SetupScreen(
         Text(stringResource(R.string.premium_required), style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(8.dp))
         Text(stringResource(R.string.artwork_cache_note), style = MaterialTheme.typography.bodySmall)
+    }
+    }
+
+@Composable
+private fun CodeChallengeScreen(
+    maskedTarget: String,
+    isLoading: Boolean,
+    onSubmit: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var code by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 48.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            if (maskedTarget.isNotBlank()) {
+                stringResource(R.string.code_challenge_description, maskedTarget)
+            } else {
+                stringResource(R.string.code_challenge_description_generic)
+            },
+            style = MaterialTheme.typography.bodyLarge,
+        )
         Spacer(Modifier.height(24.dp))
-        OutlinedButton(
-            onClick = onRunDiagnostics,
-            enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth().testTag("diagnostics-button"),
+        OutlinedTextField(
+            value = code,
+            onValueChange = { code = it },
+            label = { Text(stringResource(R.string.verification_code)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().testTag("code-input"),
+        )
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = { onSubmit(code) },
+            enabled = code.isNotBlank() && !isLoading,
+            modifier = Modifier.fillMaxWidth().testTag("code-submit-button"),
         ) {
-            Text("Run diagnostics")
+            if (isLoading) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text(stringResource(R.string.verify))
+            }
         }
-        diagnosticsReport?.let { report ->
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = report,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.fillMaxWidth().testTag("diagnostics-report"),
-            )
+        Spacer(Modifier.height(8.dp))
+        TextButton(
+            onClick = onCancel,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth().testTag("code-cancel-button"),
+        ) {
+            Text(stringResource(R.string.cancel))
         }
     }
 }

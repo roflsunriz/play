@@ -35,4 +35,9 @@
     <string name="dismiss">Fermer</string>
     <string name="artwork_cache_note">Les pochettes sont conservées dans un cache LRU de 128 Mo. Spotify gère l’audio.</string>
     <string name="credentials_required">Saisissez votre nom d’utilisateur et mot de passe Spotify.</string>
+    <string name="verification_code">Code de vérification</string>
+    <string name="verify">Vérifier</string>
+    <string name="cancel">Annuler</string>
+    <string name="code_challenge_description">Saisissez le code envoyé à %1$s</string>
+    <string name="code_challenge_description_generic">Saisissez le code envoyé à votre adresse e-mail</string>
 </resources>

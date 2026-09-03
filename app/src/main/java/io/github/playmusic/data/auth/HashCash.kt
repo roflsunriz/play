@@ -1,4 +1,4 @@
-package io.github.playmusic.data.auth
+﻿package io.github.playmusic.data.auth
 
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -49,10 +49,11 @@ object HashCash {
     fun solveClientToken(prefix: ByteArray, length: Int): ByteArray {
         require(length <= 64)
         val contextDigest = MessageDigest.getInstance("SHA-1").digest(ByteArray(0))
-        val target = ByteBuffer.wrap(contextDigest).getLong(12)
+        val seed = ByteBuffer.wrap(contextDigest).getLong(12)
         var counter = 0L
         val hasher = MessageDigest.getInstance("SHA-1")
         while (true) {
+            val target = seed + counter
             val suffix = ByteArray(16)
             val targetBytes = ByteBuffer.allocate(8).putLong(target).array()
             val counterBytes = ByteBuffer.allocate(8).putLong(counter).array()
@@ -63,10 +64,7 @@ object HashCash {
             hasher.update(prefix)
             hasher.update(suffix)
             val candidate = hasher.digest()
-            val digestLong = ByteBuffer.wrap(candidate).getLong(12)
-            if (java.lang.Long.numberOfTrailingZeros(digestLong) >= length) {
-                return suffix
-            }
+            if (hasTrailingZeroBits(candidate, length)) return suffix
             counter++
         }
     }

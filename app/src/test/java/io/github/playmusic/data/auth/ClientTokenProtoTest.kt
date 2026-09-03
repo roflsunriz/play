@@ -1,23 +1,23 @@
-package io.github.playmusic.data.auth
+﻿package io.github.playmusic.data.auth
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClientTokenProtoTest {
+
     @Test
     fun encodesClientDataRequestInWireOrder() {
         val request = ClientTokenRequest(
-            clientId = "65b708073fc0480ea92a077233ca87bd",
+            clientId = "9a8d2f0ce77a4e248bb71fefcb557637",
             clientVersion = "9.1.78.2218",
             deviceId = "device-1",
         )
 
         val bytes = request.encode()
 
-        // request_type(1) = varint 1
-        // client_data(2) = message
         assertEquals(0x08, bytes[0].toInt() and 0xFF)
         assertEquals(0x01, bytes[1].toInt() and 0xFF)
         assertEquals(0x12, bytes[2].toInt() and 0xFF)
@@ -25,12 +25,11 @@ class ClientTokenProtoTest {
     }
 
     @Test
-    fun parsesChallengesResponseWithRawPrefix() {
-        // Challenge { type(1) = HASH_CASH(3); hash_cash(4) { length(1)=20; prefix(2)=<32 raw bytes> } }
-        val prefix = ByteArray(32) { it.toByte() }
+    fun parsesChallengesResponseWithHexPrefix() {
+        val prefixHex = "112C47D95C20F1285BBC94606A7C4C4E"
         val hashCash = java.io.ByteArrayOutputStream().apply {
             write(ProtoWire.fieldVarint(1, 20))
-            write(ProtoWire.fieldBytes(2, prefix))
+            write(ProtoWire.fieldString(2, prefixHex))
         }.toByteArray()
         val challenge = java.io.ByteArrayOutputStream().apply {
             write(ProtoWire.fieldVarint(1, ChallengeType.HASH_CASH.code))
@@ -51,37 +50,72 @@ class ClientTokenProtoTest {
         assertEquals("state-123", parsed.challenges?.state)
         assertEquals(1, parsed.challenges?.challenges?.size)
         assertEquals(ChallengeType.HASH_CASH.code, parsed.challenges?.challenges?.get(0)?.type?.code)
-        assertArrayEquals(prefix, parsed.challenges?.challenges?.get(0)?.hashCash?.prefix)
+        assertArrayEquals(prefixHex.hexToBytes(), parsed.challenges?.challenges?.get(0)?.hashCash?.prefix)
         assertEquals(20, parsed.challenges?.challenges?.get(0)?.hashCash?.length)
     }
 
     @Test
-    fun encodesHashCashAnswerAsBytes() {
+    fun encodesHashCashAnswerAsUppercaseHexString() {
         val suffix = ByteArray(16) { (0x10 + it).toByte() }
 
         val bytes = HashCashAnswer(suffix).encode()
 
-        // field 1 (suffix) must be length-delimited containing the raw bytes
         assertEquals(0x0A, bytes[0].toInt() and 0xFF)
-        assertEquals(16, bytes[1].toInt() and 0xFF)
-        assertArrayEquals(suffix, bytes.copyOfRange(2, 18))
+        val expected = suffix.joinToString("") { "%02X".format(it) }
+        assertEquals(expected, String(bytes.copyOfRange(2, bytes.size), Charsets.UTF_8))
     }
 
     @Test
-    fun encodesChallengeAnswersInWireOrder() {
-        val answer = HashCashAnswer(ByteArray(16) { 1 })
+    fun hexHelpersRoundTrip() {
+        val raw = byteArrayOf(0x11, 0x2C, 0x47.toByte(), 0xD9.toByte())
+        assertEquals("112C47D9", raw.toUppercaseHex())
+        assertArrayEquals(raw, "112C47D9".hexToBytes())
+    }
 
-        val bytes = ClientTokenRequest(
-            clientId = "id",
-            clientVersion = "v",
-            deviceId = "dev",
-        ).encodeChallengeAnswers("state-xyz", answer)
+    @Test
+    fun encodesChallengeAnswersFlatWithoutWrapper() {
+        val suffix = ByteArray(16) { (0x10 + it).toByte() }
+        val request = ClientTokenRequest("id", "v", "dev")
 
-        // request_type(1) = CHALLENGE_ANSWERS_REQUEST(2)
-        // challenge_answers(3) = message
+        val bytes = request.encodeChallengeAnswers("state-1", HashCashAnswer(suffix))
+
         assertEquals(0x08, bytes[0].toInt() and 0xFF)
         assertEquals(0x02, bytes[1].toInt() and 0xFF)
         assertEquals(0x1A, bytes[2].toInt() and 0xFF)
-        assertNotNull(bytes)
+
+        val reader = ProtoWire.Reader(bytes)
+        var seenTag = 0
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            if (reader.fieldNumber(tag) == 3) {
+                val challengeAnswers = reader.readBytes()
+                // ChallengeAnswersRequest: f1(state)=string tag is 0x0A
+                assertEquals(0x0A, challengeAnswers[0].toInt() and 0xFF)
+
+                var inner = ProtoWire.Reader(challengeAnswers)
+                while (inner.hasNext()) {
+                    val innerTag = inner.readTag()
+                    if (inner.fieldNumber(innerTag) == 2) {
+                        val answer = inner.readBytes()
+                        // ChallengeAnswer must start with f1 varint 3 (HASH_CASH)
+                        assertEquals(0x08, answer[0].toInt() and 0xFF)
+                        assertEquals(0x03, answer[1].toInt() and 0xFF)
+                        seenTag++
+                    }
+                }
+            }
+        }
+        assertEquals(1, seenTag)
+    }
+
+    @Test
+    fun capturedChallengeStateIsReusedWithoutWrapper() {
+        val suffix = ByteArray(16) { 0x01 }
+        val request = ClientTokenRequest("id", "v", "dev")
+
+        val bytes = request.encodeChallengeAnswers("STATE-TOKEN", HashCashAnswer(suffix))
+        val text = String(bytes, Charsets.UTF_8)
+        assertTrue(text.contains("STATE-TOKEN"))
+        assertTrue(text.contains(suffix.toUppercaseHex()))
     }
 }

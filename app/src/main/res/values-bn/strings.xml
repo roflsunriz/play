@@ -35,4 +35,9 @@
     <string name="dismiss">বন্ধ করুন</string>
     <string name="artwork_cache_note">আর্টওয়ার্ক 128 MB LRU ক্যাশে রাখা হয়। অডিও Spotify পরিচালনা করে।</string>
     <string name="credentials_required">আপনার Spotify ব্যবহারকারীর নাম ও পাসওয়ার্ড লিখুন।</string>
+    <string name="verification_code">যাচাইকরণ কোড</string>
+    <string name="verify">যাচাই করুন</string>
+    <string name="cancel">বাতিল</string>
+    <string name="code_challenge_description">%1$s-এ পাঠানো কোডটি লিখুন</string>
+    <string name="code_challenge_description_generic">ইমেইলে পাঠানো কোডটি লিখুন</string>
 </resources>
