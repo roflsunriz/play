@@ -13,8 +13,9 @@ class SetupScreenTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun setupRequiresClientIdBeforeLogin() {
-        composeRule.onNodeWithTag("client-id-input").assertIsDisplayed()
+    fun setupRequiresCredentialsBeforeLogin() {
+        composeRule.onNodeWithTag("username-input").assertIsDisplayed()
+        composeRule.onNodeWithTag("password-input").assertIsDisplayed()
         composeRule.onNodeWithTag("login-button").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
     }
 }

@@ -8,6 +8,7 @@ import androidx.core.content.edit
 import io.github.playmusic.data.model.AuthSession
 import org.json.JSONObject
 import java.security.KeyStore
+import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -22,6 +23,13 @@ class SecureSessionStore(context: Context) {
         preferences.edit { putString(KEY_CLIENT_ID, clientId.trim()) }
     }
 
+    fun loadDeviceId(): String {
+        preferences.getString(KEY_DEVICE_ID, null)?.let { return it }
+        val deviceId = "0${SecureRandom().generateDeviceId()}"
+        preferences.edit { putString(KEY_DEVICE_ID, deviceId) }
+        return deviceId
+    }
+
     fun loadSession(): AuthSession? {
         val encoded = preferences.getString(KEY_SESSION, null) ?: return null
         return runCatching {
@@ -34,10 +42,11 @@ class SecureSessionStore(context: Context) {
             val json = JSONObject(String(cipher.doFinal(ciphertext), Charsets.UTF_8))
             require(json.getInt("schemaVersion") == SESSION_SCHEMA_VERSION)
             AuthSession(
+                username = json.getString("username"),
                 accessToken = json.getString("accessToken"),
-                refreshToken = json.getString("refreshToken"),
+                storedCredential = json.optString("storedCredential").takeIf(String::isNotBlank)
+                    ?.let { Base64.decode(it, Base64.NO_WRAP) },
                 expiresAtEpochMs = json.getLong("expiresAtEpochMs"),
-                scope = json.optString("scope"),
             )
         }.getOrElse {
             clearSession()
@@ -48,10 +57,10 @@ class SecureSessionStore(context: Context) {
     fun saveSession(session: AuthSession) {
         val json = JSONObject()
             .put("schemaVersion", SESSION_SCHEMA_VERSION)
+            .put("username", session.username)
             .put("accessToken", session.accessToken)
-            .put("refreshToken", session.refreshToken)
+            .put("storedCredential", session.storedCredential?.let { Base64.encodeToString(it, Base64.NO_WRAP) }.orEmpty())
             .put("expiresAtEpochMs", session.expiresAtEpochMs)
-            .put("scope", session.scope)
             .toString()
             .toByteArray(Charsets.UTF_8)
         val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
@@ -82,14 +91,22 @@ class SecureSessionStore(context: Context) {
         return generator.generateKey()
     }
 
+    private fun SecureRandom.generateDeviceId(): String {
+        val bytes = ByteArray(DEVICE_ID_HEX_BYTES)
+        nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
     private companion object {
         const val PREFERENCES_NAME = "play_secure_preferences"
         const val KEY_CLIENT_ID = "spotify_client_id"
+        const val KEY_DEVICE_ID = "spotify_device_id"
         const val KEY_SESSION = "spotify_session"
         const val KEY_ALIAS = "play_spotify_session_key"
         const val ANDROID_KEY_STORE = "AndroidKeyStore"
         const val CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
         const val GCM_TAG_BITS = 128
-        const val SESSION_SCHEMA_VERSION = 1
+        const val SESSION_SCHEMA_VERSION = 2
+        const val DEVICE_ID_HEX_BYTES = 16
     }
 }

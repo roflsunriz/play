@@ -13,6 +13,7 @@ data class SpotifyContent(
     val subtitle: String,
     val imageUrl: String?,
     val kind: ContentKind,
+    val previewUrl: String? = null,
 )
 
 enum class RepeatMode(val apiValue: String) {
@@ -42,10 +43,10 @@ data class Playback(
 )
 
 data class AuthSession(
+    val username: String,
     val accessToken: String,
-    val refreshToken: String,
+    val storedCredential: ByteArray?,
     val expiresAtEpochMs: Long,
-    val scope: String,
 ) {
     fun expiresSoon(nowEpochMs: Long = System.currentTimeMillis()): Boolean =
         expiresAtEpochMs - nowEpochMs <= TOKEN_REFRESH_SKEW_MS

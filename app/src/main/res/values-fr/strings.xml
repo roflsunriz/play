@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Connectez votre compte Spotify</string>
-    <string name="setup_description">Play utilise Spotify Web API pour afficher votre bibliothèque et contrôler la lecture sur votre appareil Spotify actif.</string>
-    <string name="client_id">ID client Spotify</string>
-    <string name="client_id_help">Créez une application dans Spotify for Developers, puis enregistrez http://127.0.0.1 comme URI de redirection.</string>
-    <string name="open_dashboard">Ouvrir Spotify Dashboard</string>
+    <string name="setup_description">Connectez-vous avec votre nom d’utilisateur et mot de passe Spotify pour voir votre bibliothèque et contrôler la lecture sur votre appareil Spotify actif.</string>
+    <string name="username">Nom d’utilisateur Spotify</string>
+    <string name="password">Mot de passe</string>
     <string name="login">Se connecter avec Spotify</string>
-    <string name="premium_required">Le contrôle de la lecture nécessite Spotify Premium. Les applications en mode développement sont soumises aux limites de compte Spotify.</string>
+    <string name="premium_required">Le contrôle de la lecture nécessite Spotify Premium.</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Albums</string>
     <string name="tracks">Titres</string>
@@ -29,10 +28,11 @@
     <string name="settings">Paramètres</string>
     <string name="supplied_by_spotify">Contenu fourni par Spotify</string>
     <string name="open_on_spotify">Ouvrir dans Spotify</string>
+    <string name="preview">Lire un aperçu</string>
     <string name="login_failed">La connexion à Spotify a échoué.</string>
     <string name="request_failed">La requête Spotify a échoué.</string>
     <string name="error_title">Une erreur est survenue</string>
     <string name="dismiss">Fermer</string>
     <string name="artwork_cache_note">Les pochettes sont conservées dans un cache LRU de 128 Mo. Spotify gère l’audio.</string>
-    <string name="client_id_required">Saisissez votre ID client Spotify.</string>
+    <string name="credentials_required">Saisissez votre nom d’utilisateur et mot de passe Spotify.</string>
 </resources>

@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Подключите аккаунт Spotify</string>
-    <string name="setup_description">Play использует Spotify Web API для показа медиатеки и управления воспроизведением на активном устройстве Spotify.</string>
-    <string name="client_id">ID клиента Spotify</string>
-    <string name="client_id_help">Создайте приложение в Spotify for Developers и зарегистрируйте http://127.0.0.1 как URI перенаправления.</string>
-    <string name="open_dashboard">Открыть Spotify Dashboard</string>
+    <string name="setup_description">Войдите с именем пользователя и паролем Spotify, чтобы просматривать медиатеку и управлять воспроизведением на активном устройстве Spotify.</string>
+    <string name="username">Имя пользователя Spotify</string>
+    <string name="password">Пароль</string>
     <string name="login">Войти через Spotify</string>
-    <string name="premium_required">Для управления воспроизведением нужен Spotify Premium. На приложения в режиме разработки действуют ограничения аккаунтов Spotify.</string>
+    <string name="premium_required">Для управления воспроизведением нужен Spotify Premium.</string>
     <string name="playlists">Плейлисты</string>
     <string name="albums">Альбомы</string>
     <string name="tracks">Треки</string>
@@ -29,10 +28,11 @@
     <string name="settings">Настройки</string>
     <string name="supplied_by_spotify">Контент предоставлен Spotify</string>
     <string name="open_on_spotify">Открыть в Spotify</string>
+    <string name="preview">Воспроизвести превью</string>
     <string name="login_failed">Не удалось войти в Spotify.</string>
     <string name="request_failed">Запрос к Spotify завершился ошибкой.</string>
     <string name="error_title">Произошла ошибка</string>
     <string name="dismiss">Закрыть</string>
     <string name="artwork_cache_note">Обложки хранятся в LRU-кэше до 128 МБ. Аудио управляется Spotify.</string>
-    <string name="client_id_required">Введите ID клиента Spotify.</string>
+    <string name="credentials_required">Введите имя пользователя и пароль Spotify.</string>
 </resources>

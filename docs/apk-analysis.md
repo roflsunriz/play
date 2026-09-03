@@ -53,7 +53,38 @@
 4. トラック位置は再生中にローカルで時刻更新し、操作後と手動更新時にサーバー状態へ再同期する。
 5. 操作可能要素に安定したテストタグを付け、表示言語に依存しないUIテストを可能にする。
 
-## 動的解析
+## 深い静的解析（Login5 / spclient / 楽曲キャッシュ）
+
+### 認証方式の刷新（Login5通常ログイン）
+
+- 旧実装のPKCE OAuth（Client ID入力 + accounts.spotify.com/authorize）を廃止し、**通常のSpotifyアカウント（ユーザー名+パスワード）でログインできる方式へ刷新**した。
+- 対象APKの認証本体はネイティブ(Rust)実装で、Java層にはEsperanto RPCのprotobuf契約が露出していた。`spotify.authentication.login5.impl.proto.Login5` の `authenticate` に `AuthenticateRequest{credentials=password}` を送る契約を抽出した（`EsAuthenticateRequest$AuthenticateRequest.java` 等）。
+- ワイヤ契約は公開OSS実装（librespot / librespot-java / spotcontrol）から確定した:
+  - `POST https://login5.spotify.com/v3/login`（protobuf、`Client-Token`ヘッダ必須）
+  - Android用クライアントID `9a8d2f0ce77a4e248bb71fefcb557637`（client_secretは存在しない）
+  - hashcash（SHA-1）チャレンジ解決が必須。`login_context`のSHA-1後半8バイトをシードに、prefix+suffixのダイジェスト末尾10ビットが0になるsuffix(16バイト)を探索する
+  - 成功時は `LoginOk{username, access_token, stored_credential, access_token_expires_in}` を返し、`stored_credential`（バイナリ）で以後の再認証・トークン更新を行う
+- Client Tokenは `POST https://clienttoken.spotify.com/v1/clienttoken`（Android用 `ConnectivitySdkData`）で取得する契約。
+- API呼び出しは `spclient.wg.spotify.com` をベースにし、`Authorization: Bearer <login5トークン>` と `Client-Token` ヘッダを送る（`OAuthHelper.smali` の `DEFAULT_WEBGATE_HOST` と `p/g82.java` の認証ホスト一覧から確定）。
+
+### 楽曲ストリーム・キャッシュの意味契約
+
+- 楽曲ストリームURLは固定CDNを持たず、Esperanto RPC `GetMediaManifest` が返すマニフェストからCDN base URL一覧とurlPathテンプレートを配布する方式（`EsDownload$MediaManifestResponse`、`p/rro0.java`）。urlPathは `{{profile_id}}` / `{{segment_timestamp}}` を置換して構成する。
+- セグメント取得は `RequestSegmentData(streamerId, urlPath, cdnBaseUrl[], start, end, metadata)` のバイトレンジ指定で、応答に `previouslyCached / fromNetwork / hadCacheError` を持つ（`EsDownload$RequestDataResponse`）。キャッシュ優先・ネットフォールバックの契約。
+- 完全キャッシュ判定は `IsFileFullyCached(urlPath, contentForm)`、部分キャッシュは `GetFirstCachedSegmentIndex` で先頭位置を取得する。
+- ディスクキャッシュの意味契約（ExoPlayer SimpleCache相当）:
+  - 容量上限は `segment_cache_max_size_bytes`（既定最大100MB）
+  - LRU押し出しはファイル名のタイムスタンプでアクセス順を永続化し、読み取り時にリネームでタッチする
+  - インデックスはバイナリファイル + SQLiteの二重化、起動時に実ファイル走査で再構築し実長不一致スパンを削除する
+  - ダウンロード状態は QUEUED→DOWNLOADING→COMPLETED/FAILED で管理し、起動時に割り込み分を再キューする
+- 本アプリでは、公開契約で取得できる楽曲プレビュー（`preview_url`）を対象に、**容量上限付きLRUディスクキャッシュ（TrackCache）**を実装した。SHA-256キー、最終アクセス時刻による押し出し、起動時の破損ファイル除去（再構築）を持つ。ストリームURL取得契約（Esperanto RPC）はネイティブ実装のためJava単体では確定不能であり、プレビュー音源をキャッシュ対象として意味契約を適用した。
+
+### spclientのWeb APIプロキシ（確定・検証必要）
+
+- spotcontrol（Go）実装では、Login5トークンはspclientエンドポイント専用で、`api.spotify.com` のWeb APIはOAuth2(PKCE)トークンを要求すると明記されている。
+- 本アプリはユーザー判断により **spclient.wg.spotify.com のみ** を使用し、ライブラリ表示・検索・再生操作も同ホストへ送る。spclientがWeb APIパスをプロキシする契約に依存するため、実機での動作確認が必要（verification.mdに記録）。
+
+### 動的解析
 
 Android 36の隔離AVDへ対象APKをインストールし、未ログイン状態のコールド起動を確認した。
 

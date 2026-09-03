@@ -26,10 +26,12 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
         body: JSONObject?,
     ): Response {
         var token = sessionManager.accessToken()
-        var response = execute(method, path, query, body, token)
+        var clientToken = sessionManager.clientToken()
+        var response = execute(method, path, query, body, token, clientToken)
         if (response.status == HttpURLConnection.HTTP_UNAUTHORIZED) {
             token = sessionManager.accessToken(forceRefresh = true)
-            response = execute(method, path, query, body, token)
+            clientToken = sessionManager.clientToken(forceRefresh = true)
+            response = execute(method, path, query, body, token, clientToken)
         }
         if (response.status !in 200..299) {
             val message = extractError(response.body)
@@ -44,6 +46,7 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
         query: Map<String, String>,
         body: JSONObject?,
         token: String,
+        clientToken: String,
     ): Response = withContext(Dispatchers.IO) {
         val queryString = query.entries.joinToString("&") { (key, value) -> "${encode(key)}=${encode(value)}" }
         val url = "$API_BASE$path" + if (queryString.isBlank()) "" else "?$queryString"
@@ -53,6 +56,8 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
             connection.setRequestProperty("Authorization", "Bearer $token")
+            connection.setRequestProperty("Client-Token", clientToken)
+            connection.setRequestProperty("User-Agent", USER_AGENT)
             connection.setRequestProperty("Accept", "application/json")
             if (body != null) {
                 connection.doOutput = true
@@ -83,7 +88,8 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
     private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())
 
     private companion object {
-        const val API_BASE = "https://api.spotify.com/v1"
+        const val API_BASE = "https://spclient.wg.spotify.com"
+        const val USER_AGENT = "Spotify/9.1.78.2218 Android/37 (Android 16)"
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 20_000
     }

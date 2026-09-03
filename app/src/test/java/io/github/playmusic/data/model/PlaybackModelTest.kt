@@ -15,7 +15,12 @@ class PlaybackModelTest {
 
     @Test
     fun `session refreshes only inside safety window`() {
-        val session = AuthSession("access", "refresh", expiresAtEpochMs = 100_000L, scope = "")
+        val session = AuthSession(
+            username = "user",
+            accessToken = "access",
+            storedCredential = ByteArray(4),
+            expiresAtEpochMs = 100_000L,
+        )
 
         assertFalse(session.expiresSoon(nowEpochMs = 39_999L))
         assertTrue(session.expiresSoon(nowEpochMs = 40_000L))

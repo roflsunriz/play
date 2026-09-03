@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Conecte sua conta do Spotify</string>
-    <string name="setup_description">O Play usa a Spotify Web API para mostrar sua biblioteca e controlar a reprodução no dispositivo Spotify ativo.</string>
-    <string name="client_id">ID de cliente do Spotify</string>
-    <string name="client_id_help">Crie um app no Spotify for Developers e registre http://127.0.0.1 como URI de redirecionamento.</string>
-    <string name="open_dashboard">Abrir Spotify Dashboard</string>
+    <string name="setup_description">Entre com seu nome de usuário e senha do Spotify para ver sua biblioteca e controlar a reprodução no dispositivo Spotify ativo.</string>
+    <string name="username">Nome de usuário do Spotify</string>
+    <string name="password">Senha</string>
     <string name="login">Entrar com o Spotify</string>
-    <string name="premium_required">O controle de reprodução exige Spotify Premium. Apps no modo de desenvolvimento estão sujeitos aos limites de conta do Spotify.</string>
+    <string name="premium_required">O controle de reprodução exige Spotify Premium.</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Álbuns</string>
     <string name="tracks">Músicas</string>
@@ -29,10 +28,11 @@
     <string name="settings">Configurações</string>
     <string name="supplied_by_spotify">Conteúdo fornecido pelo Spotify</string>
     <string name="open_on_spotify">Abrir no Spotify</string>
+    <string name="preview">Reproduzir prévia</string>
     <string name="login_failed">Falha ao entrar no Spotify.</string>
     <string name="request_failed">Falha na solicitação ao Spotify.</string>
     <string name="error_title">Algo deu errado</string>
     <string name="dismiss">Fechar</string>
     <string name="artwork_cache_note">As capas ficam em um cache LRU de 128 MB. O áudio é gerenciado pelo Spotify.</string>
-    <string name="client_id_required">Digite seu ID de cliente do Spotify.</string>
+    <string name="credentials_required">Digite seu nome de usuário e senha do Spotify.</string>
 </resources>

@@ -55,6 +55,7 @@ class HomeScreenTest {
                     onSeek = {},
                     onShuffle = { shuffled = true },
                     onRepeat = { repeated = true },
+                    onPreview = {},
                 )
             }
         }
@@ -100,6 +101,7 @@ class HomeScreenTest {
                     onSeek = {},
                     onShuffle = {},
                     onRepeat = {},
+                    onPreview = {},
                 )
             }
         }

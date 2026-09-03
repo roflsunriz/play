@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">连接你的 Spotify 帐户</string>
-    <string name="setup_description">Play 使用 Spotify Web API 显示你的音乐库，并控制当前 Spotify 设备上的播放。</string>
-    <string name="client_id">Spotify 客户端 ID</string>
-    <string name="client_id_help">在 Spotify for Developers 中创建应用，并将 http://127.0.0.1 注册为重定向 URI。</string>
-    <string name="open_dashboard">打开 Spotify Dashboard</string>
+    <string name="setup_description">使用你的 Spotify 用户名和密码登录，浏览音乐库并控制当前 Spotify 设备上的播放。</string>
+    <string name="username">Spotify 用户名</string>
+    <string name="password">密码</string>
     <string name="login">使用 Spotify 登录</string>
-    <string name="premium_required">播放控制需要 Spotify Premium。开发模式应用受 Spotify 帐户限制。</string>
+    <string name="premium_required">播放控制需要 Spotify Premium。</string>
     <string name="playlists">播放列表</string>
     <string name="albums">专辑</string>
     <string name="tracks">歌曲</string>
@@ -29,10 +28,11 @@
     <string name="settings">设置</string>
     <string name="supplied_by_spotify">内容由 Spotify 提供</string>
     <string name="open_on_spotify">在 Spotify 中打开</string>
+    <string name="preview">播放预览</string>
     <string name="login_failed">Spotify 登录失败。</string>
     <string name="request_failed">Spotify 请求失败。</string>
     <string name="error_title">出现错误</string>
     <string name="dismiss">关闭</string>
     <string name="artwork_cache_note">封面保存在最大 128 MB 的 LRU 缓存中。音频由 Spotify 管理。</string>
-    <string name="client_id_required">请输入 Spotify 客户端 ID。</string>
+    <string name="credentials_required">请输入你的 Spotify 用户名和密码。</string>
 </resources>

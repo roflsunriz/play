@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">अपना Spotify खाता कनेक्ट करें</string>
-    <string name="setup_description">Play आपकी लाइब्रेरी दिखाने और सक्रिय Spotify डिवाइस पर प्लेबैक नियंत्रित करने के लिए Spotify Web API का उपयोग करता है।</string>
-    <string name="client_id">Spotify क्लाइंट ID</string>
-    <string name="client_id_help">Spotify for Developers में ऐप बनाएँ और http://127.0.0.1 को रीडायरेक्ट URI के रूप में पंजीकृत करें।</string>
-    <string name="open_dashboard">Spotify Dashboard खोलें</string>
+    <string name="setup_description">अपनी लाइब्रेरी देखने और सक्रिय Spotify डिवाइस पर प्लेबैक नियंत्रित करने के लिए अपने Spotify उपयोगकर्ता नाम और पासवर्ड से लॉग इन करें।</string>
+    <string name="username">Spotify उपयोगकर्ता नाम</string>
+    <string name="password">पासवर्ड</string>
     <string name="login">Spotify से लॉग इन करें</string>
-    <string name="premium_required">प्लेबैक नियंत्रण के लिए Spotify Premium आवश्यक है। डेवलपमेंट मोड ऐप Spotify खाता सीमाओं के अधीन हैं।</string>
+    <string name="premium_required">प्लेबैक नियंत्रण के लिए Spotify Premium आवश्यक है।</string>
     <string name="playlists">प्लेलिस्ट</string>
     <string name="albums">एल्बम</string>
     <string name="tracks">गाने</string>
@@ -29,10 +28,11 @@
     <string name="settings">सेटिंग</string>
     <string name="supplied_by_spotify">Spotify द्वारा उपलब्ध सामग्री</string>
     <string name="open_on_spotify">Spotify में खोलें</string>
+    <string name="preview">पूर्वावलोकन चलाएँ</string>
     <string name="login_failed">Spotify लॉगिन विफल रहा।</string>
     <string name="request_failed">Spotify अनुरोध विफल रहा।</string>
     <string name="error_title">कुछ गलत हुआ</string>
     <string name="dismiss">बंद करें</string>
     <string name="artwork_cache_note">आर्टवर्क 128 MB की LRU कैश में रखा जाता है। ऑडियो Spotify संभालता है।</string>
-    <string name="client_id_required">अपना Spotify क्लाइंट ID दर्ज करें।</string>
+    <string name="credentials_required">अपना Spotify उपयोगकर्ता नाम और पासवर्ड दर्ज करें।</string>
 </resources>

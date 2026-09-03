@@ -1,7 +1,6 @@
 package io.github.playmusic.ui
 
 import android.content.Intent
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -77,11 +77,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.playmusic.R
+import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.model.SpotifyContent
@@ -90,7 +93,6 @@ import kotlinx.coroutines.delay
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     if (state.isLoggedIn) {
         HomeScreen(
             state = state,
@@ -106,21 +108,15 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onSeek = viewModel::seek,
             onShuffle = viewModel::toggleShuffle,
             onRepeat = viewModel::cycleRepeat,
+            onPreview = viewModel::preview,
         )
     } else {
         SetupScreen(
-            initialClientId = state.clientId,
+            initialUsername = state.username,
             isLoading = state.isLoading,
-            onLogin = { clientId ->
-                viewModel.beginLogin(clientId)?.let { authorizationUri ->
-                    runCatching {
-                        CustomTabsIntent.Builder().build().launchUrl(
-                            context,
-                            authorizationUri,
-                        )
-                    }.onFailure { viewModel.reportLaunchFailure(it.message) }
-                }
-            },
+            onLogin = viewModel::beginLogin,
+            onRunDiagnostics = viewModel::runDiagnostics,
+            diagnosticsReport = state.diagnosticsReport,
         )
     }
     state.error?.let { ErrorDialog(it, viewModel::clearError) }
@@ -128,12 +124,14 @@ fun PlayRoute(viewModel: PlayViewModel) {
 
 @Composable
 private fun SetupScreen(
-    initialClientId: String,
+    initialUsername: String,
     isLoading: Boolean,
-    onLogin: (String) -> Unit,
+    onLogin: (String, String) -> Unit,
+    onRunDiagnostics: () -> Unit,
+    diagnosticsReport: String?,
 ) {
-    val context = LocalContext.current
-    var clientId by remember(initialClientId) { mutableStateOf(initialClientId) }
+    var username by remember(initialUsername) { mutableStateOf(initialUsername) }
+    var password by remember { mutableStateOf("") }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -148,30 +146,26 @@ private fun SetupScreen(
         Text(stringResource(R.string.setup_description), style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(
-            value = clientId,
-            onValueChange = { clientId = it },
-            label = { Text(stringResource(R.string.client_id)) },
-            supportingText = { Text(stringResource(R.string.client_id_help)) },
+            value = username,
+            onValueChange = { username = it },
+            label = { Text(stringResource(R.string.username)) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag("client-id-input"),
+            modifier = Modifier.fillMaxWidth().testTag("username-input"),
         )
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = {
-                CustomTabsIntent.Builder().build().launchUrl(
-                    context,
-                    "https://developer.spotify.com/dashboard".toUri(),
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
-            Text(stringResource(R.string.open_dashboard), modifier = Modifier.padding(start = 8.dp))
-        }
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text(stringResource(R.string.password)) },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().testTag("password-input"),
+        )
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = { onLogin(clientId) },
-            enabled = clientId.isNotBlank() && !isLoading,
+            onClick = { onLogin(username, password) },
+            enabled = username.isNotBlank() && password.isNotBlank() && !isLoading,
             modifier = Modifier.fillMaxWidth().testTag("login-button"),
         ) {
             if (isLoading) {
@@ -184,6 +178,22 @@ private fun SetupScreen(
         Text(stringResource(R.string.premium_required), style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(8.dp))
         Text(stringResource(R.string.artwork_cache_note), style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(24.dp))
+        OutlinedButton(
+            onClick = onRunDiagnostics,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth().testTag("diagnostics-button"),
+        ) {
+            Text("Run diagnostics")
+        }
+        diagnosticsReport?.let { report ->
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = report,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth().testTag("diagnostics-report"),
+            )
+        }
     }
 }
 
@@ -203,6 +213,7 @@ internal fun HomeScreen(
     onSeek: (Long) -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
+    onPreview: (SpotifyContent) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Scaffold(
@@ -254,9 +265,10 @@ internal fun HomeScreen(
                     onQueryChanged = onSearchChanged,
                     onSearch = onSearch,
                     onPlay = onPlay,
+                    onPreview = onPreview,
                 )
             } else {
-                ContentList(state.items, onPlay)
+                ContentList(state.items, onPlay, onPreview)
             }
             if (state.isLoading) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center).testTag("loading-indicator"))
@@ -293,6 +305,7 @@ private fun SearchContent(
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
     onPlay: (SpotifyContent) -> Unit,
+    onPreview: (SpotifyContent) -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -314,12 +327,16 @@ private fun SearchContent(
                 Icon(Icons.Default.Search, stringResource(R.string.search_action))
             }
         }
-        ContentList(items, onPlay)
+        ContentList(items, onPlay, onPreview)
     }
 }
 
 @Composable
-private fun ContentList(items: List<SpotifyContent>, onPlay: (SpotifyContent) -> Unit) {
+private fun ContentList(
+    items: List<SpotifyContent>,
+    onPlay: (SpotifyContent) -> Unit,
+    onPreview: (SpotifyContent) -> Unit,
+) {
     if (items.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(R.string.empty_library))
@@ -331,13 +348,17 @@ private fun ContentList(items: List<SpotifyContent>, onPlay: (SpotifyContent) ->
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(items, key = { "${it.kind}-${it.id}" }) { item ->
-            ContentCard(item, onPlay)
+            ContentCard(item, onPlay, onPreview)
         }
     }
 }
 
 @Composable
-private fun ContentCard(item: SpotifyContent, onPlay: (SpotifyContent) -> Unit) {
+private fun ContentCard(
+    item: SpotifyContent,
+    onPlay: (SpotifyContent) -> Unit,
+    onPreview: (SpotifyContent) -> Unit,
+) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     Card(
@@ -367,6 +388,17 @@ private fun ContentCard(item: SpotifyContent, onPlay: (SpotifyContent) -> Unit) 
                 Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
                 Text(item.subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.supplied_by_spotify), style = MaterialTheme.typography.labelSmall)
+            }
+            if (item.kind == ContentKind.TRACK && item.previewUrl != null) {
+                IconButton(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onPreview(item)
+                    },
+                    modifier = Modifier.testTag("preview-${item.id}"),
+                ) {
+                    Icon(Icons.Default.MusicNote, stringResource(R.string.preview))
+                }
             }
             IconButton(
                 onClick = {
@@ -487,7 +519,7 @@ private fun PlaybackBar(
 @Composable
 private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
     val message = when (error.kind) {
-        ErrorKind.CLIENT_ID_REQUIRED -> stringResource(R.string.client_id_required)
+        ErrorKind.CREDENTIALS_REQUIRED -> stringResource(R.string.credentials_required)
         ErrorKind.NO_ACTIVE_DEVICE -> stringResource(R.string.no_active_device)
         ErrorKind.LOGIN -> stringResource(R.string.login_failed)
         ErrorKind.REQUEST -> stringResource(R.string.request_failed)

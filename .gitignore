@@ -1,8 +1,12 @@
 COMMON-AGENTS.md
 service-apks/
+subagents/
 .gradle/
 .idea/
 local.properties
 **/build/
 captures/
 *.iml
+
+.kotlin/
+session/

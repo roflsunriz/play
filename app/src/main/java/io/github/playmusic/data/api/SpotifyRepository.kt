@@ -140,6 +140,7 @@ class SpotifyRepository(private val api: SpotifyApiClient) {
             subtitle = artistNames(json.optJSONArray("artists")),
             imageUrl = album?.let(::firstImage),
             kind = ContentKind.TRACK,
+            previewUrl = json.optString("preview_url").ifBlank { null },
         )
     }
 
