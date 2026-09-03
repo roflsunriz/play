@@ -1,4 +1,4 @@
-﻿package io.github.playmusic.data.auth
+package io.github.playmusic.data.auth
 
 import java.io.ByteArrayOutputStream
 
@@ -111,19 +111,26 @@ object ProtoWire {
         private fun skipGroup() {
             var depth = 1
             while (depth > 0) {
+                if (position >= data.size) throw ProtoParseException("Unexpected end of data in group")
                 val tag = readTag()
                 when (wireType(tag)) {
                     WIRE_START_GROUP -> depth++
                     WIRE_END_GROUP -> depth--
                     WIRE_VARINT -> readVarint()
                     WIRE_FIXED64 -> position += 8
-                    WIRE_LENGTH_DELIMITED -> position += readVarint().toInt()
+                    WIRE_LENGTH_DELIMITED -> {
+                        val length = readVarint().toInt()
+                        require(length >= 0 && position + length <= data.size) {
+                            "Invalid length-delimited field in group"
+                        }
+                        position += length
+                    }
                     WIRE_FIXED32 -> position += 4
-                    else -> throw ProtoParseException("Unsupported wire type ${wireType(tag)} in group")
                 }
             }
         }
     }
-
-    class ProtoParseException(message: String) : Exception(message)
 }
+
+class ProtoParseException(message: String) : Exception(message)
+

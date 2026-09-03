@@ -4,6 +4,9 @@ enum class ContentKind {
     PLAYLIST,
     ALBUM,
     TRACK,
+    ARTIST,
+    SHOW,
+    EPISODE,
 }
 
 data class SpotifyContent(

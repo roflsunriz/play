@@ -16,6 +16,11 @@ class SessionManager(
     private val clientTokenMutex = Mutex()
     private var cachedClientToken: String? = null
 
+    suspend fun username(): String {
+        val session = store.loadSession() ?: throw SpotifyAuthException("Spotify login is required")
+        return session.username
+    }
+
     suspend fun accessToken(forceRefresh: Boolean = false): String = refreshMutex.withLock {
         val session = store.loadSession() ?: throw SpotifyAuthException("Spotify login is required")
         if (!forceRefresh && !session.expiresSoon()) return@withLock session.accessToken
