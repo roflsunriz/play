@@ -28,5 +28,6 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 押し出し式の容量上限ありの楽曲キャッシュ（スムーズに再生するため）
 
 ## 契約
+- DMCAリスクを下げるためソースコード以外にSpotifyの文言を入れない。入っている場合は削除。
 - sessionフォルダに適宜進捗を残し、後続エージェントが作業を続けやすくすること。
 - sessionのファイル名は<month>-<day>-<hour>-<minutes>.mdとすること
