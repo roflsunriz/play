@@ -31,9 +31,4 @@ name = "org.jetbrains.kotlin:kotlin-gradle-plugin"
 version = "2.2.10"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "AGP requests 2.2.10 metadata, but the build classpath resolves and executes 2.4.10."
-
-[[IgnoredVulns]]
-id = "GHSA-r937-wjx7-w2jp"
-ignoreUntil = 2026-12-31
-reason = "The first patched Kotlin release is 2.4.20-Beta1. Keep the latest stable 2.4.10, disable build caches and incremental compilation, and update when a patched stable release is available. This plugin is build-only and is not packaged in the APK."
+reason = "AGP requests 2.2.10 metadata, but the build classpath resolves and executes 2.4.20."
