@@ -8,7 +8,10 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
 
-class SpotifyApiClient(private val sessionManager: SessionManager) {
+class SpotifyApiClient(
+    private val sessionManager: SessionTokens,
+    private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
+) {
     data class Response(val status: Int, val body: String, val bytes: ByteArray? = null) {
         val bodyBytes: ByteArray
             get() = bytes ?: body.toByteArray(Charsets.UTF_8)
@@ -42,7 +45,8 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
         body: ByteArray,
         contentType: String = "application/x-protobuf",
         base: String = API_BASE,
-    ): Response = request("POST", base, path, emptyMap(), null, body, contentType, acceptProto = true)
+        featureId: String? = null,
+    ): Response = request("POST", base, path, emptyMap(), null, body, contentType, acceptProto = true, featureId = featureId)
 
     suspend fun getProto(
         path: String,
@@ -60,14 +64,15 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
         contentType: String,
         acceptProto: Boolean,
         stringBody: String? = null,
+        featureId: String? = null,
     ): Response {
         var token = sessionManager.accessToken()
         var clientToken = sessionManager.clientToken()
-        var response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody)
+        var response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId)
         if (response.status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-            token = sessionManager.accessToken(forceRefresh = true)
             clientToken = sessionManager.clientToken(forceRefresh = true)
-            response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody)
+            token = sessionManager.accessToken(forceRefresh = true)
+            response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId)
         }
         if (response.status !in 200..299) {
             val message = extractError(response.body)
@@ -88,10 +93,11 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
         clientToken: String,
         acceptProto: Boolean,
         stringBody: String?,
+        featureId: String?,
     ): Response = withContext(Dispatchers.IO) {
         val queryString = query.entries.joinToString("&") { (key, value) -> "${encode(key)}=${encode(value)}" }
         val url = "$base$path" + if (queryString.isBlank()) "" else "?$queryString"
-        val connection = URI(url).toURL().openConnection() as HttpURLConnection
+        val connection = openConnection(URI(url))
         try {
             connection.requestMethod = method
             connection.connectTimeout = CONNECT_TIMEOUT_MS
@@ -102,11 +108,16 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
             connection.setRequestProperty("Spotify-App-Version", AppConstants.CLIENT_VERSION)
             connection.setRequestProperty("App-Platform", "Android")
             connection.setRequestProperty("Accept-Language", "ja-JP")
+            connection.setRequestProperty("Time-Zone", java.util.TimeZone.getDefault().id)
+            featureId?.let { connection.setRequestProperty("Client-Feature-Id", it) }
             connection.setRequestProperty(
                 "Accept",
-                if (acceptProto) "application/protobuf" else "application/json",
+                when {
+                    contentType == COLLECTION_CONTENT_TYPE -> contentType
+                    acceptProto -> "application/protobuf"
+                    else -> "application/json"
+                },
             )
-            connection.setRequestProperty("X-Client-Id", AppConstants.SPOTIFY_CLIENT_ID)
             if (protoBody != null) {
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", contentType)
@@ -134,16 +145,16 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
     }
 
     private fun extractError(body: String): String {
-        if (body.isBlank()) return "Spotify API request failed"
+        if (body.isBlank()) return "Service API request failed"
         return runCatching {
             val error = JSONObject(body).opt("error")
             when (error) {
-                is JSONObject -> error.optString("message").ifBlank { "Spotify API request failed" }
+                is JSONObject -> error.optString("message").ifBlank { "Service API request failed" }
                 is String -> error
-                null -> "Spotify API request failed"
-                else -> "Spotify API request failed"
+                null -> "Service API request failed"
+                else -> "Service API request failed"
             }
-        }.getOrDefault("Spotify API request failed")
+        }.getOrDefault("Service API request failed")
     }
 
     private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())
@@ -153,7 +164,8 @@ class SpotifyApiClient(private val sessionManager: SessionManager) {
         const val GAE2_BASE = "https://gae2-spclient.spotify.com"
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 20_000
+        private const val COLLECTION_CONTENT_TYPE = "application/vnd.collection-v2.spotify.proto"
     }
 }
 
-class SpotifyApiException(val status: Int, message: String) : Exception(message)
+class SpotifyApiException(val status: Int, message: String) : Exception("$message ($status)")

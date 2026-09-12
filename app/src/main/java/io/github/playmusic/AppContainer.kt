@@ -11,20 +11,19 @@ import io.github.playmusic.data.cache.TrackCache
 import io.github.playmusic.data.playback.PreviewPlayer
 import io.github.playmusic.data.security.SecureSessionStore
 
-class AppContainer(context: Context) {
+class AppContainer(
+    context: Context,
+    private val clientTokenClient: SpotifyClientTokenClient = SpotifyClientTokenClient(),
+    val login5Client: SpotifyLogin5Client = SpotifyLogin5Client(AppConstants.SPOTIFY_CLIENT_ID, clientTokenClient),
+    apiConnection: (java.net.URI) -> java.net.HttpURLConnection = { it.toURL().openConnection() as java.net.HttpURLConnection },
+) {
     val sessionStore = SecureSessionStore(context)
-    private val clientTokenClient = SpotifyClientTokenClient()
-    val login5Client = SpotifyLogin5Client(AppConstants.SPOTIFY_CLIENT_ID, clientTokenClient)
     val trackCache = TrackCache(context)
     val previewPlayer = PreviewPlayer(trackCache)
     val sessionManager = SessionManager(sessionStore, login5Client, clientTokenClient)
     val repository = SpotifyRepository(
-        api = SpotifyApiClient(sessionManager),
+        api = SpotifyApiClient(sessionManager, apiConnection),
         sessionManager = sessionManager,
         deviceIdProvider = { sessionStore.loadDeviceId() },
     )
-
-    companion object {
-        const val SPOTIFY_CLIENT_ID = AppConstants.SPOTIFY_CLIENT_ID
-    }
 }

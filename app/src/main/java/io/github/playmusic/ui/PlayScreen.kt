@@ -72,6 +72,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -92,7 +94,15 @@ import kotlinx.coroutines.delay
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    if (state.isLoggedIn) {
+    val pending = state.loginPending
+    if (pending != null) {
+        CodeChallengeScreen(
+            maskedTarget = pending.maskedTarget,
+            isLoading = state.isLoading,
+            onSubmit = viewModel::submitCode,
+            onCancel = viewModel::cancelLogin,
+        )
+    } else if (state.isLoggedIn) {
         HomeScreen(
             state = state,
             onSectionSelected = viewModel::selectSection,
@@ -110,21 +120,11 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onPreview = viewModel::preview,
         )
     } else {
-        val pending = state.loginPending
-        if (pending != null) {
-            CodeChallengeScreen(
-                maskedTarget = pending.maskedTarget,
-                isLoading = state.isLoading,
-                onSubmit = viewModel::submitCode,
-                onCancel = viewModel::cancelLogin,
-            )
-        } else {
-            SetupScreen(
-                initialUsername = state.username,
-                isLoading = state.isLoading,
-                onLogin = viewModel::beginLogin,
-            )
-        }
+        SetupScreen(
+            initialUsername = state.username,
+            isLoading = state.isLoading,
+            onLogin = viewModel::beginLogin,
+        )
     }
     state.error?.let { ErrorDialog(it, viewModel::clearError) }
 }
@@ -184,7 +184,7 @@ private fun SetupScreen(
         Spacer(Modifier.height(8.dp))
         Text(stringResource(R.string.artwork_cache_note), style = MaterialTheme.typography.bodySmall)
     }
-    }
+}
 
 @Composable
 private fun CodeChallengeScreen(
@@ -272,11 +272,12 @@ internal fun HomeScreen(
                     IconButton(onClick = onRefresh, modifier = Modifier.testTag("refresh-button")) {
                         Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                     }
-                    IconButton(onClick = { menuExpanded = true }) {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.testTag("settings-button")) {
                         Icon(Icons.Default.MoreVert, stringResource(R.string.settings))
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(
+                            modifier = Modifier.testTag("logout-button"),
                             text = { Text(stringResource(R.string.logout)) },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
                             onClick = {
@@ -433,7 +434,13 @@ private fun ContentCard(
                 }
             }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+                Text(
+                    item.title.ifBlank { stringResource(R.string.untitled_playlist) },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.testTag("title-${item.kind.name.lowercase()}-${item.id}"),
+                )
                 Text(item.subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.supplied_by_spotify), style = MaterialTheme.typography.labelSmall)
             }
@@ -471,6 +478,10 @@ private fun PlaybackBar(
     onRepeat: () -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
+    val windowSize = LocalWindowInfo.current.containerSize
+    val horizontalControls = with(LocalDensity.current) {
+        windowSize.width.toDp() >= 600.dp && windowSize.height.toDp() < 480.dp
+    }
     var progress by remember(playback.progressMs) { mutableFloatStateOf(playback.progressMs.toFloat()) }
     var isDragging by remember { mutableStateOf(false) }
     LaunchedEffect(playback.isPlaying, playback.progressMs, playback.durationMs, isDragging) {
@@ -478,6 +489,55 @@ private fun PlaybackBar(
         while (progress < playback.durationMs) {
             delay(1_000)
             progress = (progress + 1_000).coerceAtMost(playback.durationMs.toFloat())
+        }
+    }
+    val seekControl: @Composable (Modifier) -> Unit = { modifier ->
+        Slider(
+            value = progress.coerceIn(0f, playback.durationMs.coerceAtLeast(1).toFloat()),
+            onValueChange = {
+                isDragging = true
+                progress = it
+            },
+            onValueChangeFinished = {
+                isDragging = false
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onSeek(progress.toLong())
+            },
+            valueRange = 0f..playback.durationMs.coerceAtLeast(1).toFloat(),
+            enabled = playback.durationMs > 0,
+            modifier = modifier.testTag("seek-slider"),
+        )
+    }
+    val modeControls: @Composable () -> Unit = {
+        IconButton(onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onShuffle()
+        }, modifier = Modifier.testTag("shuffle-button")) {
+            Icon(
+                Icons.Default.Shuffle,
+                stringResource(R.string.shuffle),
+                tint = if (playback.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        IconButton(onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onRepeat()
+        }, modifier = Modifier.testTag("repeat-button")) {
+            Icon(
+                if (playback.repeatMode == RepeatMode.TRACK) Icons.Default.RepeatOne else Icons.Default.Repeat,
+                stringResource(
+                    when (playback.repeatMode) {
+                        RepeatMode.OFF -> R.string.repeat_off
+                        RepeatMode.CONTEXT -> R.string.repeat_context
+                        RepeatMode.TRACK -> R.string.repeat_track
+                    },
+                ),
+                tint = if (playback.repeatMode == RepeatMode.OFF) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+            )
         }
     }
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -512,52 +572,15 @@ private fun PlaybackBar(
             }, modifier = Modifier.testTag("next-button")) {
                 Icon(Icons.Default.SkipNext, stringResource(R.string.next))
             }
-        }
-        Slider(
-            value = progress.coerceIn(0f, playback.durationMs.coerceAtLeast(1).toFloat()),
-            onValueChange = {
-                isDragging = true
-                progress = it
-            },
-            onValueChangeFinished = {
-                isDragging = false
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onSeek(progress.toLong())
-            },
-            valueRange = 0f..playback.durationMs.coerceAtLeast(1).toFloat(),
-            enabled = playback.durationMs > 0,
-            modifier = Modifier.fillMaxWidth().testTag("seek-slider"),
-        )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            IconButton(onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onShuffle()
-            }, modifier = Modifier.testTag("shuffle-button")) {
-                Icon(
-                    Icons.Default.Shuffle,
-                    stringResource(R.string.shuffle),
-                    tint = if (playback.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                )
+            if (horizontalControls) {
+                seekControl(Modifier.weight(1f))
+                modeControls()
             }
-            IconButton(onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onRepeat()
-            }, modifier = Modifier.testTag("repeat-button")) {
-                Icon(
-                    if (playback.repeatMode == RepeatMode.TRACK) Icons.Default.RepeatOne else Icons.Default.Repeat,
-                    stringResource(
-                        when (playback.repeatMode) {
-                            RepeatMode.OFF -> R.string.repeat_off
-                            RepeatMode.CONTEXT -> R.string.repeat_context
-                            RepeatMode.TRACK -> R.string.repeat_track
-                        },
-                    ),
-                    tint = if (playback.repeatMode == RepeatMode.OFF) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                )
+        }
+        if (!horizontalControls) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                seekControl(Modifier.weight(1f))
+                modeControls()
             }
         }
         HorizontalDivider()
@@ -570,6 +593,7 @@ private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
         ErrorKind.CREDENTIALS_REQUIRED -> stringResource(R.string.credentials_required)
         ErrorKind.NO_ACTIVE_DEVICE -> stringResource(R.string.no_active_device)
         ErrorKind.LOGIN -> stringResource(R.string.login_failed)
+        ErrorKind.VERIFICATION_CODE -> stringResource(R.string.verification_code_failed)
         ErrorKind.REQUEST -> stringResource(R.string.request_failed)
     }
     AlertDialog(
@@ -584,7 +608,11 @@ private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.dismiss)) } },
+        confirmButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("error-dismiss-button")) {
+                Text(stringResource(R.string.dismiss))
+            }
+        },
         icon = { Icon(Icons.Default.Close, contentDescription = null) },
     )
 }

@@ -3,10 +3,39 @@
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.security.MessageDigest
 
 class HashCashTest {
+    @Test
+    fun invalidDifficultyAndExhaustedBudgetFailPromptly() {
+        assertThrows(IllegalArgumentException::class.java) { HashCash.solve(null, byteArrayOf(1), -1) }
+        assertThrows(IllegalArgumentException::class.java) { HashCash.solveClientToken(byteArrayOf(1), 65) }
+        assertThrows(SpotifyAuthException::class.java) { HashCash.solve(null, byteArrayOf(1), 64, maxDurationMs = 0) }
+    }
+
+    @Test
+    fun interruptionStopsAnInProgressChallenge() {
+        val started = java.util.concurrent.CountDownLatch(1)
+        val interrupted = java.util.concurrent.atomic.AtomicBoolean(false)
+        val worker = Thread {
+            started.countDown()
+            try {
+                HashCash.solve(null, byteArrayOf(1, 2, 3), 64)
+            } catch (_: InterruptedException) {
+                interrupted.set(true)
+            }
+        }.apply { isDaemon = true }
+        worker.start()
+        assertTrue(started.await(1, java.util.concurrent.TimeUnit.SECONDS))
+        worker.interrupt()
+        worker.join(2_000)
+        assertFalse("Challenge must stop when the login operation is cancelled", worker.isAlive)
+        assertTrue(interrupted.get())
+    }
+
     @Test
     fun solutionSuffixLengthIsSixteen() {
         val solution = HashCash.solve(

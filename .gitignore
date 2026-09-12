@@ -5,8 +5,9 @@ subagents/
 .idea/
 local.properties
 **/build/
-captures/
+/captures/
 *.iml
 
 .kotlin/
+__pycache__/
 session/

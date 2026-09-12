@@ -2,37 +2,56 @@
 
 ## 前提
 
-- 作業前に `COMMON-AGENTS.md` と `AGENTS.md` を全文確認する。
-- `git status --short --branch` で既存差分を確認する。
-- Web APIの変更履歴、Android SDK、AGP、Compose BOM、Kotlin、依存ライブラリの公式リリースを確認する。
+- `COMMON-AGENTS.md`と`AGENTS.md`を全文確認し、`git status --short --branch`で既存差分を確認する。
+- JDK 17以上と、ビルド設定が指定するAndroid SDKを用意する。バージョンの正本は`app/build.gradle.kts`と`gradle/libs.versions.toml`。
+- 認証とライブラリはネイティブAPIを使う。[通信の根拠と記録](docs/api-contracts.md)を先に確認する。
 
-## 手順
+## 修正と検証
 
-1. `gradle/libs.versions.toml` の固定バージョンを公式リリースに合わせて更新する。
-2. Web APIのOpenAPI仕様と移行ガイドを確認し、削除・変更されたエンドポイントやフィールドをデータ層へ反映する。
-3. 新しいAPKを `service-apks/` に置き、AAPT2とJADXでSDK、マニフェスト、認証、プレイヤー、キャッシュの差分を確認する。
-4. Login5のワイヤ契約が変更されていないか、公開OSS（librespot / librespot-java / spotcontrol）の `login5.proto`・`client_token.proto` と照合する。エンドポイントURL・protobufフィールド番号・client_id・hashcash要件に変更があれば `data/auth/` へ反映する。
-5. spclient.wg.spotify.com のWeb APIプロキシ動作を実機で確認し、パス構造や認証方式の変更を `data/api/` へ反映する。
-6. `docs/apk-analysis.md` と `CHANGELOG.md` を更新する。
-7. 依存関係を変更した場合は、解決済み依存の検証値を更新する。
+1. 依存関係を更新する場合は、公式リリースの変更点・修正版・互換条件を確認する。
+2. APIを変更する場合は、実応答または対象APKのprotobuf定義と照合する。未知のフィールド番号や国・契約種別を固定値として推測で埋め込まない。
+3. 新しい解析用APKはGit管理外の`service-apks/`へ置く。AAPT2でパッケージ・バージョン・SDKを確認し、JADXで認証、ライブラリ、プレイヤーの変更を調べる。
+4. 通信原本はGit管理外の`captures/`に置く。検索の検証データは`tools/import-search-capture.py`で抽出し、個人情報を確認してからテストへ追加する。
+5. 修正箇所のテストを実行し、その後で次を実行する。
+
+```powershell
+.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+WindowsでSDK・コンパイラの共有キャッシュにAccessDeniedExceptionが出る場合は、同じコマンドを昇格したPowerShellで再実行する。JDKを切り替える場合は`JAVA_HOME`を明示する。
+
+6. 依存関係を変更した場合に限り、解決する全プラットフォームのアーティファクトについて検証メタデータを更新する。
 
 ```powershell
 .\gradlew.bat --write-verification-metadata sha256 testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+.\gradlew.bat --no-configuration-cache --write-verification-metadata sha256 -I tools/verify-platform-tools.init.gradle.kts verifyPlatformTools
 ```
 
-Linux/macOS用AAPT2を更新した場合は、各classifierも一時的な検証用Configurationで解決し、`gradle/verification-metadata.xml` へGradle自身にSHA-256を追記させる。生成物を手編集しない。
+2つ目のコマンドは生成済みメタデータから実際のAAPT2バージョンを読み、Windows・Linux・macOS用の検証値をGradleに生成させる。未使用の旧依存を除く必要がある場合は元のメタデータを退避してから全体を再生成し、共通するアーティファクトのハッシュが変わっていないことを比較する。`gradle/verification-metadata.xml`を手編集しない。
 
-8. 次を実行する。
+7. OSV-Scannerで依存関係を監査する。オフラインDBを使った場合は更新日時を記録する。既存の例外と緩和策は`gradle/osv-scanner.toml`および`SECURITY.md`を確認する。
+8. [検証手順](verification.md)に従い、画面操作、ログイン、ライブラリ、再起動後の認証保持を確認する。実アカウントの検証は対象端末を明示して実行する。
+9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
+
+## 許可済み端末の通信確認
+
+参照アプリがユーザーCAを信頼し、所有者が通信確認を許可した検証端末でだけ実行する。mitmproxyが必要。元のHTTP proxyを記録してから一時設定し、指定時間の終了時に復元する。
 
 ```powershell
-.\gradlew.bat testDebugUnitTest
-.\gradlew.bat lintDebug
-.\gradlew.bat assembleDebug
+$captureDevice = Read-Host '通信確認を許可した端末ID'
+pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 ```
 
-9. `gradle/verification-metadata.xml` をOSV-Scannerのオフラインデータベースで検査し、例外が必要な場合は `gradle/osv-scanner.toml` に期限、根拠、緩和策を記録する。
-10. 実機で `verification.md` のログイン、検索、全再生操作、再起動後ログイン保持、キャッシュ上限、楽曲プレビュー再生を確認する。
+記録先は`captures/`配下に表示される。認証・Cookieヘッダーは保存前に除去するが、本文やURLには私的なライブラリ情報が含まれるため原本を公開しない。`tools/inspect-library-capture.py`で構造・ステータスだけを抽出し、個人情報を確認してから文書へ取り込む。
 
-## ロールバック
+親プロセスの強制終了では復元処理が動かない場合がある。通常は指定時間の終了を待つ。異常終了した場合は、その記録先の`proxy-state.json`を読み、対象端末・元のproxy・使用ポートを確認する。現在のproxyが記録した検証用設定と一致することを確かめてから元の値へ戻す。元の値が`null`または空なら設定を削除する。`adb reverse --remove`はその記録にあるポートだけを指定し、他の転送を消さない。保存PIDを使ってプロセスを止める場合も、起動時刻とコマンドラインがこの記録ツールのものか確認する。最後に`adb shell settings get global http_proxy`と`adb reverse --list`で復元を確認する。
 
-問題がある更新は該当する1コミットをrevertし、旧バージョンの依存関係とAPI処理へ戻す。暗号化セッション形式を変更した場合は、旧形式を誤読せず安全にログアウト状態へ戻せることを確認する。
+## CI・配布
+
+- Linuxでは`gradlew`の実行属性が必要。`git ls-files --stage gradlew`のmodeが`100755`であることを確認する。
+- リリースAPKには署名設定が必要。生成・署名・配布の正本は`.github/workflows/release.yml`。
+- CIや実機の未実施項目を成功と記録しない。サービス側のエラーはHTTPの結果とメタデータ内の結果を分けて記録する。
+
+## 復旧
+
+不具合のある更新は対象コミットをrevertし、既存の認証情報を保ったまま以前のAPKへ戻す。暗号化セッションの形式を変更するときはスキーマ番号と移行・破損時の処理を同時に検証する。外部APIが変わった場合、失敗を空一覧へ置き換えて隠さず、利用者へ取得失敗を示す。

@@ -17,12 +17,6 @@ import javax.crypto.spec.GCMParameterSpec
 class SecureSessionStore(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
-    fun loadClientId(): String = preferences.getString(KEY_CLIENT_ID, "").orEmpty()
-
-    fun saveClientId(clientId: String) {
-        preferences.edit { putString(KEY_CLIENT_ID, clientId.trim()) }
-    }
-
     fun loadDeviceId(): String {
         preferences.getString(KEY_DEVICE_ID, null)?.let { return it }
         val deviceId = "0${SecureRandom().generateDeviceId()}"
@@ -99,7 +93,6 @@ class SecureSessionStore(context: Context) {
 
     private companion object {
         const val PREFERENCES_NAME = "play_secure_preferences"
-        const val KEY_CLIENT_ID = "spotify_client_id"
         const val KEY_DEVICE_ID = "spotify_device_id"
         const val KEY_SESSION = "spotify_session"
         const val KEY_ALIAS = "play_spotify_session_key"

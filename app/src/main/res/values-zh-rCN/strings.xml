@@ -1,12 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">连接你的 Spotify 帐户</string>
-    <string name="setup_description">使用你的 Spotify 用户名和密码登录，浏览音乐库并控制当前 Spotify 设备上的播放。</string>
-    <string name="username">Spotify 用户名</string>
+    <string name="setup_title">连接账号</string>
+    <string name="setup_description">使用服务的用户名和密码登录以查看音乐库。</string>
+    <string name="username">用户名</string>
     <string name="password">密码</string>
-    <string name="login">使用 Spotify 登录</string>
-    <string name="premium_required">播放控制需要 Spotify Premium。</string>
+    <string name="login">登录</string>
+    <string name="premium_required">播放功能取决于账号的使用条件。</string>
     <string name="playlists">播放列表</string>
     <string name="albums">专辑</string>
     <string name="tracks">歌曲</string>
@@ -24,20 +24,22 @@
     <string name="repeat_off">关闭循环</string>
     <string name="repeat_context">循环播放列表</string>
     <string name="repeat_track">单曲循环</string>
-    <string name="no_active_device">请打开 Spotify 并在设备上开始播放，然后重试。</string>
+    <string name="no_active_device">请在服务应用中开始播放，然后重试。</string>
     <string name="settings">设置</string>
-    <string name="supplied_by_spotify">内容由 Spotify 提供</string>
-    <string name="open_on_spotify">在 Spotify 中打开</string>
+    <string name="supplied_by_spotify">服务提供的内容</string>
+    <string name="open_on_spotify">在服务应用中打开</string>
     <string name="preview">播放预览</string>
-    <string name="login_failed">Spotify 登录失败。</string>
-    <string name="request_failed">Spotify 请求失败。</string>
+    <string name="login_failed">登录失败。</string>
+    <string name="request_failed">请求失败。</string>
     <string name="error_title">出现错误</string>
     <string name="dismiss">关闭</string>
-    <string name="artwork_cache_note">封面保存在最大 128 MB 的 LRU 缓存中。音频由 Spotify 管理。</string>
-    <string name="credentials_required">请输入你的 Spotify 用户名和密码。</string>
+    <string name="artwork_cache_note">图片缓存上限为128 MiB。</string>
+    <string name="credentials_required">请输入用户名和密码。</string>
     <string name="verification_code">验证码</string>
     <string name="verify">验证</string>
     <string name="cancel">取消</string>
     <string name="code_challenge_description">输入发送至 %1$s 的验证码</string>
     <string name="code_challenge_description_generic">输入发送至您邮箱的验证码</string>
+    <string name="verification_code_failed">验证码未被接受，请输入最新验证码。</string>
+    <string name="untitled_playlist">未命名播放列表</string>
 </resources>

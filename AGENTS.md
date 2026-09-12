@@ -28,6 +28,21 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 押し出し式の容量上限ありの楽曲キャッシュ（スムーズに再生するため）
 
 ## 契約
-- DMCAリスクを下げるためソースコード以外にSpotifyの文言を入れない。入っている場合は削除。
+- DMCAリスクを下げるためソースコード以外に対象サービスの固有名を入れない。入っている場合は削除。
 - sessionフォルダに適宜進捗を残し、後続エージェントが作業を続けやすくすること。
 - sessionのファイル名は<month>-<day>-<hour>-<minutes>.mdとすること
+
+## 調査・検証で確認した注意点
+
+- ライブラリ通信はWeb APIプロキシではなくネイティブのprotobuf契約を使う。根拠・フィールド番号・記録の所在は `docs/api-contracts.md` に集約する。ヘッダーの推測追加で解決したことにしない。
+- `ProtoWire.Reader` で未知の長さ付きフィールドを飛ばす際、読み取り位置への複合代入の右辺で長さを読まない。位置更新前に長さを取得する。`ProtoWireTest` が境界と未知フィールドを検証する。
+- プレイリストの改訂番号はバイト列、コレクションの追加時刻は整数であり、同じアイテムパーサーを流用しない。拡張メタデータのqueryは型付きの要求で、ランダムバイト列ではない。
+- 保存済み認証情報による再認証はv3、パスワード認証はv4を使う。認証応答の本文をログへ出力しない。
+- 2026-09-12確認: `search_hex.txt` と既存検索テストの埋め込み応答は同一の5,815バイトだった。復元した検証資料の所在と原本の再検索結果は `docs/api-contracts.md` に残す。キャプチャ、セッション、トークンはGit管理しない。
+- このWindows環境でSDKやKotlin daemonにAccessDeniedExceptionが出た場合、設定を変更する前に昇格したPowerShellで同じGradle検証を実行する。JDKは `JAVA_HOME` で明示する。
+- 名前が空でも属性が存在するプレイリストは有効。rootlistのdecorated metadataを使い、items内の空URIを除く前に同じ位置のmetadataを対応付ける。
+- メタデータ要求の国・catalogueは認証済みのアカウント属性から取得する。参照アプリの画面に作品があっても、キャッシュ表示とオンラインの詳細取得成功は区別する。2026-09-12は両アプリの詳細応答内で502を確認した。条件と集計は `docs/api-contracts.md`。
+- `LibraryAccountTest` は `liveAccount=true` を明示してログイン済み実機で実行する。未ログイン前提の `SetupScreenTest` は分離したAVDへ限定する。AVDの全端末一括実行で実機の認証を消さない。
+- 通信記録ツールは通常終了で端末のproxyと所有するadb reverseを復元する。親プロセスを強制終了するとfinallyが動かないため、時間制限付きで通常終了を待つ。異常終了時は `how-to-update.md` の復旧手順に従う。
+- 画面の `assertIsDisplayed` は一部だけ見える項目でも通る。低い横画面でタイトルが切れたため、タイトルの元の高さと表示範囲の高さを比較し、画像も確認する。画面幅・高さは `LocalWindowInfo` を使用する。
+- 依存の検証メタデータを新規生成した際は `tools/verify-platform-tools.init.gradle.kts` も実行し、WindowsだけでなくLinux/macOS用AAPT2を解決する。手順は `how-to-update.md`。

@@ -1,37 +1,57 @@
-﻿package io.github.playmusic.data.auth
+package io.github.playmusic.data.auth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.net.HttpURLConnection
 import java.net.URI
 
 class SpotifyClientTokenClient(
     private val userAgent: String = DEFAULT_USER_AGENT,
     private val clientVersion: String = CLIENT_VERSION,
+    private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
+    private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
 ) {
-    suspend fun acquire(clientId: String, deviceId: String): GrantedClientToken = withContext(Dispatchers.IO) {
+    private data class CachedToken(val clientId: String, val deviceId: String, val value: GrantedClientToken, val refreshAt: Long)
+    private val mutex = Mutex()
+    private var cached: CachedToken? = null
+
+    suspend fun acquire(clientId: String, deviceId: String, forceRefresh: Boolean = false): GrantedClientToken = mutex.withLock {
+        cached?.takeIf { !forceRefresh && it.clientId == clientId && it.deviceId == deviceId && clock() < it.refreshAt }
+            ?.let { return@withLock it.value }
+        cached = null
+        val value = fetch(clientId, deviceId)
+        val lifetime = listOf(value.refreshAfterSeconds, value.expiresAfterSeconds).filter { it > 0 }.minOrNull() ?: 0
+        cached = CachedToken(clientId, deviceId, value, clock() + lifetime * 1_000L)
+        value
+    }
+
+    private suspend fun fetch(clientId: String, deviceId: String): GrantedClientToken = withContext(Dispatchers.IO) {
         val initialRequest = ClientTokenRequest(
             clientId = clientId,
             clientVersion = clientVersion,
             deviceId = deviceId,
         )
-        var response = post(initialRequest.encode())
+        val response = post(initialRequest.encode(), "initial")
         if (response.grantedToken != null) {
-            return@withContext response.grantedToken
+            return@withContext response.grantedToken.takeIf { it.token.isNotBlank() }
+                ?: throw SpotifyAuthException("Client token response is empty")
         }
         val challenges = response.challenges
-            ?: throw SpotifyAuthException("Spotify client token request did not return a result")
+            ?: throw SpotifyAuthException("Service client token request did not return a result")
         val hashCash = challenges.challenges.firstNotNullOfOrNull { it.hashCash }
-            ?: throw SpotifyAuthException("Spotify client token challenge is not supported")
-        val suffix = HashCash.solveClientToken(hashCash.prefix, hashCash.length)
+            ?: throw SpotifyAuthException("Service client token challenge is not supported")
+        val suffix = runInterruptible(Dispatchers.Default) { HashCash.solveClientToken(hashCash.prefix, hashCash.length) }
         val answerRequest = initialRequest.encodeChallengeAnswers(challenges.state, HashCashAnswer(suffix))
-        val answerResponse = post(answerRequest)
+        val answerResponse = post(answerRequest, "challenge")
         answerResponse.grantedToken?.takeIf { it.token.isNotBlank() }
-            ?: throw SpotifyAuthException("Spotify did not return a client token after challenge")
+            ?: throw SpotifyAuthException("Service did not return a client token after challenge")
     }
 
-    private fun post(body: ByteArray): ClientTokenResponse {
-        val connection = URI(CLIENT_TOKEN_ENDPOINT).toURL().openConnection() as HttpURLConnection
+    private fun post(body: ByteArray, phase: String): ClientTokenResponse {
+        val connection = openConnection(URI(CLIENT_TOKEN_ENDPOINT))
         try {
             connection.requestMethod = "POST"
             connection.connectTimeout = CONNECT_TIMEOUT_MS
@@ -46,14 +66,10 @@ class SpotifyClientTokenClient(
             val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
                 ?.use { it.readBytes() }
                 ?: ByteArray(0)
-            android.util.Log.w("SpotifyClientToken", "status=$status resp=${responseBody.joinToString("") { "%02x".format(it) }}")
             if (status !in 200..299) {
-                throw SpotifyAuthException("Spotify client token request failed ($status)")
+                throw SpotifyAuthException("Client token $phase request failed ($status)")
             }
-            return runCatching { ClientTokenResponse.parse(responseBody) }.getOrElse {
-                android.util.Log.e("SpotifyClientToken", "parse failed", it)
-                throw it
-            }
+            return ClientTokenResponse.parse(responseBody)
         } finally {
             connection.disconnect()
         }

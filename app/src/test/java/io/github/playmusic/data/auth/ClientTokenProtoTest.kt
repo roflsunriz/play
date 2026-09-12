@@ -92,7 +92,7 @@ class ClientTokenProtoTest {
                 // ChallengeAnswersRequest: f1(state)=string tag is 0x0A
                 assertEquals(0x0A, challengeAnswers[0].toInt() and 0xFF)
 
-                var inner = ProtoWire.Reader(challengeAnswers)
+                val inner = ProtoWire.Reader(challengeAnswers)
                 while (inner.hasNext()) {
                     val innerTag = inner.readTag()
                     if (inner.fieldNumber(innerTag) == 2) {
@@ -101,9 +101,9 @@ class ClientTokenProtoTest {
                         assertEquals(0x08, answer[0].toInt() and 0xFF)
                         assertEquals(0x03, answer[1].toInt() and 0xFF)
                         seenTag++
-                    }
+                    } else inner.skip(inner.wireType(innerTag))
                 }
-            }
+            } else reader.skip(reader.wireType(tag))
         }
         assertEquals(1, seenTag)
     }

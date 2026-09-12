@@ -1,12 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">Подключите аккаунт Spotify</string>
-    <string name="setup_description">Войдите с именем пользователя и паролем Spotify, чтобы просматривать медиатеку и управлять воспроизведением на активном устройстве Spotify.</string>
-    <string name="username">Имя пользователя Spotify</string>
+    <string name="setup_title">Подключите аккаунт</string>
+    <string name="setup_description">Войдите с именем пользователя и паролем сервиса, чтобы открыть медиатеку.</string>
+    <string name="username">Имя пользователя</string>
     <string name="password">Пароль</string>
-    <string name="login">Войти через Spotify</string>
-    <string name="premium_required">Для управления воспроизведением нужен Spotify Premium.</string>
+    <string name="login">Войти</string>
+    <string name="premium_required">Доступность воспроизведения зависит от условий аккаунта.</string>
     <string name="playlists">Плейлисты</string>
     <string name="albums">Альбомы</string>
     <string name="tracks">Треки</string>
@@ -24,20 +24,22 @@
     <string name="repeat_off">Повтор выключен</string>
     <string name="repeat_context">Повтор плейлиста</string>
     <string name="repeat_track">Повтор одного трека</string>
-    <string name="no_active_device">Откройте Spotify и запустите воспроизведение на устройстве, затем повторите попытку.</string>
+    <string name="no_active_device">Начните воспроизведение в приложении сервиса и повторите попытку.</string>
     <string name="settings">Настройки</string>
-    <string name="supplied_by_spotify">Контент предоставлен Spotify</string>
-    <string name="open_on_spotify">Открыть в Spotify</string>
+    <string name="supplied_by_spotify">Контент сервиса</string>
+    <string name="open_on_spotify">Открыть в приложении сервиса</string>
     <string name="preview">Воспроизвести превью</string>
-    <string name="login_failed">Не удалось войти в Spotify.</string>
-    <string name="request_failed">Запрос к Spotify завершился ошибкой.</string>
+    <string name="login_failed">Не удалось войти.</string>
+    <string name="request_failed">Ошибка запроса.</string>
     <string name="error_title">Произошла ошибка</string>
     <string name="dismiss">Закрыть</string>
-    <string name="artwork_cache_note">Обложки хранятся в LRU-кэше до 128 МБ. Аудио управляется Spotify.</string>
-    <string name="credentials_required">Введите имя пользователя и пароль Spotify.</string>
+    <string name="artwork_cache_note">Изображения кэшируются в пределах 128 МиБ.</string>
+    <string name="credentials_required">Введите имя пользователя и пароль.</string>
     <string name="verification_code">Код подтверждения</string>
     <string name="verify">Подтвердить</string>
     <string name="cancel">Отмена</string>
     <string name="code_challenge_description">Введите код, отправленный на %1$s</string>
     <string name="code_challenge_description_generic">Введите код, отправленный на вашу почту</string>
+    <string name="verification_code_failed">Код подтверждения не принят. Введите последний код.</string>
+    <string name="untitled_playlist">Плейлист без названия</string>
 </resources>

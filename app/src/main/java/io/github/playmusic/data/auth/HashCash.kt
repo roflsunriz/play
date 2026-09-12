@@ -1,6 +1,5 @@
 ﻿package io.github.playmusic.data.auth
 
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 object HashCash {
@@ -10,8 +9,9 @@ object HashCash {
         val durationNanos: Int,
     )
 
-    fun solve(loginContext: ByteArray?, prefix: ByteArray, length: Int): Solution {
-        require(length <= 16)
+    fun solve(loginContext: ByteArray?, prefix: ByteArray, length: Int, maxDurationMs: Long = 30_000): Solution {
+        require(length in 0..64)
+        require(maxDurationMs in 0..30_000)
         val contextDigest = MessageDigest.getInstance("SHA-1").digest(loginContext ?: ByteArray(0))
         val seed = ByteArray(8)
         System.arraycopy(contextDigest, 12, seed, 0, 8)
@@ -21,11 +21,19 @@ object HashCash {
 
         val start = System.nanoTime()
         val digest = MessageDigest.getInstance("SHA-1")
+        val candidate = ByteArray(20)
+        var iterations = 0
         while (true) {
+            if (iterations++ and 4095 == 0) {
+                if (Thread.currentThread().isInterrupted) throw InterruptedException("Verification cancelled")
+                if (System.nanoTime() - start >= maxDurationMs * 1_000_000) {
+                    throw SpotifyAuthException("Verification calculation timed out. Try again.")
+                }
+            }
             digest.reset()
             digest.update(prefix)
             digest.update(suffix)
-            val candidate = digest.digest()
+            digest.digest(candidate, 0, candidate.size)
             if (hasTrailingZeroBits(candidate, length)) {
                 break
             }
@@ -47,26 +55,7 @@ object HashCash {
      * SHA1(prefix + suffix)[12:20] must have >= length trailing zero bits.
      */
     fun solveClientToken(prefix: ByteArray, length: Int): ByteArray {
-        require(length <= 64)
-        val contextDigest = MessageDigest.getInstance("SHA-1").digest(ByteArray(0))
-        val seed = ByteBuffer.wrap(contextDigest).getLong(12)
-        var counter = 0L
-        val hasher = MessageDigest.getInstance("SHA-1")
-        while (true) {
-            val target = seed + counter
-            val suffix = ByteArray(16)
-            val targetBytes = ByteBuffer.allocate(8).putLong(target).array()
-            val counterBytes = ByteBuffer.allocate(8).putLong(counter).array()
-            System.arraycopy(targetBytes, 0, suffix, 0, 8)
-            System.arraycopy(counterBytes, 0, suffix, 8, 8)
-
-            hasher.reset()
-            hasher.update(prefix)
-            hasher.update(suffix)
-            val candidate = hasher.digest()
-            if (hasTrailingZeroBits(candidate, length)) return suffix
-            counter++
-        }
+        return solve(null, prefix, length).suffix
     }
 
     private fun hasTrailingZeroBits(array: ByteArray, length: Int): Boolean {

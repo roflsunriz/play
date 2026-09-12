@@ -1,12 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">اربط حساب Spotify</string>
-    <string name="setup_description">سجّل الدخول باسم مستخدم وكلمة مرور Spotify لعرض مكتبتك والتحكم في التشغيل على جهاز Spotify النشط.</string>
-    <string name="username">اسم مستخدم Spotify</string>
+    <string name="setup_title">اربط حسابك</string>
+    <string name="setup_description">سجّل الدخول باسم المستخدم وكلمة المرور للخدمة لعرض مكتبتك.</string>
+    <string name="username">اسم المستخدم</string>
     <string name="password">كلمة المرور</string>
-    <string name="login">تسجيل الدخول باستخدام Spotify</string>
-    <string name="premium_required">يتطلب التحكم في التشغيل Spotify Premium.</string>
+    <string name="login">تسجيل الدخول</string>
+    <string name="premium_required">يعتمد توفر التشغيل على شروط حسابك.</string>
     <string name="playlists">قوائم التشغيل</string>
     <string name="albums">الألبومات</string>
     <string name="tracks">الأغاني</string>
@@ -24,20 +24,22 @@
     <string name="repeat_off">إيقاف التكرار</string>
     <string name="repeat_context">تكرار قائمة التشغيل</string>
     <string name="repeat_track">تكرار أغنية واحدة</string>
-    <string name="no_active_device">افتح Spotify وابدأ التشغيل على جهاز ثم حاول مرة أخرى.</string>
+    <string name="no_active_device">ابدأ التشغيل في تطبيق الخدمة، ثم حاول مرة أخرى.</string>
     <string name="settings">الإعدادات</string>
-    <string name="supplied_by_spotify">المحتوى مقدّم من Spotify</string>
-    <string name="open_on_spotify">فتح في Spotify</string>
+    <string name="supplied_by_spotify">محتوى الخدمة</string>
+    <string name="open_on_spotify">فتح في تطبيق الخدمة</string>
     <string name="preview">تشغيل المعاينة</string>
-    <string name="login_failed">فشل تسجيل الدخول إلى Spotify.</string>
-    <string name="request_failed">فشل طلب Spotify.</string>
+    <string name="login_failed">تعذر تسجيل الدخول.</string>
+    <string name="request_failed">فشل الطلب.</string>
     <string name="error_title">حدث خطأ</string>
     <string name="dismiss">إغلاق</string>
-    <string name="artwork_cache_note">تُحفظ الصور في ذاكرة LRU مؤقتة بحد 128 ميغابايت. يدير Spotify الصوت.</string>
-    <string name="credentials_required">أدخل اسم مستخدم وكلمة مرور Spotify.</string>
+    <string name="artwork_cache_note">تُخزّن الصور مؤقتًا بحد أقصى 128 MiB.</string>
+    <string name="credentials_required">أدخل اسم المستخدم وكلمة المرور.</string>
     <string name="verification_code">رمز التحقق</string>
     <string name="verify">تحقق</string>
     <string name="cancel">إلغاء</string>
     <string name="code_challenge_description">أدخل الرمز المرسل إلى %1$s</string>
     <string name="code_challenge_description_generic">أدخل الرمز المرسل إلى بريدك الإلكتروني</string>
+    <string name="verification_code_failed">لم يُقبل رمز التحقق. أدخل أحدث رمز.</string>
+    <string name="untitled_playlist">قائمة تشغيل بلا عنوان</string>
 </resources>

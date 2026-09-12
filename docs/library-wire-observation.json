@@ -1,0 +1,212 @@
+{
+  "http_status_counts": {
+    "/collection:200": 18,
+    "/extended-metadata:200": 18,
+    "/playlist:200": 8
+  },
+  "credential_group_counts": {
+    "/collection:access-1:client-1": 18,
+    "/extended-metadata:access-1:client-1": 18,
+    "/playlist:access-1:client-1": 8
+  },
+  "metadata_requests": [
+    {
+      "feature": "track_metadata_loader",
+      "requested_entities": 261,
+      "requested_extensions": {
+        "10": 261
+      },
+      "response_extension_statuses": {
+        "10:502": 261
+      }
+    },
+    {
+      "feature": "track_metadata_loader",
+      "requested_entities": 298,
+      "requested_extensions": {
+        "10": 298
+      },
+      "response_extension_statuses": {
+        "10:502": 298
+      }
+    },
+    {
+      "feature": "track_metadata_loader",
+      "requested_entities": 297,
+      "requested_extensions": {
+        "10": 297
+      },
+      "response_extension_statuses": {
+        "10:502": 297
+      }
+    },
+    {
+      "feature": "track_metadata_loader",
+      "requested_entities": 243,
+      "requested_extensions": {
+        "10": 243
+      },
+      "response_extension_statuses": {
+        "10:502": 243
+      }
+    },
+    {
+      "feature": "track_metadata_loader",
+      "requested_entities": 298,
+      "requested_extensions": {
+        "10": 298
+      },
+      "response_extension_statuses": {
+        "10:502": 298
+      }
+    },
+    {
+      "feature": "played_state",
+      "requested_entities": 7,
+      "requested_extensions": {
+        "12": 7
+      },
+      "response_extension_statuses": {
+        "12:451": 7
+      }
+    },
+    {
+      "feature": "kodiak",
+      "requested_entities": 1,
+      "requested_extensions": {
+        "178": 1,
+        "179": 1
+      },
+      "response_extension_statuses": {
+        "178:502": 1,
+        "179:502": 1
+      }
+    },
+    {
+      "feature": "your_library",
+      "requested_entities": 75,
+      "requested_extensions": {
+        "178": 2,
+        "179": 39,
+        "225": 34,
+        "9": 39
+      },
+      "response_extension_statuses": {
+        "178:502": 2,
+        "179:502": 39,
+        "225:502": 34,
+        "9:502": 39
+      }
+    },
+    {
+      "feature": "your_library",
+      "requested_entities": 75,
+      "requested_extensions": {
+        "178": 2,
+        "179": 39,
+        "225": 34,
+        "9": 39
+      },
+      "response_extension_statuses": {
+        "178:502": 2,
+        "179:502": 39,
+        "225:502": 34,
+        "9:502": 39
+      }
+    },
+    {
+      "feature": "kodiak",
+      "requested_entities": 1,
+      "requested_extensions": {
+        "178": 1
+      },
+      "response_extension_statuses": {
+        "178:502": 1
+      }
+    },
+    {
+      "feature": "kodiak",
+      "requested_entities": 1,
+      "requested_extensions": {
+        "178": 1
+      },
+      "response_extension_statuses": {
+        "178:502": 1
+      }
+    },
+    {
+      "feature": "kodiak",
+      "requested_entities": 1,
+      "requested_extensions": {
+        "178": 1
+      },
+      "response_extension_statuses": {
+        "178:502": 1
+      }
+    },
+    {
+      "feature": "collection",
+      "requested_entities": 300,
+      "requested_extensions": {
+        "6": 300
+      },
+      "response_extension_statuses": {
+        "6:502": 300
+      }
+    },
+    {
+      "feature": "collection",
+      "requested_entities": 300,
+      "requested_extensions": {
+        "6": 300
+      },
+      "response_extension_statuses": {
+        "6:502": 300
+      }
+    },
+    {
+      "feature": "collection",
+      "requested_entities": 300,
+      "requested_extensions": {
+        "6": 300
+      },
+      "response_extension_statuses": {
+        "6:502": 300
+      }
+    },
+    {
+      "feature": "collection",
+      "requested_entities": 300,
+      "requested_extensions": {
+        "6": 300
+      },
+      "response_extension_statuses": {
+        "6:502": 300
+      }
+    },
+    {
+      "feature": "collection",
+      "requested_entities": 184,
+      "requested_extensions": {
+        "6": 184
+      },
+      "response_extension_statuses": {
+        "6:502": 184
+      }
+    },
+    {
+      "feature": "list_metadata_prefetcher",
+      "requested_entities": 17,
+      "requested_extensions": {
+        "178": 17,
+        "179": 17,
+        "212": 17
+      },
+      "response_extension_statuses": {
+        "178:502": 17,
+        "179:502": 17,
+        "212:502": 17
+      }
+    }
+  ]
+}

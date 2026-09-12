@@ -1,12 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">Conecte sua conta do Spotify</string>
-    <string name="setup_description">Entre com seu nome de usuário e senha do Spotify para ver sua biblioteca e controlar a reprodução no dispositivo Spotify ativo.</string>
-    <string name="username">Nome de usuário do Spotify</string>
+    <string name="setup_title">Conecte sua conta</string>
+    <string name="setup_description">Entre com suas credenciais do serviço para ver sua biblioteca.</string>
+    <string name="username">Nome de usuário</string>
     <string name="password">Senha</string>
-    <string name="login">Entrar com o Spotify</string>
-    <string name="premium_required">O controle de reprodução exige Spotify Premium.</string>
+    <string name="login">Entrar</string>
+    <string name="premium_required">A reprodução depende das condições da sua conta.</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Álbuns</string>
     <string name="tracks">Músicas</string>
@@ -24,20 +24,22 @@
     <string name="repeat_off">Repetição desativada</string>
     <string name="repeat_context">Repetir playlist</string>
     <string name="repeat_track">Repetir uma música</string>
-    <string name="no_active_device">Abra o Spotify e inicie a reprodução em um dispositivo. Depois, tente novamente.</string>
+    <string name="no_active_device">Inicie a reprodução no aplicativo do serviço e tente novamente.</string>
     <string name="settings">Configurações</string>
-    <string name="supplied_by_spotify">Conteúdo fornecido pelo Spotify</string>
-    <string name="open_on_spotify">Abrir no Spotify</string>
+    <string name="supplied_by_spotify">Conteúdo do serviço</string>
+    <string name="open_on_spotify">Abrir no aplicativo do serviço</string>
     <string name="preview">Reproduzir prévia</string>
-    <string name="login_failed">Falha ao entrar no Spotify.</string>
-    <string name="request_failed">Falha na solicitação ao Spotify.</string>
+    <string name="login_failed">Falha no login.</string>
+    <string name="request_failed">Falha na solicitação.</string>
     <string name="error_title">Algo deu errado</string>
     <string name="dismiss">Fechar</string>
-    <string name="artwork_cache_note">As capas ficam em um cache LRU de 128 MB. O áudio é gerenciado pelo Spotify.</string>
-    <string name="credentials_required">Digite seu nome de usuário e senha do Spotify.</string>
+    <string name="artwork_cache_note">As imagens são armazenadas em cache até 128 MiB.</string>
+    <string name="credentials_required">Digite seu nome de usuário e senha.</string>
     <string name="verification_code">Código de verificação</string>
     <string name="verify">Verificar</string>
     <string name="cancel">Cancelar</string>
     <string name="code_challenge_description">Insira o código enviado para %1$s</string>
     <string name="code_challenge_description_generic">Insira o código enviado para o seu e-mail</string>
+    <string name="verification_code_failed">O código de verificação não foi aceito. Digite o código mais recente.</string>
+    <string name="untitled_playlist">Playlist sem título</string>
 </resources>

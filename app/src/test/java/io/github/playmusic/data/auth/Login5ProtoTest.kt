@@ -1,4 +1,4 @@
-﻿package io.github.playmusic.data.auth
+package io.github.playmusic.data.auth
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -7,6 +7,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Login5ProtoTest {
+    @Test
+    fun storedCredentialRefreshUsesV3AndPasswordLoginUsesV4() {
+        val stored = LoginRequest(storedCredential = LoginStoredCredential("user", byteArrayOf(1, 2, 3)))
+        val password = LoginRequest(password = LoginPassword("user", "pass"))
+        assertEquals("https://login5.spotify.com/v3/login", SpotifyLogin5Client.endpointFor(stored))
+        assertEquals("https://login5.spotify.com/v4/login", SpotifyLogin5Client.endpointFor(password))
+        assertArrayEquals(byteArrayOf(0xA2.toByte(), 6) + ProtoWire.varint(11) +
+            byteArrayOf(10, 4, 117, 115, 101, 114, 18, 3, 1, 2, 3), stored.encode())
+    }
+
     @Test
     fun encodesPasswordRequestWithClientInfo() {
         val request = LoginRequest(
@@ -83,7 +93,7 @@ class Login5ProtoTest {
             write(ProtoWire.fieldVarint(1, 2))
             write(ProtoWire.fieldVarint(2, 6))
             write(ProtoWire.fieldVarint(3, 300))
-            write(ProtoWire.fieldString(5, "r***z@y***.co.jp"))
+            write(ProtoWire.fieldString(5, "u***@example.com"))
         }.toByteArray()
         val challenge = java.io.ByteArrayOutputStream().apply {
             write(ProtoWire.fieldMessage(2, code))
@@ -99,7 +109,7 @@ class Login5ProtoTest {
         val parsed = LoginResponse.parse(response)
 
         assertEquals(1, parsed.challenges.size)
-        assertEquals("r***z@y***.co.jp", parsed.challenges[0].code?.maskedTarget)
+        assertEquals("u***@example.com", parsed.challenges[0].code?.maskedTarget)
         assertEquals(null, parsed.challenges[0].hashcash)
         assertArrayEquals(byteArrayOf(0x04, 0x00), parsed.loginContext)
     }
@@ -110,14 +120,14 @@ class Login5ProtoTest {
             clientInfo = ClientInfo("9a8d2f0ce77a4e248bb71fefcb557637", "device-1"),
             loginContext = byteArrayOf(0x04, 0x00),
             challengeSolutions = listOf(
-                ChallengeSolution(code = CodeSolution("749769")),
+                ChallengeSolution(code = CodeSolution("123456")),
             ),
             authFlow = LoginAuthFlow(
                 redirectUri = "https://auth-callback.spotify.com/r/android/music/login",
-                callbackUuid = "54b6a0a6-1901-4353-95d4-eb4e34997323",
+                callbackUuid = "00000000-0000-4000-8000-000000000001",
                 language = "ja",
             ),
-            clientRequestId = "68f3bde3-bfc0-4ac8-a122-a7c6b94a8d73",
+            clientRequestId = "00000000-0000-4000-8000-000000000002",
             password = LoginPassword("user@example.com", "pass"),
         )
 
@@ -143,7 +153,7 @@ class Login5ProtoTest {
                                 val t3 = r3.readTag()
                                 if (r3.fieldNumber(t3) == 2) {
                                     val codeSol = r3.readBytes()
-                                    assertEquals("749769", String(codeSol.copyOfRange(2, codeSol.size), Charsets.UTF_8))
+                                    assertEquals("123456", String(codeSol.copyOfRange(2, codeSol.size), Charsets.UTF_8))
                                 }
                             }
                         }

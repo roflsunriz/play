@@ -1,6 +1,7 @@
 package io.github.playmusic.data.api
 
 import io.github.playmusic.data.auth.ProtoWire
+import io.github.playmusic.data.auth.ProtoParseException
 import java.util.UUID
 
 /**
@@ -8,45 +9,63 @@ import java.util.UUID
  *
  * Captured wire contracts:
  * - GET  /playlist/v2/user/{username}/rootlist?decorate=...&from=0&length=120
- *   Response: field 5 = items (field 1 = start, field 2 = end, field 3 = item),
+ *   Response: field 1 = revision bytes, field 5 = items (field 1 = position, field 2 = truncated, field 3 = item),
  *   item field 1 = URI, item field 2 = timestamp/attributes.
  * - GET  /playlist/v2/playlist/{id}
  *   Response: field 3 = header (field 1 = name, field 13 = images {field 1 = key, field 2 = url}),
- *   field 5 = items (field 3 = item, item field 1 = URI), field 15 = revision.
+ *   field 5 = items (field 3 = item, item field 1 = URI), field 15 = timestamp.
  * - POST /collection/v2/paging  body: {field 1 = username, field 2 = kind, field 4 = limit}
- *   Response: field 1 repeated = item {field 1 = URI, field 2 = timestamp}, field 2 = change token.
+ *   Response: field 1 repeated = item {field 1 = URI, field 2 = added_at seconds, field 3 = removed},
+ *   field 2 = next page token, field 3 = sync token.
  * - POST /extended-metadata/v0/extended-metadata
  *   Response: field 2 repeated = EntityExtensionDataArray.field 3 repeated =
  *   EntityExtensionData {field 2 = uri, field 3 = Any {field 1 = type_url, field 2 = value}}.
  *   spotify.metadata.Album: field 2 = name, field 3 = artist {field 2 = name},
  *   field 17 = ImageGroup {field 1 repeated = Image {field 1 = file id, field 2 = size, field 3 = width, field 4 = height}},
- *   field 35 = uri, field 36 = artist.
- *   spotify.metadata.Track: field 2 = name, field 4 = artist {field 2 = name}, field 7 = duration ms,
- *   field 17 = ImageGroup, field 36 = canonical uri.
+ *   spotify.metadata.Track: field 2 = name, field 3 = album (including its cover group),
+ *   field 4 = artist {field 2 = name}, field 7 = sint32 duration ms, field 36 = canonical uri.
  * - GET  /searchview/v3/search
  *   Response: field 1 repeated = Entity {field 1 = uri, field 2 = name, field 3 = image uri,
  *   field 5 = track {field 3 = album ref, field 4 = artist refs}, field 6 = album, field 7 = playlist}.
  */
 object SpClientProto {
 
-    data class PlaylistItem(val uri: String, val timestampMs: Long? = null)
+    data class PlaylistItem(val uri: String, val timestampMs: Long? = null, val metadata: PlaylistMetadata? = null)
+
+    data class PlaylistAttributes(
+        val name: String?,
+        val images: Map<String, String>,
+        val deletedByOwner: Boolean = false,
+    )
+
+    data class PlaylistMetadata(val attributes: PlaylistAttributes?, val status: Int?)
 
     data class PlaylistDetail(
         val name: String? = null,
         val images: Map<String, String> = emptyMap(),
-        val isPlayable: Boolean = true,
         val items: List<PlaylistItem> = emptyList(),
-        val revision: Long? = null,
+        val revision: ByteArray? = null,
+        val totalLength: Int? = null,
+        val offset: Int = 0,
+        val truncated: Boolean = false,
+        val hasAttributes: Boolean = false,
+        val deletedByOwner: Boolean = false,
     )
 
     data class Rootlist(
         val items: List<PlaylistItem> = emptyList(),
-        val revision: Long? = null,
+        val revision: ByteArray? = null,
+        val totalLength: Int? = null,
+        val offset: Int = 0,
+        val truncated: Boolean = false,
     )
 
+    data class CollectionItem(val uri: String, val addedAtSeconds: Long, val removed: Boolean)
+
     data class CollectionPage(
-        val items: List<PlaylistItem> = emptyList(),
-        val changeToken: String? = null,
+        val items: List<CollectionItem> = emptyList(),
+        val nextPageToken: String? = null,
+        val syncToken: String? = null,
     )
 
     data class EntityMetadata(
@@ -55,36 +74,27 @@ object SpClientProto {
         val artists: List<String> = emptyList(),
         val imageUrl: String? = null,
         val durationMs: Long? = null,
+        val status: Int? = null,
     )
 
     fun parseRootlist(bytes: ByteArray): Rootlist {
-        val reader = ProtoWire.Reader(bytes)
-        val items = mutableListOf<PlaylistItem>()
-        var revision: Long? = null
-        while (reader.hasNext()) {
-            val tag = reader.readTag()
-            when (reader.fieldNumber(tag)) {
-                5 -> items += parseItems(reader.readBytes())
-                1 -> reader.readVarint() // format header
-                2 -> reader.readVarint() // length
-                15 -> revision = reader.readVarint()
-                else -> reader.skip(reader.wireType(tag))
-            }
-        }
-        return Rootlist(items, revision)
+        val list = parsePlaylist(bytes)
+        return Rootlist(list.items, list.revision, list.totalLength, list.offset, list.truncated)
     }
 
     fun parsePlaylist(bytes: ByteArray): PlaylistDetail {
         val reader = ProtoWire.Reader(bytes)
         var header: ByteArray? = null
-        val items = mutableListOf<PlaylistItem>()
-        var revision: Long? = null
+        var contents = ItemPage()
+        var revision: ByteArray? = null
+        var totalLength: Int? = null
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
+                1 -> revision = reader.readBytes()
+                2 -> totalLength = reader.readVarint().toInt()
                 3 -> header = reader.readBytes()
-                5 -> items += parseItems(reader.readBytes())
-                15 -> revision = reader.readVarint()
+                5 -> contents = parseItems(reader.readBytes())
                 else -> reader.skip(reader.wireType(tag))
             }
         }
@@ -92,25 +102,48 @@ object SpClientProto {
         return PlaylistDetail(
             name = parsedHeader?.name,
             images = parsedHeader?.images ?: emptyMap(),
-            isPlayable = parsedHeader?.isPlayable ?: true,
-            items = items,
+            items = contents.items,
             revision = revision,
+            totalLength = totalLength,
+            offset = contents.offset,
+            truncated = contents.truncated,
+            hasAttributes = parsedHeader != null,
+            deletedByOwner = parsedHeader?.deletedByOwner ?: false,
         )
     }
 
     fun parseCollectionPage(bytes: ByteArray): CollectionPage {
         val reader = ProtoWire.Reader(bytes)
-        val items = mutableListOf<PlaylistItem>()
-        var changeToken: String? = null
+        val items = mutableListOf<CollectionItem>()
+        var nextPageToken: String? = null
+        var syncToken: String? = null
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
-                1 -> parseItem(reader.readBytes())?.let { items += it }
-                2 -> changeToken = reader.readBytes().toString(Charsets.UTF_8)
+                1 -> items += parseCollectionItem(reader.readBytes())
+                2 -> nextPageToken = reader.readString().takeIf(String::isNotBlank)
+                3 -> syncToken = reader.readString().takeIf(String::isNotBlank)
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return CollectionPage(items, changeToken)
+        return CollectionPage(items, nextPageToken, syncToken)
+    }
+
+    private fun parseCollectionItem(bytes: ByteArray): CollectionItem {
+        val reader = ProtoWire.Reader(bytes)
+        var uri = ""
+        var addedAtSeconds = 0L
+        var removed = false
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            when (reader.fieldNumber(tag)) {
+                1 -> uri = reader.readString()
+                2 -> addedAtSeconds = reader.readVarint()
+                3 -> removed = reader.readVarint() != 0L
+                else -> reader.skip(reader.wireType(tag))
+            }
+        }
+        return CollectionItem(uri, addedAtSeconds, removed)
     }
 
     /**
@@ -145,22 +178,50 @@ object SpClientProto {
         return result
     }
 
-    private fun parseItems(bytes: ByteArray): List<PlaylistItem> {
+    private data class ItemPage(
+        val items: List<PlaylistItem> = emptyList(),
+        val offset: Int = 0,
+        val truncated: Boolean = false,
+    )
+
+    private fun parseItems(bytes: ByteArray): ItemPage {
         val reader = ProtoWire.Reader(bytes)
         val items = mutableListOf<PlaylistItem>()
+        val metadata = mutableListOf<PlaylistMetadata>()
+        var offset = 0
+        var truncated = false
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
-                3 -> parseItem(reader.readBytes())?.let { items += it }
-                1 -> reader.readVarint() // from
-                2 -> reader.readVarint() // to
+                3 -> items += parseItem(reader.readBytes())
+                4 -> metadata += parsePlaylistMetadata(reader.readBytes())
+                1 -> offset = reader.readVarint().toInt()
+                2 -> truncated = reader.readVarint() != 0L
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return items
+        return ItemPage(items.mapIndexed { index, item -> item.copy(metadata = metadata.getOrNull(index)) }, offset, truncated)
     }
 
-    private fun parseItem(bytes: ByteArray): PlaylistItem? {
+    private fun parsePlaylistMetadata(bytes: ByteArray): PlaylistMetadata {
+        val reader = ProtoWire.Reader(bytes)
+        var attributes: PlaylistAttributes? = null
+        var status: Int? = null
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            when (reader.fieldNumber(tag)) {
+                2 -> attributes = parseHeader(reader.readBytes())
+                9 -> {
+                    val encoded = reader.readVarint()
+                    status = ((encoded ushr 1) xor -(encoded and 1)).toInt()
+                }
+                else -> reader.skip(reader.wireType(tag))
+            }
+        }
+        return PlaylistMetadata(attributes, status)
+    }
+
+    private fun parseItem(bytes: ByteArray): PlaylistItem {
         val reader = ProtoWire.Reader(bytes)
         var uri: String? = null
         var timestamp: Long? = null
@@ -175,7 +236,8 @@ object SpClientProto {
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return uri?.takeIf { it.isNotBlank() }?.let { PlaylistItem(it, timestamp) }
+        val itemUri = uri ?: throw ProtoParseException("Playlist item is missing a URI")
+        return PlaylistItem(itemUri, timestamp)
     }
 
     private fun parseTimestamp(bytes: ByteArray): Long? {
@@ -190,23 +252,21 @@ object SpClientProto {
         return null
     }
 
-    private data class ParsedHeader(val name: String?, val images: Map<String, String>, val isPlayable: Boolean)
-
-    private fun parseHeader(bytes: ByteArray): ParsedHeader {
+    private fun parseHeader(bytes: ByteArray): PlaylistAttributes {
         val reader = ProtoWire.Reader(bytes)
         var name: String? = null
         val images = mutableMapOf<String, String>()
-        var isPlayable = true
+        var deletedByOwner = false
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 1 -> name = reader.readString()
+                6 -> deletedByOwner = reader.readVarint() != 0L
                 13 -> parseImage(reader.readBytes())?.let { images[it.first] = it.second }
-                16 -> isPlayable = reader.readVarint() != 0L
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return ParsedHeader(name, images, isPlayable)
+        return PlaylistAttributes(name, images, deletedByOwner)
     }
 
     private fun parseImage(bytes: ByteArray): Pair<String, String>? {
@@ -230,6 +290,12 @@ object SpClientProto {
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
+                1 -> {
+                    val status = parseStatus(reader.readBytes())
+                    if (status != null && status != 0 && status !in 200..299) {
+                        throw SpotifyApiException(status, "Metadata provider request failed")
+                    }
+                }
                 3 -> result += parseEntityExtensionData(reader.readBytes())
                 else -> reader.skip(reader.wireType(tag))
             }
@@ -242,9 +308,11 @@ object SpClientProto {
         var uri: String? = null
         var typeUrl: String? = null
         var value: ByteArray? = null
+        var status: Int? = null
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
+                1 -> status = parseStatus(reader.readBytes())
                 2 -> uri = reader.readString()
                 3 -> {
                     val anyReader = ProtoWire.Reader(reader.readBytes())
@@ -266,13 +334,23 @@ object SpClientProto {
             else -> null
         } ?: EntityMetadata(uri = uri.orEmpty())
         val resolvedUri = uri?.takeIf { it.isNotBlank() } ?: metadata.uri
-        return metadata.copy(uri = resolvedUri)
+        return metadata.copy(uri = resolvedUri, status = status)
+    }
+
+    private fun parseStatus(bytes: ByteArray): Int? {
+        val reader = ProtoWire.Reader(bytes)
+        var status: Int? = null
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            if (reader.fieldNumber(tag) == 1) status = reader.readVarint().toInt()
+            else reader.skip(reader.wireType(tag))
+        }
+        return status
     }
 
     private fun parseAlbum(bytes: ByteArray): EntityMetadata {
         val reader = ProtoWire.Reader(bytes)
         var name: String? = null
-        var uri: String? = null
         val artists = mutableListOf<String>()
         var imageUrl: String? = null
         while (reader.hasNext()) {
@@ -281,13 +359,11 @@ object SpClientProto {
                 2 -> name = reader.readString()
                 3 -> parseArtistName(reader.readBytes())?.let { artists += it }
                 17 -> imageUrl = parseImageGroup(reader.readBytes()) ?: imageUrl
-                35 -> uri = reader.readString()
-                36 -> parseArtistName(reader.readBytes())?.let { artists += it }
                 else -> reader.skip(reader.wireType(tag))
             }
         }
         return EntityMetadata(
-            uri = uri.orEmpty(),
+            uri = "",
             name = name,
             artists = artists.distinct(),
             imageUrl = imageUrl,
@@ -305,9 +381,12 @@ object SpClientProto {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 2 -> name = reader.readString()
+                3 -> imageUrl = parseAlbum(reader.readBytes()).imageUrl ?: imageUrl
                 4 -> parseArtistName(reader.readBytes())?.let { artists += it }
-                7 -> durationMs = reader.readVarint()
-                17 -> imageUrl = parseImageGroup(reader.readBytes()) ?: imageUrl
+                7 -> {
+                    val encoded = reader.readVarint()
+                    durationMs = (encoded ushr 1) xor -(encoded and 1)
+                }
                 36 -> uri = reader.readString()
                 else -> reader.skip(reader.wireType(tag))
             }
@@ -335,7 +414,7 @@ object SpClientProto {
     }
 
     /**
-     * Returns an image URL for the ImageGroup, preferring the large image (size 0).
+     * Returns an image URL for the ImageGroup, preferring the default size (0).
      */
     private fun parseImageGroup(bytes: ByteArray): String? {
         val reader = ProtoWire.Reader(bytes)
@@ -347,7 +426,7 @@ object SpClientProto {
                 1 -> {
                     val imageReader = ProtoWire.Reader(reader.readBytes())
                     var fileId: ByteArray? = null
-                    var size = Int.MAX_VALUE
+                    var size = 0
                     while (imageReader.hasNext()) {
                         val imageTag = imageReader.readTag()
                         when (imageReader.fieldNumber(imageTag)) {
@@ -384,46 +463,62 @@ object SpClientProto {
         var name: String? = null
         var imageUri: String? = null
         var sub: ByteArray? = null
+        var subType = 0
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 1 -> uri = reader.readString()
                 2 -> name = reader.readString()
                 3 -> imageUri = reader.readString()
-                5 -> sub = reader.readBytes()
-                6 -> sub = reader.readBytes()
-                7 -> sub = reader.readBytes()
+                5, 6, 7 -> {
+                    subType = reader.fieldNumber(tag)
+                    sub = reader.readBytes()
+                }
                 else -> reader.skip(reader.wireType(tag))
             }
         }
         val entityUri = uri?.takeIf { it.isNotBlank() } ?: return null
-        val subtitle = sub?.let(::parseSearchSubtitle).orEmpty()
+        val artists = when (subType) {
+            5 -> sub?.let(::parseSearchTrackArtists).orEmpty()
+            6 -> sub?.let(::parseSearchAlbumArtists).orEmpty()
+            else -> emptyList()
+        }
         return EntityMetadata(
             uri = entityUri,
             name = name,
-            artists = listOfNotNull(subtitle.takeIf { it.isNotBlank() }),
+            artists = artists,
             imageUrl = normalizeImageUri(imageUri),
         )
     }
 
-    private fun parseSearchSubtitle(bytes: ByteArray): String? {
-        System.err.println("DBG subtitle bytes len=" + bytes.size)
-
+    private fun parseSearchTrackArtists(bytes: ByteArray): List<String> {
         val reader = ProtoWire.Reader(bytes)
         var albumName: String? = null
-        var artistName: String? = null
+        val artistNames = mutableListOf<String>()
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 3 -> albumName = parseRefName(reader.readBytes()) ?: albumName
-                4 -> artistName = parseRefName(reader.readBytes()) ?: artistName
-                else -> {
-                    System.err.println("DBG subtitle skip field=" + reader.fieldNumber(tag) + " wire=" + reader.wireType(tag))
-                    reader.skip(reader.wireType(tag))
-                }
+                4 -> parseRefName(reader.readBytes())?.let { artistNames += it }
+                else -> reader.skip(reader.wireType(tag))
             }
         }
-        return artistName ?: albumName
+        return artistNames.distinct().ifEmpty { listOfNotNull(albumName) }
+    }
+
+    private fun parseSearchAlbumArtists(bytes: ByteArray): List<String> {
+        val reader = ProtoWire.Reader(bytes)
+        val names = mutableListOf<String>()
+        val refs = mutableListOf<String>()
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            when (reader.fieldNumber(tag)) {
+                1 -> reader.readString().takeIf(String::isNotBlank)?.let { names += it }
+                7 -> parseRefName(reader.readBytes())?.let { refs += it }
+                else -> reader.skip(reader.wireType(tag))
+            }
+        }
+        return refs.distinct().ifEmpty { names.distinct() }
     }
 
     private fun parseRefName(bytes: ByteArray): String? {
@@ -454,33 +549,39 @@ object SpClientProto {
     /**
      * Builds an /extended-metadata/v0/extended-metadata request body for the given URIs.
      *
-     * The market context field 3 is a 16-byte request-scoped gid that varies per request
-     * in the real capture (#302 vs #319 differ), so a random value is used.
+     * EntityRequest.query is an ExtensionQuery message, not a random mask.
+     * Country/catalogue come from authenticated account attributes when provided.
+     * Contract: librespot protocol/proto/extended_metadata.proto and extension_kind.proto.
      */
-    fun buildExtendedMetadataRequest(uris: List<String>, mask: ByteArray): ByteArray {
-        val marketContext = ProtoWire.fieldBytes(
-            1,
-            ProtoWire.fieldString(1, "JP") +
-                ProtoWire.fieldString(2, "free") +
-                ProtoWire.fieldBytes(3, randomGid()),
-        )
+    fun buildExtendedMetadataRequest(uris: List<String>, context: AccountContext? = null): ByteArray {
         val entities = uris.map { uri ->
+            val extensionKind = when {
+                uri.startsWith("spotify:album:") -> 9 // ALBUM_V4
+                uri.startsWith("spotify:track:") -> 10 // TRACK_V4
+                else -> throw IllegalArgumentException("Unsupported metadata entity type")
+            }
             ProtoWire.fieldBytes(
                 2,
                 ProtoWire.fieldString(1, uri) +
-                    ProtoWire.fieldBytes(2, mask),
+                    ProtoWire.fieldBytes(2, ProtoWire.fieldVarint(1, extensionKind)),
             )
         }
         val out = java.io.ByteArrayOutputStream()
-        out.write(marketContext)
+        if (context != null) {
+            val task = UUID.randomUUID()
+            val taskId = java.nio.ByteBuffer.allocate(16).putLong(task.mostSignificantBits).putLong(task.leastSignificantBits).array()
+            out.write(ProtoWire.fieldBytes(1,
+                ProtoWire.fieldString(1, context.country) + ProtoWire.fieldString(2, context.catalogue) + ProtoWire.fieldBytes(3, taskId)))
+        }
         entities.forEach { out.write(it) }
         return out.toByteArray()
     }
 
-    fun randomGid(): ByteArray {
-        val bytes = ByteArray(16)
-        java.security.SecureRandom().nextBytes(bytes)
-        return bytes
+    fun buildCollectionPageRequest(username: String, set: String, limit: Int, pageToken: String? = null): ByteArray {
+        require(limit > 0)
+        return ProtoWire.fieldString(1, username) + ProtoWire.fieldString(2, set) +
+            (pageToken?.let { ProtoWire.fieldString(3, it) } ?: ByteArray(0)) +
+            ProtoWire.fieldVarint(4, limit)
     }
 
     fun newSearchRequestId(): String = UUID.randomUUID().toString()
