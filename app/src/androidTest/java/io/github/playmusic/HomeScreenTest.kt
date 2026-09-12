@@ -41,7 +41,7 @@ class HomeScreenTest {
                     state = PlayUiState(isLoggedIn = true, items = listOf(item)),
                     onSectionSelected = {}, onSearchChanged = {}, onSearch = {}, onRefresh = {}, onLogout = {},
                     onPlay = { played = true }, onPlayPause = {}, onNext = {}, onPrevious = {}, onSeek = {},
-                    onShuffle = {}, onRepeat = {}, onPreview = {},
+                    onShuffle = {}, onRepeat = {},
                 )
             }
         }
@@ -82,7 +82,6 @@ class HomeScreenTest {
                     onSeek = {},
                     onShuffle = { shuffled = true },
                     onRepeat = { repeated = true },
-                    onPreview = {},
                 )
             }
         }
@@ -135,7 +134,6 @@ class HomeScreenTest {
                     onSeek = {},
                     onShuffle = {},
                     onRepeat = {},
-                    onPreview = {},
                 )
             }
         }

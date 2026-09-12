@@ -1,0 +1,363 @@
+{
+  "data": {
+    "albumUnion": {
+      "__typename": "Album",
+      "date": {
+        "isoString": "1991-09-26T00:00:00Z"
+      },
+      "name": "Nevermind (Remastered)",
+      "playability": {
+        "playable": true,
+        "reason": "PLAYABLE"
+      },
+      "tracksV2": {
+        "items": [
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 301920
+              },
+              "name": "Smells Like Teen Spirit",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 1,
+              "uri": "spotify:track:4CeeEOM32jQcH3eN9Q2dGj"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 255080
+              },
+              "name": "In Bloom",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 2,
+              "uri": "spotify:track:2mvffzYUJ9Ld9xhsF5DUjU"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 218920
+              },
+              "name": "Come As You Are",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 3,
+              "uri": "spotify:track:2RsAajgo0g7bMCHxwH3Sk0"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 184040
+              },
+              "name": "Breed",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 4,
+              "uri": "spotify:track:3PyPpABRA2bTGhNwPd66H6"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 257053
+              },
+              "name": "Lithium",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 5,
+              "uri": "spotify:track:5vHLwhxxlGzmClMcxRRFPr"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 173853
+              },
+              "name": "Polly",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 6,
+              "uri": "spotify:track:2SJ38LDlkNjwWSUq98r4Q5"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 142946
+              },
+              "name": "Territorial Pissings",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 7,
+              "uri": "spotify:track:6oZYLz0vZy8HhqwioRYtTp"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 223880
+              },
+              "name": "Drain You",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 8,
+              "uri": "spotify:track:0bTLGlCqwZXwJGWGE2Dywg"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 156426
+              },
+              "name": "Lounge Act",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 9,
+              "uri": "spotify:track:1o5jmMhhk2UZ9YP1X5fXfj"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 211440
+              },
+              "name": "Stay Away",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 10,
+              "uri": "spotify:track:0w7k0ZhHzkfEBsDmwp49xA"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 194426
+              },
+              "name": "On A Plain",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 11,
+              "uri": "spotify:track:2xIlEsioAFODKpsVgVNrrQ"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 232146
+              },
+              "name": "Something In The Way",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 12,
+              "uri": "spotify:track:4gHnSNHs8RyVukKoWdS99f"
+            }
+          },
+          {
+            "track": {
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "discNumber": 1,
+              "duration": {
+                "totalMilliseconds": 403293
+              },
+              "name": "Endless, Nameless",
+              "playability": {
+                "playable": true
+              },
+              "trackNumber": 13,
+              "uri": "spotify:track:5KV9bNW1Ta4Z4PdHgu84TA"
+            }
+          }
+        ],
+        "totalCount": 13
+      },
+      "uri": "spotify:album:2UJcKiJxNryhL050F5Z1Fk",
+      "artists": {
+        "items": [
+          {
+            "profile": {
+              "name": "ニルヴァーナ"
+            },
+            "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+          }
+        ],
+        "totalCount": 1
+      },
+      "coverArt": {
+        "sources": [
+          {
+            "height": 300,
+            "url": "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6",
+            "width": 300
+          },
+          {
+            "height": 64,
+            "url": "https://i.scdn.co/image/ab67616d00004851fbc71c99f9c1296c56dd51b6",
+            "width": 64
+          },
+          {
+            "height": 640,
+            "url": "https://i.scdn.co/image/ab67616d0000b273fbc71c99f9c1296c56dd51b6",
+            "width": 640
+          }
+        ]
+      }
+    }
+  }
+}

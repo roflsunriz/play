@@ -16,6 +16,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 ## 目的
 - apkを解析する
 - Androidアプリを作る
+- 現在の完了条件は、ライブラリ詳細、アルバム・楽曲の検索とタイトル・画像・詳細取得、実際のフル再生と再生操作を利用可能にすること。プレイリストの作成・メタデータ設定・削除は、その次の段階とする（2026-09-12のユーザー指定）。
 
 ## 機能
 - サービスにログイン
@@ -41,8 +42,20 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 2026-09-12確認: `search_hex.txt` と既存検索テストの埋め込み応答は同一の5,815バイトだった。復元した検証資料の所在と原本の再検索結果は `docs/api-contracts.md` に残す。キャプチャ、セッション、トークンはGit管理しない。
 - このWindows環境でSDKやKotlin daemonにAccessDeniedExceptionが出た場合、設定を変更する前に昇格したPowerShellで同じGradle検証を実行する。JDKは `JAVA_HOME` で明示する。
 - 名前が空でも属性が存在するプレイリストは有効。rootlistのdecorated metadataを使い、items内の空URIを除く前に同じ位置のmetadataを対応付ける。
-- メタデータ要求の国・catalogueは認証済みのアカウント属性から取得する。参照アプリの画面に作品があっても、キャッシュ表示とオンラインの詳細取得成功は区別する。2026-09-12は両アプリの詳細応答内で502を確認した。条件と集計は `docs/api-contracts.md`。
+- メタデータ要求の国・catalogueは認証済みのアカウント属性から取得する。参照アプリのキャッシュ表示とオンライン取得は区別する。2026-09-12昼の502は改変・非ストア配布の参照APKを含む観測であり、通常版や提供元全体の障害を示すものではない。同日夜、ユーザーがGoogle Play通常版へ入れ直した。条件と集計は `docs/api-contracts.md`。
 - `LibraryAccountTest` は `liveAccount=true` を明示してログイン済み実機で実行する。未ログイン前提の `SetupScreenTest` は分離したAVDへ限定する。AVDの全端末一括実行で実機の認証を消さない。
 - 通信記録ツールは通常終了で端末のproxyと所有するadb reverseを復元する。親プロセスを強制終了するとfinallyが動かないため、時間制限付きで通常終了を待つ。異常終了時は `how-to-update.md` の復旧手順に従う。
 - 画面の `assertIsDisplayed` は一部だけ見える項目でも通る。低い横画面でタイトルが切れたため、タイトルの元の高さと表示範囲の高さを比較し、画像も確認する。画面幅・高さは `LocalWindowInfo` を使用する。
 - 依存の検証メタデータを新規生成した際は `tools/verify-platform-tools.init.gradle.kts` も実行し、WindowsだけでなくLinux/macOS用AAPT2を解決する。手順は `how-to-update.md`。
+- 診断パッチは `diagnostics/`、受信機は `app/src/debug/` に置く。RVPのルートにはAndroid用DEX、`extensions/capture.rve` にはZIPではなく生DEXを入れる。CLI 6はパッチが失敗してもAPKを書き出して終了コード0を返す場合があるため、`tools/apply-diagnostic-patches.ps1` で各パッチの成功を確認する。
+- HTTP観測はJava/native境界の送信とコールバック呼び出し元へ入れる。ネイティブ宣言の改名・置換はJNI連携を壊すので避ける。要求ヘッダーはNUL区切りのキーと値。認証通信を除外し、DUMP権限付き制御と一時nonceで受信を制限する。
+- 自己署名の照会は対象自身に限定する。公開証明書は入力APKの署名ブロックから抽出し、他パッケージの署名照会、OSの署名検証、リモートの認証結果と混同しない。署名変更したAPKはGoogle Play版へデータを保持したまま上書きできるとは扱わない。
+- 2026-09-12夜以降、ユーザー指定で参照Android版の調査を中断し、Windows版を優先する。Windows版の検索・アルバム詳細・楽曲一括装飾は実応答を取得済み。Play自身の認証では拒否されるため、応答取得だけで製品の機能完成としない。
+- Windows版の認証サービス名にLogin5が含まれていても、HTTPも同じ方式とは限らない。2026-09-13、通常の更新はOAuth token endpointへの`grant_type=refresh_token`だったことをネイティブ関数で確認した。公開IDは実行中のplatform metadataと一致する。Playの保存済みLogin5資格情報のclient IDを書き換える方法は拒否された。
+- Windows版の初期Sessionオブジェクトは更新後に古くなる。観測ではAuthorizationAPIのtoken providerまたはlive sessionを参照し、有効期限を確認する。端末間の認証値転送は一度の比較に限定して承認されたもので、製品の保存・更新方式に流用しない。
+- 2026-09-13確認: Windows版の新規ログインはデバイス認証。対応する権限のカンマ区切り、待機間隔、更新方式は`DeviceAuthorizationClient`へ反映した。このクライアントでOpenID権限を追加すると拒否される。APの検証済みwelcomeから正規ユーザー名を取得する。
+- カタログは`CatalogApiClient`へ接続。50曲一括の実応答とアルバムのページ分割を確認済み。ブラウザー認証には`DesktopClientProfile`の共通要求ヘッダーを使い、従来の端末SDKトークンと混在させない。
+- 音声の旧APキー要求は実アカウントで拒否された。Windows版は専用HTTPキーAPIを使用する。Playの端末内再生は、配信情報の`manifestFileFormat=file_ids_mp4`で得る形式10とAndroid標準DRMを使う。CDN内MP4に初期化データがあることを確認済みで、独自に音声キーを保存・出力しない。
+- 認証待機中の実機へAPKを再インストールしたりinstrumentationを実行すると、待機中の処理を停止させる。本人認証の完了・期限切れを確認するまでは、ビルド・JVMテスト・読み取り専用AVDで作業を進める。
+- StateFlowの画面状態を更新するとき、`state.value.copy(items = suspendCall())`のように中断を伴う式を渡さない。中断前の状態を復活させ、同時に更新した確認コード画面や再生状態を消す。取得結果を先に変数へ受け、完了後の最新状態へ反映する。`SessionVerificationScreenTest`が再現する競合を維持する。
+- Media3のDRM保持を無効にする値は`C.TIME_UNSET`。0は実サービス起動時に例外となるため、合成音源だけでなく本番のサービス初期化も検証する。停止位置はMediaController側の推定値と再生エンジンの確定値に差があるため、両者が停止することを個別に確認する。

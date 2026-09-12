@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Connectez votre compte</string>
-    <string name="setup_description">Connectez-vous avec vos identifiants du service pour consulter votre bibliothèque.</string>
-    <string name="username">Nom d’utilisateur</string>
-    <string name="password">Mot de passe</string>
-    <string name="login">Se connecter</string>
-    <string name="premium_required">La lecture dépend des conditions de votre compte.</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Albums</string>
     <string name="tracks">Titres</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">Répétition désactivée</string>
     <string name="repeat_context">Répéter la playlist</string>
     <string name="repeat_track">Répéter un titre</string>
-    <string name="no_active_device">Lancez la lecture dans l’application du service, puis réessayez.</string>
     <string name="settings">Paramètres</string>
     <string name="supplied_by_spotify">Contenu du service</string>
     <string name="open_on_spotify">Ouvrir dans l’application du service</string>
-    <string name="preview">Lire un aperçu</string>
     <string name="login_failed">Échec de la connexion.</string>
     <string name="request_failed">Échec de la demande.</string>
     <string name="error_title">Une erreur est survenue</string>
     <string name="dismiss">Fermer</string>
-    <string name="artwork_cache_note">Les illustrations sont mises en cache jusqu’à 128 Mio.</string>
-    <string name="credentials_required">Saisissez votre nom d’utilisateur et votre mot de passe.</string>
     <string name="verification_code">Code de vérification</string>
     <string name="verify">Vérifier</string>
     <string name="cancel">Annuler</string>
@@ -42,4 +33,18 @@
     <string name="code_challenge_description_generic">Saisissez le code envoyé à votre adresse e-mail</string>
     <string name="verification_code_failed">Le code de vérification a été refusé. Saisissez le dernier code.</string>
     <string name="untitled_playlist">Playlist sans titre</string>
+    <string name="browser_login">Se connecter dans le navigateur</string>
+    <string name="browser_login_description">Connectez votre compte dans le navigateur pour charger votre bibliothèque et les détails de la musique.</string>
+    <string name="browser_login_waiting">Terminez la connexion dans le navigateur. Si un code est demandé, saisissez celui-ci. Play continuera automatiquement.</string>
+    <string name="browser_login_open">Ouvrir la page de connexion</string>
+    <string name="browser_reconnect">Reconnecter le compte</string>
+    <string name="back">Retour</string>
+    <string name="track_unavailable">Ce titre est indisponible.</string>
+    <string name="open_album">Ouvrir l’album : %1$s</string>
+    <string name="detail_not_loaded">Impossible de charger les détails. Essayez d’actualiser.</string>
+    <plurals name="track_count">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="many">%1$d titres</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
 </resources>

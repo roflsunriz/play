@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Conecte sua conta</string>
-    <string name="setup_description">Entre com suas credenciais do serviço para ver sua biblioteca.</string>
-    <string name="username">Nome de usuário</string>
-    <string name="password">Senha</string>
-    <string name="login">Entrar</string>
-    <string name="premium_required">A reprodução depende das condições da sua conta.</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Álbuns</string>
     <string name="tracks">Músicas</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">Repetição desativada</string>
     <string name="repeat_context">Repetir playlist</string>
     <string name="repeat_track">Repetir uma música</string>
-    <string name="no_active_device">Inicie a reprodução no aplicativo do serviço e tente novamente.</string>
     <string name="settings">Configurações</string>
     <string name="supplied_by_spotify">Conteúdo do serviço</string>
     <string name="open_on_spotify">Abrir no aplicativo do serviço</string>
-    <string name="preview">Reproduzir prévia</string>
     <string name="login_failed">Falha no login.</string>
     <string name="request_failed">Falha na solicitação.</string>
     <string name="error_title">Algo deu errado</string>
     <string name="dismiss">Fechar</string>
-    <string name="artwork_cache_note">As imagens são armazenadas em cache até 128 MiB.</string>
-    <string name="credentials_required">Digite seu nome de usuário e senha.</string>
     <string name="verification_code">Código de verificação</string>
     <string name="verify">Verificar</string>
     <string name="cancel">Cancelar</string>
@@ -42,4 +33,18 @@
     <string name="code_challenge_description_generic">Insira o código enviado para o seu e-mail</string>
     <string name="verification_code_failed">O código de verificação não foi aceito. Digite o código mais recente.</string>
     <string name="untitled_playlist">Playlist sem título</string>
+    <string name="browser_login">Entrar pelo navegador</string>
+    <string name="browser_login_description">Conecte sua conta no navegador para carregar sua biblioteca e os detalhes das músicas.</string>
+    <string name="browser_login_waiting">Conclua o login no navegador. Se solicitado, digite este código. O Play continuará automaticamente.</string>
+    <string name="browser_login_open">Abrir página de login</string>
+    <string name="browser_reconnect">Reconectar conta</string>
+    <string name="back">Voltar</string>
+    <string name="track_unavailable">Esta música não está disponível.</string>
+    <string name="open_album">Abrir álbum: %1$s</string>
+    <string name="detail_not_loaded">Não foi possível carregar os detalhes. Tente atualizar.</string>
+    <plurals name="track_count">
+        <item quantity="one">%1$d música</item>
+        <item quantity="many">%1$d músicas</item>
+        <item quantity="other">%1$d músicas</item>
+    </plurals>
 </resources>

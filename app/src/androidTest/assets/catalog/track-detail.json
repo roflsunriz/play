@@ -1,0 +1,144 @@
+{
+  "data": {
+    "trackUnion": {
+      "__typename": "Track",
+      "duration": {
+        "totalMilliseconds": 301920
+      },
+      "name": "Smells Like Teen Spirit",
+      "playability": {
+        "playable": true,
+        "reason": "PLAYABLE"
+      },
+      "trackNumber": 1,
+      "uri": "spotify:track:4CeeEOM32jQcH3eN9Q2dGj",
+      "albumOfTrack": {
+        "date": {
+          "isoString": "1991-09-26T00:00:00Z",
+          "year": 1991
+        },
+        "name": "Nevermind (Remastered)",
+        "playability": {
+          "playable": true
+        },
+        "tracks": {
+          "items": [
+            {
+              "track": {
+                "trackNumber": 1,
+                "uri": "spotify:track:4CeeEOM32jQcH3eN9Q2dGj"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 2,
+                "uri": "spotify:track:2mvffzYUJ9Ld9xhsF5DUjU"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 3,
+                "uri": "spotify:track:2RsAajgo0g7bMCHxwH3Sk0"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 4,
+                "uri": "spotify:track:3PyPpABRA2bTGhNwPd66H6"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 5,
+                "uri": "spotify:track:5vHLwhxxlGzmClMcxRRFPr"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 6,
+                "uri": "spotify:track:2SJ38LDlkNjwWSUq98r4Q5"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 7,
+                "uri": "spotify:track:6oZYLz0vZy8HhqwioRYtTp"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 8,
+                "uri": "spotify:track:0bTLGlCqwZXwJGWGE2Dywg"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 9,
+                "uri": "spotify:track:1o5jmMhhk2UZ9YP1X5fXfj"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 10,
+                "uri": "spotify:track:0w7k0ZhHzkfEBsDmwp49xA"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 11,
+                "uri": "spotify:track:2xIlEsioAFODKpsVgVNrrQ"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 12,
+                "uri": "spotify:track:4gHnSNHs8RyVukKoWdS99f"
+              }
+            },
+            {
+              "track": {
+                "trackNumber": 13,
+                "uri": "spotify:track:5KV9bNW1Ta4Z4PdHgu84TA"
+              }
+            }
+          ],
+          "totalCount": 13
+        },
+        "uri": "spotify:album:2UJcKiJxNryhL050F5Z1Fk",
+        "coverArt": {
+          "sources": [
+            {
+              "height": 300,
+              "url": "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6",
+              "width": 300
+            },
+            {
+              "height": 64,
+              "url": "https://i.scdn.co/image/ab67616d00004851fbc71c99f9c1296c56dd51b6",
+              "width": 64
+            },
+            {
+              "height": 640,
+              "url": "https://i.scdn.co/image/ab67616d0000b273fbc71c99f9c1296c56dd51b6",
+              "width": 640
+            }
+          ]
+        }
+      },
+      "firstArtist": {
+        "items": [
+          {
+            "profile": {
+              "name": "ニルヴァーナ"
+            },
+            "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+          }
+        ],
+        "totalCount": 1
+      },
+      "otherArtists": {
+        "items": []
+      }
+    }
+  }
+}

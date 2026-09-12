@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Подключите аккаунт</string>
-    <string name="setup_description">Войдите с именем пользователя и паролем сервиса, чтобы открыть медиатеку.</string>
-    <string name="username">Имя пользователя</string>
-    <string name="password">Пароль</string>
-    <string name="login">Войти</string>
-    <string name="premium_required">Доступность воспроизведения зависит от условий аккаунта.</string>
     <string name="playlists">Плейлисты</string>
     <string name="albums">Альбомы</string>
     <string name="tracks">Треки</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">Повтор выключен</string>
     <string name="repeat_context">Повтор плейлиста</string>
     <string name="repeat_track">Повтор одного трека</string>
-    <string name="no_active_device">Начните воспроизведение в приложении сервиса и повторите попытку.</string>
     <string name="settings">Настройки</string>
     <string name="supplied_by_spotify">Контент сервиса</string>
     <string name="open_on_spotify">Открыть в приложении сервиса</string>
-    <string name="preview">Воспроизвести превью</string>
     <string name="login_failed">Не удалось войти.</string>
     <string name="request_failed">Ошибка запроса.</string>
     <string name="error_title">Произошла ошибка</string>
     <string name="dismiss">Закрыть</string>
-    <string name="artwork_cache_note">Изображения кэшируются в пределах 128 МиБ.</string>
-    <string name="credentials_required">Введите имя пользователя и пароль.</string>
     <string name="verification_code">Код подтверждения</string>
     <string name="verify">Подтвердить</string>
     <string name="cancel">Отмена</string>
@@ -42,4 +33,19 @@
     <string name="code_challenge_description_generic">Введите код, отправленный на вашу почту</string>
     <string name="verification_code_failed">Код подтверждения не принят. Введите последний код.</string>
     <string name="untitled_playlist">Плейлист без названия</string>
+    <string name="browser_login">Войти через браузер</string>
+    <string name="browser_login_description">Подключите аккаунт в браузере, чтобы загрузить медиатеку и сведения о музыке.</string>
+    <string name="browser_login_waiting">Завершите вход в браузере. Если потребуется код, введите его ниже. Play продолжит автоматически.</string>
+    <string name="browser_login_open">Открыть страницу входа</string>
+    <string name="browser_reconnect">Подключить аккаунт заново</string>
+    <string name="back">Назад</string>
+    <string name="track_unavailable">Этот трек недоступен.</string>
+    <string name="open_album">Открыть альбом: %1$s</string>
+    <string name="detail_not_loaded">Не удалось загрузить сведения. Попробуйте обновить.</string>
+    <plurals name="track_count">
+        <item quantity="one">%1$d трек</item>
+        <item quantity="few">%1$d трека</item>
+        <item quantity="many">%1$d треков</item>
+        <item quantity="other">%1$d трека</item>
+    </plurals>
 </resources>

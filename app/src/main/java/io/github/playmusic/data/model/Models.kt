@@ -16,7 +16,17 @@ data class SpotifyContent(
     val subtitle: String,
     val imageUrl: String?,
     val kind: ContentKind,
-    val previewUrl: String? = null,
+    val durationMs: Long = 0,
+    val albumUri: String? = null,
+    val albumTitle: String? = null,
+    val isPlayable: Boolean? = null,
+)
+
+data class ContentDetail(
+    val content: SpotifyContent,
+    val tracks: List<SpotifyContent> = emptyList(),
+    val totalTracks: Int = tracks.size,
+    val releaseDate: String? = null,
 )
 
 enum class RepeatMode(val apiValue: String) {
@@ -40,6 +50,8 @@ data class Playback(
     val progressMs: Long = 0,
     val durationMs: Long = 0,
     val isPlaying: Boolean = false,
+    val playWhenReady: Boolean = isPlaying,
+    val isBuffering: Boolean = false,
     val shuffle: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val deviceName: String? = null,
@@ -50,6 +62,7 @@ data class AuthSession(
     val accessToken: String,
     val storedCredential: ByteArray?,
     val expiresAtEpochMs: Long,
+    val refreshToken: String? = null,
 ) {
     fun expiresSoon(nowEpochMs: Long = System.currentTimeMillis()): Boolean =
         expiresAtEpochMs - nowEpochMs <= TOKEN_REFRESH_SKEW_MS

@@ -34,14 +34,19 @@ class SecureSessionStore(context: Context) {
             val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(GCM_TAG_BITS, iv))
             val json = JSONObject(String(cipher.doFinal(ciphertext), Charsets.UTF_8))
-            require(json.getInt("schemaVersion") == SESSION_SCHEMA_VERSION)
-            AuthSession(
+            val schema = json.getInt("schemaVersion")
+            require(schema in 2..SESSION_SCHEMA_VERSION)
+            val session = AuthSession(
                 username = json.getString("username"),
                 accessToken = json.getString("accessToken"),
                 storedCredential = json.optString("storedCredential").takeIf(String::isNotBlank)
                     ?.let { Base64.decode(it, Base64.NO_WRAP) },
                 expiresAtEpochMs = json.getLong("expiresAtEpochMs"),
+                refreshToken = json.optString("refreshToken").takeIf(String::isNotBlank),
             )
+            require(session.username.isNotBlank() && session.accessToken.isNotBlank())
+            if (schema < SESSION_SCHEMA_VERSION) saveSession(session)
+            session
         }.getOrElse {
             clearSession()
             null
@@ -55,6 +60,7 @@ class SecureSessionStore(context: Context) {
             .put("accessToken", session.accessToken)
             .put("storedCredential", session.storedCredential?.let { Base64.encodeToString(it, Base64.NO_WRAP) }.orEmpty())
             .put("expiresAtEpochMs", session.expiresAtEpochMs)
+            .put("refreshToken", session.refreshToken.orEmpty())
             .toString()
             .toByteArray(Charsets.UTF_8)
         val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
@@ -99,7 +105,7 @@ class SecureSessionStore(context: Context) {
         const val ANDROID_KEY_STORE = "AndroidKeyStore"
         const val CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
         const val GCM_TAG_BITS = 128
-        const val SESSION_SCHEMA_VERSION = 2
+        const val SESSION_SCHEMA_VERSION = 3
         const val DEVICE_ID_HEX_BYTES = 16
     }
 }

@@ -16,7 +16,7 @@ import io.github.playmusic.ui.theme.PlayTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: PlayViewModel by viewModels {
-        PlayViewModel.Factory(AppContainer(applicationContext))
+        PlayViewModel.Factory((application as PlayApplication).container)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

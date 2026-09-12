@@ -4,15 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.playmusic.AppContainer
-import io.github.playmusic.data.api.SpotifyApiException
+import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.auth.LoginVerificationRequiredException
 import io.github.playmusic.data.auth.SpotifyAuthException
 import io.github.playmusic.data.model.ContentKind
+import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.SpotifyContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +26,6 @@ enum class LibrarySection(val kind: ContentKind?) {
 }
 
 enum class ErrorKind {
-    CREDENTIALS_REQUIRED,
-    NO_ACTIVE_DEVICE,
     LOGIN,
     VERIFICATION_CODE,
     REQUEST,
@@ -37,7 +35,6 @@ data class UiError(val kind: ErrorKind, val detail: String? = null)
 
 data class LoginPending(
     val username: String,
-    val password: String?,
     val deviceId: String,
     val loginContext: ByteArray,
     val maskedTarget: String,
@@ -53,6 +50,11 @@ data class PlayUiState(
     val searchQuery: String = "",
     val error: UiError? = null,
     val loginPending: LoginPending? = null,
+    val browserAuthorization: BrowserAuthorizationUi? = null,
+    val isAuthorizing: Boolean = false,
+    val isBrowserAuthorized: Boolean = false,
+    val selectedContent: SpotifyContent? = null,
+    val detail: ContentDetail? = null,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -60,51 +62,60 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         PlayUiState(
             username = container.sessionStore.loadSession()?.username.orEmpty(),
             isLoggedIn = container.sessionStore.loadSession() != null,
+            isBrowserAuthorized = container.sessionStore.loadSession()?.refreshToken != null,
         ),
     )
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
     private var contentRequestJob: Job? = null
+    private var browserAuthorizationJob: Job? = null
+    private var legacyLoginJob: Job? = null
+    private var playbackRequestJob: Job? = null
+    private var playbackSnapshotJob: Job? = null
+    private val detailHistory = ArrayDeque<ContentDetail>()
 
     init {
+        viewModelScope.launch { container.localPlayback.state.collect { mutableState.value = mutableState.value.copy(playback = it) } }
+        viewModelScope.launch { container.localPlayback.errors.collect {
+            if (mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, it))
+        } }
         if (mutableState.value.isLoggedIn) refreshAll()
     }
 
-    fun beginLogin(username: String, password: String) {
-        if (mutableState.value.isLoading) return
-        val normalizedUsername = username.trim()
-        if (normalizedUsername.isBlank() || password.isBlank()) {
-            mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.CREDENTIALS_REQUIRED))
-            return
-        }
-        mutableState.value = mutableState.value.copy(username = normalizedUsername, isLoading = true, error = null, loginPending = null)
-        viewModelScope.launch {
+    fun beginBrowserLogin() {
+        if (mutableState.value.isAuthorizing) return
+        contentRequestJob?.cancel()
+        legacyLoginJob?.cancel()
+        playbackRequestJob?.cancel()
+        mutableState.value = mutableState.value.copy(isAuthorizing = true, isLoading = false,
+            browserAuthorization = null, loginPending = null, error = null)
+        browserAuthorizationJob = viewModelScope.launch {
             try {
-                val deviceId = container.sessionStore.loadDeviceId()
-                when (val outcome = container.login5Client.loginWithPassword(normalizedUsername, password, deviceId)) {
-                    is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success -> {
-                        completeLogin(outcome)
-                    }
-                    is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> {
-                        mutableState.value = mutableState.value.copy(
-                            isLoading = false,
-                            loginPending = LoginPending(
-                                username = normalizedUsername,
-                                password = password,
-                                deviceId = deviceId,
-                                loginContext = outcome.loginContext,
-                                maskedTarget = outcome.maskedTarget,
-                            ),
-                        )
-                    }
-                }
+                val authorization = container.deviceAuthorizationClient.begin()
+                mutableState.value = mutableState.value.copy(browserAuthorization =
+                    BrowserAuthorizationUi(authorization.userCode, authorization.verificationUri))
+                val tokens = container.deviceAuthorizationClient.awaitAuthorization(authorization)
+                val username = container.accessPointIdentity.username(tokens.accessToken, container.sessionStore.loadDeviceId())
+                if (mutableState.value.username != username) container.localPlayback.clear()
+                container.sessionManager.replaceSession(io.github.playmusic.data.model.AuthSession(
+                    username = username,
+                    accessToken = tokens.accessToken,
+                    storedCredential = null,
+                    expiresAtEpochMs = System.currentTimeMillis() + tokens.expiresInSeconds * 1_000,
+                    refreshToken = checkNotNull(tokens.refreshToken),
+                ))
+                mutableState.value = PlayUiState(username = username, isLoggedIn = true, isBrowserAuthorized = true)
+                refreshAll()
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
-                mutableState.value = mutableState.value.copy(
-                    isLoading = false,
-                    error = UiError(ErrorKind.LOGIN, exception.message),
-                )
+                mutableState.value = mutableState.value.copy(isAuthorizing = false, browserAuthorization = null,
+                    error = UiError(ErrorKind.LOGIN, exception.message))
             }
         }
+    }
+
+    fun cancelBrowserLogin() {
+        browserAuthorizationJob?.cancel()
+        mutableState.value = mutableState.value.copy(isAuthorizing = false, browserAuthorization = null, error = null)
     }
 
     fun submitCode(code: String) {
@@ -113,27 +124,14 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         val trimmed = code.trim()
         if (trimmed.isBlank()) return
         mutableState.value = mutableState.value.copy(isLoading = true, error = null)
-        viewModelScope.launch {
+        legacyLoginJob = viewModelScope.launch {
             try {
-                val outcome = if (pending.password != null) {
-                    container.login5Client.loginWithCode(
-                        username = pending.username,
-                        password = pending.password,
-                        deviceId = pending.deviceId,
-                        code = trimmed,
-                        loginContext = pending.loginContext,
-                    )
-                } else {
-                    val session = container.sessionStore.loadSession()?.takeIf { it.username == pending.username }
-                    val credential = session?.storedCredential ?: throw SpotifyAuthException("Saved login information is unavailable")
-                    container.login5Client.loginWithStoredCredentialAndCode(
-                        username = pending.username,
-                        storedCredential = credential,
-                        deviceId = pending.deviceId,
-                        code = trimmed,
-                        loginContext = pending.loginContext,
-                    )
-                }
+                val session = container.sessionStore.loadSession()?.takeIf { it.username == pending.username }
+                val credential = session?.storedCredential ?: throw SpotifyAuthException("Saved login information is unavailable")
+                val outcome = container.login5Client.loginWithStoredCredentialAndCode(
+                    username = pending.username, storedCredential = credential, deviceId = pending.deviceId,
+                    code = trimmed, loginContext = pending.loginContext,
+                )
                 when (outcome) {
                     is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success -> completeLogin(outcome)
                     is io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> {
@@ -158,7 +156,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun cancelLogin() {
-        viewModelScope.coroutineContext.cancelChildren()
+        legacyLoginJob?.cancel()
+        contentRequestJob?.cancel()
         mutableState.value = mutableState.value.copy(loginPending = null, isLoading = false)
     }
 
@@ -166,7 +165,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         success: io.github.playmusic.data.auth.SpotifyLogin5Client.LoginOutcome.Success,
     ) {
         val pending = mutableState.value.loginPending
-        val previousCredential = if (pending != null && pending.password == null) {
+        val previousCredential = if (pending != null) {
             container.sessionStore.loadSession()?.takeIf { it.username == pending.username }?.storedCredential
         } else null
         val session = io.github.playmusic.data.model.AuthSession(
@@ -175,7 +174,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             storedCredential = success.storedCredential ?: previousCredential,
             expiresAtEpochMs = System.currentTimeMillis() + success.accessTokenExpiresIn * 1_000L,
         )
-        container.sessionStore.saveSession(session)
+        container.sessionManager.replaceSession(session)
         mutableState.value = mutableState.value.copy(
             username = success.username,
             isLoggedIn = true,
@@ -186,9 +185,11 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun selectSection(section: LibrarySection) {
-        if (section == mutableState.value.selectedSection) return
+        if (section == mutableState.value.selectedSection && mutableState.value.selectedContent == null) return
         contentRequestJob?.cancel()
-        mutableState.value = mutableState.value.copy(selectedSection = section, items = emptyList(), isLoading = false, error = null)
+        detailHistory.clear()
+        mutableState.value = mutableState.value.copy(selectedSection = section, items = emptyList(), isLoading = false,
+            error = null, selectedContent = null, detail = null)
         if (section != LibrarySection.SEARCH) loadLibrary(section)
     }
 
@@ -200,57 +201,107 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         contentRequestJob?.cancel()
         val query = mutableState.value.searchQuery
         contentRequestJob = executeRequest {
-            mutableState.value = mutableState.value.copy(items = container.repository.search(query))
+            val items = container.repository.search(query)
+            mutableState.value = mutableState.value.copy(items = items)
         }
     }
 
     fun refreshAll() {
-        if (mutableState.value.selectedSection == LibrarySection.SEARCH) search()
+        val selectedContent = mutableState.value.selectedContent
+        if (selectedContent != null) loadDetail(selectedContent, rememberCurrent = false)
+        else if (mutableState.value.selectedSection == LibrarySection.SEARCH) search()
         else loadLibrary(mutableState.value.selectedSection)
         refreshPlayback()
     }
 
-    fun refreshPlayback() = executeRequest(showLoading = false) {
-        mutableState.value = mutableState.value.copy(playback = container.repository.playback())
-    }
+    fun openDetail(content: SpotifyContent) = loadDetail(content, rememberCurrent = true)
 
-    fun play(content: SpotifyContent) = executePlaybackRequest {
-        container.repository.play(content)
-    }
-
-    fun preview(content: SpotifyContent) {
-        val previewUrl = content.previewUrl ?: return
-        if (content.kind != ContentKind.TRACK) return
-        if (container.previewPlayer.isPlaying()) {
-            container.previewPlayer.stop()
-        } else {
-            container.previewPlayer.play(previewUrl)
+    private fun loadDetail(content: SpotifyContent, rememberCurrent: Boolean) {
+        contentRequestJob?.cancel()
+        val current = mutableState.value.detail
+        if (rememberCurrent && current != null && current.content.uri != content.uri) detailHistory.addLast(current)
+        mutableState.value = mutableState.value.copy(selectedContent = content, detail = null, error = null)
+        contentRequestJob = executeRequest {
+            val detail = container.repository.detail(content)
+            mutableState.value = mutableState.value.copy(detail = detail)
         }
     }
 
-    fun togglePlayPause() = executePlaybackRequest {
-        if (mutableState.value.playback.isPlaying) container.repository.pause() else container.repository.resume()
+    fun closeDetail() {
+        contentRequestJob?.cancel()
+        val previous = detailHistory.removeLastOrNull()
+        mutableState.value = mutableState.value.copy(selectedContent = previous?.content, detail = previous,
+            isLoading = false, error = null)
     }
 
-    fun next() = executePlaybackRequest { container.repository.next() }
+    fun refreshPlayback(): Job {
+        playbackSnapshotJob?.cancel()
+        return executeRequest(showLoading = false) {
+            val playback = container.localPlayback.snapshot()
+            mutableState.value = mutableState.value.copy(playback = playback)
+        }.also { playbackSnapshotJob = it }
+    }
 
-    fun previous() = executePlaybackRequest { container.repository.previous() }
+    fun play(content: SpotifyContent) {
+        if (!mutableState.value.isBrowserAuthorized) { beginBrowserLogin(); return }
+        executePlaybackRequest {
+            val detail = mutableState.value.detail
+            val tracks = when (content.kind) {
+                ContentKind.TRACK -> mutableState.value.items.filter { it.kind == ContentKind.TRACK }.takeIf { list ->
+                    list.any { it.uri == content.uri }
+                } ?: listOf(content)
+                ContentKind.ALBUM, ContentKind.PLAYLIST ->
+                    (detail?.takeIf { it.content.uri == content.uri } ?: container.repository.detail(content)).tracks
+                else -> throw IllegalArgumentException("Unsupported playback item")
+            }.filter { it.isPlayable != false }
+            check(tracks.isNotEmpty()) { "No playable tracks are available" }
+            val index = if (content.kind == ContentKind.TRACK) tracks.indexOfFirst { it.uri == content.uri }.coerceAtLeast(0) else 0
+            container.localPlayback.play(tracks, index)
+        }
+    }
 
-    fun seek(positionMs: Long) = executePlaybackRequest { container.repository.seek(positionMs) }
+    fun playDetailTrack(index: Int) {
+        val source = mutableState.value.detail?.tracks ?: return
+        if (index !in source.indices || source[index].isPlayable == false) return
+        val tracks = source.filter { it.isPlayable != false }
+        val selectedIndex = source.take(index).count { it.isPlayable != false }
+        executePlaybackRequest { container.localPlayback.play(tracks, selectedIndex) }
+    }
+
+    fun togglePlayPause() = executePlaybackRequest {
+        if (mutableState.value.playback.playWhenReady) container.localPlayback.pause() else container.localPlayback.resume()
+    }
+
+    fun next() = executePlaybackRequest { container.localPlayback.next() }
+
+    fun previous() = executePlaybackRequest { container.localPlayback.previous() }
+
+    fun seek(positionMs: Long) = executePlaybackRequest { container.localPlayback.seek(positionMs) }
 
     fun toggleShuffle() = executePlaybackRequest {
-        container.repository.setShuffle(!mutableState.value.playback.shuffle)
+        container.localPlayback.setShuffle(!mutableState.value.playback.shuffle)
     }
 
     fun cycleRepeat() = executePlaybackRequest {
-        container.repository.setRepeat(mutableState.value.playback.repeatMode.next())
+        container.localPlayback.setRepeat(mutableState.value.playback.repeatMode.next())
     }
 
     fun logout() {
-        viewModelScope.coroutineContext.cancelChildren()
-        container.previewPlayer.stop()
-        container.sessionStore.clearSession()
+        contentRequestJob?.cancel()
+        browserAuthorizationJob?.cancel()
+        legacyLoginJob?.cancel()
+        playbackRequestJob?.cancel()
+        playbackSnapshotJob?.cancel()
+        container.sessionManager.clearSession()
+        detailHistory.clear()
         mutableState.value = PlayUiState()
+        viewModelScope.launch {
+            try { container.localPlayback.clear() }
+            catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, exception.message))
+            }
+        }
     }
 
     fun clearError() {
@@ -265,16 +316,21 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         val kind = section.kind ?: return
         contentRequestJob?.cancel()
         contentRequestJob = executeRequest {
-            mutableState.value = mutableState.value.copy(items = container.repository.library(kind))
+            val items = container.repository.library(kind)
+            mutableState.value = mutableState.value.copy(items = items)
         }
     }
 
-    private fun executePlaybackRequest(block: suspend () -> Unit) = executeRequest(showLoading = false, isPlayback = true) {
-        block()
-        mutableState.value = mutableState.value.copy(playback = container.repository.playback())
+    private fun executePlaybackRequest(block: suspend () -> Unit): Job {
+        playbackRequestJob?.cancel()
+        return executeRequest(showLoading = false) {
+            block()
+            val playback = container.localPlayback.snapshot()
+            mutableState.value = mutableState.value.copy(playback = playback)
+        }.also { playbackRequestJob = it }
     }
 
-    private fun executeRequest(showLoading: Boolean = true, isPlayback: Boolean = false, block: suspend () -> Unit): Job =
+    private fun executeRequest(showLoading: Boolean = true, block: suspend () -> Unit): Job =
         viewModelScope.launch {
             if (showLoading) mutableState.value = mutableState.value.copy(isLoading = true, error = null)
             try {
@@ -282,13 +338,16 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 if (showLoading) mutableState.value = mutableState.value.copy(isLoading = false)
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
+                if (exception is BrowserAuthorizationRequiredException) {
+                    beginBrowserLogin()
+                    return@launch
+                }
                 if (exception is LoginVerificationRequiredException) {
                     mutableState.value = mutableState.value.copy(
                         isLoading = false,
                         error = null,
                         loginPending = LoginPending(
                             username = exception.username,
-                            password = null,
                             deviceId = container.sessionStore.loadDeviceId(),
                             loginContext = exception.challenge.loginContext,
                             maskedTarget = exception.challenge.maskedTarget,
@@ -296,14 +355,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                     )
                     return@launch
                 }
-                val kind = if (isPlayback && exception is SpotifyApiException && exception.status == 404) {
-                    ErrorKind.NO_ACTIVE_DEVICE
-                } else {
-                    ErrorKind.REQUEST
-                }
                 mutableState.value = mutableState.value.copy(
                     isLoading = if (showLoading) false else mutableState.value.isLoading,
-                    error = UiError(kind, exception.message),
+                    error = UiError(ErrorKind.REQUEST, exception.message),
                 )
             }
         }

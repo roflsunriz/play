@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">अपना खाता जोड़ें</string>
-    <string name="setup_description">अपनी लाइब्रेरी देखने के लिए सेवा के उपयोगकर्ता नाम और पासवर्ड से लॉग इन करें।</string>
-    <string name="username">उपयोगकर्ता नाम</string>
-    <string name="password">पासवर्ड</string>
-    <string name="login">लॉग इन करें</string>
-    <string name="premium_required">प्लेबैक की उपलब्धता आपके खाते की शर्तों पर निर्भर है।</string>
     <string name="playlists">प्लेलिस्ट</string>
     <string name="albums">एल्बम</string>
     <string name="tracks">गाने</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">रिपीट बंद</string>
     <string name="repeat_context">प्लेलिस्ट रिपीट</string>
     <string name="repeat_track">एक गाना रिपीट</string>
-    <string name="no_active_device">सेवा के ऐप में प्लेबैक शुरू करें, फिर दोबारा कोशिश करें।</string>
     <string name="settings">सेटिंग</string>
     <string name="supplied_by_spotify">सेवा की सामग्री</string>
     <string name="open_on_spotify">सेवा के ऐप में खोलें</string>
-    <string name="preview">पूर्वावलोकन चलाएँ</string>
     <string name="login_failed">लॉग इन विफल रहा।</string>
     <string name="request_failed">अनुरोध विफल रहा।</string>
     <string name="error_title">कुछ गलत हुआ</string>
     <string name="dismiss">बंद करें</string>
-    <string name="artwork_cache_note">चित्रों के कैश की सीमा 128 MiB है।</string>
-    <string name="credentials_required">अपना उपयोगकर्ता नाम और पासवर्ड दर्ज करें।</string>
     <string name="verification_code">सत्यापन कोड</string>
     <string name="verify">सत्यापित करें</string>
     <string name="cancel">रद्द करें</string>
@@ -42,4 +33,17 @@
     <string name="code_challenge_description_generic">अपने ईमेल पर भेजा गया कोड दर्ज करें</string>
     <string name="verification_code_failed">सत्यापन कोड स्वीकार नहीं हुआ। नया कोड दर्ज करें।</string>
     <string name="untitled_playlist">बिना शीर्षक की प्लेलिस्ट</string>
+    <string name="browser_login">ब्राउज़र से साइन इन करें</string>
+    <string name="browser_login_description">अपनी लाइब्रेरी और संगीत का विवरण लोड करने के लिए ब्राउज़र में अपना खाता जोड़ें।</string>
+    <string name="browser_login_waiting">ब्राउज़र में साइन इन पूरा करें। कोड माँगे जाने पर यह कोड डालें। Play अपने आप आगे बढ़ेगा।</string>
+    <string name="browser_login_open">साइन इन पेज खोलें</string>
+    <string name="browser_reconnect">खाता फिर से जोड़ें</string>
+    <string name="back">वापस</string>
+    <string name="track_unavailable">यह गाना उपलब्ध नहीं है।</string>
+    <string name="open_album">एल्बम खोलें: %1$s</string>
+    <string name="detail_not_loaded">विवरण लोड नहीं हो सके। रीफ़्रेश करके फिर कोशिश करें।</string>
+    <plurals name="track_count">
+        <item quantity="one">%1$d गाना</item>
+        <item quantity="other">%1$d गाने</item>
+    </plurals>
 </resources>

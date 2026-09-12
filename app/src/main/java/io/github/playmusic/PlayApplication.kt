@@ -10,6 +10,7 @@ import coil3.request.crossfade
 import okio.Path.Companion.toPath
 
 class PlayApplication : Application(), SingletonImageLoader.Factory {
+    val container: AppContainer by lazy { AppContainer(this) }
     override fun newImageLoader(context: Context): ImageLoader = ImageLoader.Builder(context)
         .crossfade(true)
         .memoryCache {

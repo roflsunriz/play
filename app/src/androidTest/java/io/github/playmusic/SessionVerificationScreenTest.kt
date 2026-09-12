@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.lifecycle.ViewModelStore
 import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
@@ -23,6 +24,7 @@ import io.github.playmusic.ui.PlayRoute
 import io.github.playmusic.ui.PlayViewModel
 import io.github.playmusic.ui.ErrorKind
 import io.github.playmusic.ui.theme.PlayTheme
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -44,6 +46,8 @@ class SessionVerificationScreenTest {
     private val base = InstrumentationRegistry.getInstrumentation().targetContext
     private val name = "verification_test_${java.util.UUID.randomUUID()}"
     private val cache = File(base.cacheDir, name)
+    private val modelStore = ViewModelStore()
+    private var container: AppContainer? = null
     private val context = object : ContextWrapper(base) {
         override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences =
             base.getSharedPreferences(name, Context.MODE_PRIVATE)
@@ -52,6 +56,8 @@ class SessionVerificationScreenTest {
 
     @After
     fun cleanup() {
+        modelStore.clear()
+        runBlocking { container?.localPlayback?.release() }
         base.deleteSharedPreferences(name)
         check(cache.canonicalPath.startsWith(base.cacheDir.canonicalPath + File.separator))
         cache.deleteRecursively()
@@ -134,7 +140,10 @@ class SessionVerificationScreenTest {
                 fieldBytes(3, fieldString(1, "spotify:playlist:saved")) +
                 fieldBytes(4, fieldBytes(2, fieldString(1, "Recovered playlist")) + fieldVarint(9, 400)))
         } }
-        return PlayViewModel(app) to count
+        container = app
+        val model = PlayViewModel(app)
+        modelStore.put("verification", model)
+        return model to count
     }
 
     private fun readFields(bytes: ByteArray): Map<Int, ByteArray> {

@@ -70,21 +70,22 @@ class SpotifyRepositoryTest {
                 }
             } else {
                 assertTrue(request.sentBody.toString(Charsets.UTF_8).contains("spotify:track:second"))
-                Reply(bytes = LibraryFixtures.entity("spotify:track:second", "Second track"))
+                Reply(bytes = """{"data":{"tracks":[{"uri":"spotify:track:second","name":"Second track"}]}}""".toByteArray())
             }
         }
         val items = backend.repository.library(ContentKind.TRACK)
         assertEquals(listOf("Second track"), items.map { it.title })
         assertEquals(2, backend.requests.count { it.url.path == "/collection/v2/paging" })
-        assertEquals(1, backend.requests.count { it.url.path == "/extended-metadata/v0/extended-metadata" })
+        assertEquals(1, backend.requests.count { it.url.path == "/pathfinder/v2/query" })
     }
 
     @Test
-    fun albumMetadataUsesTheLibraryUriWhenMetadataHasNoCanonicalUri() = runTest {
+    fun albumMetadataComesFromTheObservedCatalogContract() = runTest {
         val backend = Backend { request ->
             Reply(bytes = if (request.url.path == "/collection/v2/paging") {
                 LibraryFixtures.collection(listOf("spotify:album:first"))
-            } else LibraryFixtures.entity("spotify:album:first", "Album"))
+            } else """{"data":{"albumUnion":{"uri":"spotify:album:first","name":"Album",
+                "artists":{"items":[{"profile":{"name":"Artist"}}]}}}}""".toByteArray())
         }
         val item = backend.repository.library(ContentKind.ALBUM).single()
         assertEquals("spotify:album:first", item.uri)
@@ -111,7 +112,7 @@ class SpotifyRepositoryTest {
                 if (request.url.path == "/collection/v2/paging") {
                     Reply(bytes = LibraryFixtures.collection(listOf("spotify:track:first")))
                 } else if (cancel) throw CancellationException("cancelled")
-                else Reply(bytes = LibraryFixtures.entity("spotify:track:first", status = 503))
+                else Reply(bytes = """{"errors":[{"message":"Metadata unavailable"}]}""".toByteArray())
             }
             val error = runCatching { backend.repository.library(ContentKind.TRACK) }.exceptionOrNull()
             assertTrue(if (cancel) error is CancellationException else error is SpotifyApiException)
@@ -132,7 +133,8 @@ class SpotifyRepositoryTest {
         val backend = Backend { if (attempt++ == 0) Reply(status = 401) else Reply() }
         backend.api.postProto("/collection/v2/paging", byteArrayOf(8, 42))
         assertEquals(1, backend.tokens.accessRefreshes)
-        assertEquals(1, backend.tokens.clientRefreshes)
+        assertEquals(0, backend.tokens.clientRefreshes)
+        assertEquals("Win32_x86_64", backend.requests.last().getRequestProperty("App-Platform"))
         assertTrue(backend.requests.all { it.sentBody.contentEquals(byteArrayOf(8, 42)) })
         assertEquals("Bearer refreshed-access", backend.requests.last().getRequestProperty("Authorization"))
     }
@@ -151,16 +153,15 @@ class SpotifyRepositoryTest {
             if (forceRefresh) clientRefreshes++
             return "synthetic-client-token"
         }
+        override suspend fun usesBrowserAuthorization() = true
     }
 
     private class Backend(reply: (Connection) -> Reply) {
         val requests = java.util.Collections.synchronizedList(mutableListOf<Connection>())
         val tokens = Tokens()
-        val api = SpotifyApiClient(tokens) { uri -> Connection(uri) { request ->
-            if (uri.path == "/user-customization-service/v1/customize") Reply(bytes = LibraryFixtures.accountContext())
-            else reply(request)
-        }.also { requests += it } }
-        val repository = SpotifyRepository(api, tokens) { "synthetic-device" }
+        private val connection: (URI) -> HttpURLConnection = { uri -> Connection(uri, reply).also { requests += it } }
+        val api = SpotifyApiClient(tokens, connection)
+        val repository = SpotifyRepository(api, tokens, CatalogApiClient(tokens, connection))
     }
 
     private class Connection(uri: URI, private val reply: (Connection) -> Reply) : HttpURLConnection(uri.toURL()) {

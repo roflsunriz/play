@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">اپنا اکاؤنٹ منسلک کریں</string>
-    <string name="setup_description">اپنی لائبریری دیکھنے کے لیے سروس کے صارف نام اور پاس ورڈ سے لاگ ان کریں۔</string>
-    <string name="username">صارف نام</string>
-    <string name="password">پاس ورڈ</string>
-    <string name="login">لاگ ان کریں</string>
-    <string name="premium_required">پلے بیک کی دستیابی آپ کے اکاؤنٹ کی شرائط پر منحصر ہے۔</string>
     <string name="playlists">پلے لسٹس</string>
     <string name="albums">البمز</string>
     <string name="tracks">گانے</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">ریپیٹ بند</string>
     <string name="repeat_context">پلے لسٹ ریپیٹ</string>
     <string name="repeat_track">ایک گانا ریپیٹ</string>
-    <string name="no_active_device">سروس کی ایپ میں پلے بیک شروع کریں اور دوبارہ کوشش کریں۔</string>
     <string name="settings">ترتیبات</string>
     <string name="supplied_by_spotify">سروس کا مواد</string>
     <string name="open_on_spotify">سروس کی ایپ میں کھولیں</string>
-    <string name="preview">پیش نظارہ چلائیں</string>
     <string name="login_failed">لاگ ان ناکام ہو گیا۔</string>
     <string name="request_failed">درخواست ناکام ہو گئی۔</string>
     <string name="error_title">کچھ غلط ہو گیا</string>
     <string name="dismiss">بند کریں</string>
-    <string name="artwork_cache_note">تصاویر کے کیشے کی حد 128 MiB ہے۔</string>
-    <string name="credentials_required">اپنا صارف نام اور پاس ورڈ درج کریں۔</string>
     <string name="verification_code">تصدیقی کوڈ</string>
     <string name="verify">تصدیق کریں</string>
     <string name="cancel">منسوخ</string>
@@ -42,4 +33,17 @@
     <string name="code_challenge_description_generic">اپنی ای میل پر بھیجا گیا کوڈ درج کریں</string>
     <string name="verification_code_failed">تصدیقی کوڈ قبول نہیں ہوا۔ تازہ ترین کوڈ درج کریں۔</string>
     <string name="untitled_playlist">بلا عنوان پلے لسٹ</string>
+    <string name="browser_login">براؤزر میں سائن ان کریں</string>
+    <string name="browser_login_description">اپنی لائبریری اور موسیقی کی تفصیلات لوڈ کرنے کے لیے براؤزر میں اپنا اکاؤنٹ جوڑیں۔</string>
+    <string name="browser_login_waiting">براؤزر میں سائن ان مکمل کریں۔ اگر کوڈ مانگا جائے تو یہ کوڈ درج کریں۔ Play خود بخود آگے بڑھے گا۔</string>
+    <string name="browser_login_open">سائن ان کا صفحہ کھولیں</string>
+    <string name="browser_reconnect">اکاؤنٹ دوبارہ جوڑیں</string>
+    <string name="back">واپس</string>
+    <string name="track_unavailable">یہ گانا دستیاب نہیں ہے۔</string>
+    <string name="open_album">البم کھولیں: %1$s</string>
+    <string name="detail_not_loaded">تفصیلات لوڈ نہیں ہو سکیں۔ ریفریش کر کے دوبارہ کوشش کریں۔</string>
+    <plurals name="track_count">
+        <item quantity="one">%1$d گانا</item>
+        <item quantity="other">%1$d گانے</item>
+    </plurals>
 </resources>

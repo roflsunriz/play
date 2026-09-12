@@ -1,0 +1,53 @@
+{
+  "data": {
+    "searchV2": {
+      "playlists": {
+        "items": [
+          {
+            "__typename": "PlaylistResponseWrapper",
+            "data": {
+              "__typename": "Playlist",
+              "images": {
+                "items": [
+                  {
+                    "sources": [
+                      {
+                        "height": null,
+                        "url": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da849b024663f1535fda5b3c72bb",
+                        "width": null
+                      }
+                    ]
+                  }
+                ]
+              },
+              "name": "Nirvana: Best Of The Best",
+              "uri": "spotify:playlist:2OlPfYcRHVs1TFBoTwDODy"
+            }
+          },
+          {
+            "__typename": "PlaylistResponseWrapper",
+            "data": {
+              "__typename": "Playlist",
+              "images": {
+                "items": [
+                  {
+                    "sources": [
+                      {
+                        "height": null,
+                        "url": "https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/thisisv3/6olE6TJLqED3rqDCT0FyPh/ja",
+                        "width": null
+                      }
+                    ]
+                  }
+                ]
+              },
+              "name": "This Is ニルヴァーナ",
+              "uri": "spotify:playlist:37i9dQZF1DZ06evO3M0Fbi"
+            }
+          }
+        ],
+        "totalCount": 203
+      }
+    }
+  }
+}

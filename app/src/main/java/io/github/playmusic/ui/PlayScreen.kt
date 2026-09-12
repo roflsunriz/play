@@ -1,6 +1,7 @@
 package io.github.playmusic.ui
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
@@ -60,9 +62,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -79,7 +79,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -89,7 +88,6 @@ import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.model.SpotifyContent
-import kotlinx.coroutines.delay
 
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
@@ -102,7 +100,15 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onSubmit = viewModel::submitCode,
             onCancel = viewModel::cancelLogin,
         )
-    } else if (state.isLoggedIn) {
+    } else if (!state.isLoggedIn || state.isAuthorizing) {
+        BrowserLoginScreen(
+            pending = state.browserAuthorization,
+            isAuthorizing = state.isAuthorizing,
+            onBegin = viewModel::beginBrowserLogin,
+            onCancel = viewModel::cancelBrowserLogin,
+            onFailure = viewModel::reportLoginFailure,
+        )
+    } else {
         HomeScreen(
             state = state,
             onSectionSelected = viewModel::selectSection,
@@ -117,73 +123,13 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onSeek = viewModel::seek,
             onShuffle = viewModel::toggleShuffle,
             onRepeat = viewModel::cycleRepeat,
-            onPreview = viewModel::preview,
-        )
-    } else {
-        SetupScreen(
-            initialUsername = state.username,
-            isLoading = state.isLoading,
-            onLogin = viewModel::beginLogin,
+            onBrowserLogin = viewModel::beginBrowserLogin,
+            onOpenContent = viewModel::openDetail,
+            onBack = viewModel::closeDetail,
+            onPlayDetailTrack = viewModel::playDetailTrack,
         )
     }
     state.error?.let { ErrorDialog(it, viewModel::clearError) }
-}
-
-@Composable
-private fun SetupScreen(
-    initialUsername: String,
-    isLoading: Boolean,
-    onLogin: (String, String) -> Unit,
-) {
-    var username by remember(initialUsername) { mutableStateOf(initialUsername) }
-    var password by remember { mutableStateOf("") }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 48.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(12.dp))
-        Text(stringResource(R.string.setup_description), style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(24.dp))
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text(stringResource(R.string.username)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag("username-input"),
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(stringResource(R.string.password)) },
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag("password-input"),
-        )
-        Spacer(Modifier.height(12.dp))
-        Button(
-            onClick = { onLogin(username, password) },
-            enabled = username.isNotBlank() && password.isNotBlank() && !isLoading,
-            modifier = Modifier.fillMaxWidth().testTag("login-button"),
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
-                Text(stringResource(R.string.login))
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text(stringResource(R.string.premium_required), style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.artwork_cache_note), style = MaterialTheme.typography.bodySmall)
-    }
 }
 
 @Composable
@@ -261,13 +207,22 @@ internal fun HomeScreen(
     onSeek: (Long) -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
-    onPreview: (SpotifyContent) -> Unit,
+    onBrowserLogin: () -> Unit = {},
+    onOpenContent: (SpotifyContent) -> Unit = onPlay,
+    onBack: () -> Unit = {},
+    onPlayDetailTrack: (Int) -> Unit = { index -> state.detail?.tracks?.getOrNull(index)?.let(onPlay) },
 ) {
+    BackHandler(enabled = state.selectedContent != null, onBack = onBack)
     var menuExpanded by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (state.selectedContent != null) IconButton(onClick = onBack, modifier = Modifier.testTag("detail-back-button")) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
+                },
                 actions = {
                     IconButton(onClick = onRefresh, modifier = Modifier.testTag("refresh-button")) {
                         Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
@@ -276,6 +231,11 @@ internal fun HomeScreen(
                         Icon(Icons.Default.MoreVert, stringResource(R.string.settings))
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            modifier = Modifier.testTag("browser-reconnect-button"),
+                            text = { Text(stringResource(R.string.browser_reconnect)) },
+                            onClick = { menuExpanded = false; onBrowserLogin() },
+                        )
                         DropdownMenuItem(
                             modifier = Modifier.testTag("logout-button"),
                             text = { Text(stringResource(R.string.logout)) },
@@ -307,17 +267,19 @@ internal fun HomeScreen(
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            if (state.selectedSection == LibrarySection.SEARCH) {
+            if (state.selectedContent != null) {
+                ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent, onRefresh, onPlayDetailTrack)
+            } else if (state.selectedSection == LibrarySection.SEARCH) {
                 SearchContent(
                     query = state.searchQuery,
                     items = state.items,
                     onQueryChanged = onSearchChanged,
                     onSearch = onSearch,
                     onPlay = onPlay,
-                    onPreview = onPreview,
+                    onOpen = onOpenContent,
                 )
             } else {
-                ContentList(state.items, onPlay, onPreview)
+                ContentList(state.items, onPlay, onOpenContent)
             }
             if (state.isLoading) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center).testTag("loading-indicator"))
@@ -354,7 +316,7 @@ private fun SearchContent(
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
     onPlay: (SpotifyContent) -> Unit,
-    onPreview: (SpotifyContent) -> Unit,
+    onOpen: (SpotifyContent) -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -376,7 +338,7 @@ private fun SearchContent(
                 Icon(Icons.Default.Search, stringResource(R.string.search_action))
             }
         }
-        ContentList(items, onPlay, onPreview)
+        ContentList(items, onPlay, onOpen)
     }
 }
 
@@ -384,7 +346,7 @@ private fun SearchContent(
 private fun ContentList(
     items: List<SpotifyContent>,
     onPlay: (SpotifyContent) -> Unit,
-    onPreview: (SpotifyContent) -> Unit,
+    onOpen: (SpotifyContent) -> Unit,
 ) {
     if (items.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -397,7 +359,7 @@ private fun ContentList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(items, key = { "${it.kind}-${it.id}" }) { item ->
-            ContentCard(item, onPlay, onPreview)
+            ContentCard(item, onPlay, onOpen)
         }
     }
 }
@@ -406,14 +368,14 @@ private fun ContentList(
 private fun ContentCard(
     item: SpotifyContent,
     onPlay: (SpotifyContent) -> Unit,
-    onPreview: (SpotifyContent) -> Unit,
+    onOpen: (SpotifyContent) -> Unit,
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     Card(
         onClick = {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            onPlay(item)
+            onOpen(item)
         },
         modifier = Modifier.fillMaxWidth().testTag("content-${item.kind.name.lowercase()}-${item.id}"),
     ) {
@@ -444,16 +406,12 @@ private fun ContentCard(
                 Text(item.subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.supplied_by_spotify), style = MaterialTheme.typography.labelSmall)
             }
-            if (item.kind == ContentKind.TRACK && item.previewUrl != null) {
-                IconButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onPreview(item)
-                    },
-                    modifier = Modifier.testTag("preview-${item.id}"),
-                ) {
-                    Icon(Icons.Default.MusicNote, stringResource(R.string.preview))
-                }
+            IconButton(onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onPlay(item)
+            }, enabled = item.isPlayable != false,
+                modifier = Modifier.testTag("play-${item.kind.name.lowercase()}-${item.id}")) {
+                Icon(Icons.Default.PlayArrow, stringResource(R.string.play))
             }
             IconButton(
                 onClick = {
@@ -482,26 +440,17 @@ private fun PlaybackBar(
     val horizontalControls = with(LocalDensity.current) {
         windowSize.width.toDp() >= 600.dp && windowSize.height.toDp() < 480.dp
     }
-    var progress by remember(playback.progressMs) { mutableFloatStateOf(playback.progressMs.toFloat()) }
-    var isDragging by remember { mutableStateOf(false) }
-    LaunchedEffect(playback.isPlaying, playback.progressMs, playback.durationMs, isDragging) {
-        if (!playback.isPlaying || isDragging) return@LaunchedEffect
-        while (progress < playback.durationMs) {
-            delay(1_000)
-            progress = (progress + 1_000).coerceAtMost(playback.durationMs.toFloat())
-        }
-    }
+    var scrubPosition by remember(playback.item?.uri) { mutableStateOf<Float?>(null) }
     val seekControl: @Composable (Modifier) -> Unit = { modifier ->
         Slider(
-            value = progress.coerceIn(0f, playback.durationMs.coerceAtLeast(1).toFloat()),
+            value = (scrubPosition ?: playback.progressMs.toFloat()).coerceIn(0f, playback.durationMs.coerceAtLeast(1).toFloat()),
             onValueChange = {
-                isDragging = true
-                progress = it
+                scrubPosition = it
             },
             onValueChangeFinished = {
-                isDragging = false
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onSeek(progress.toLong())
+                scrubPosition?.let { onSeek(it.toLong()) }
+                scrubPosition = null
             },
             valueRange = 0f..playback.durationMs.coerceAtLeast(1).toFloat(),
             enabled = playback.durationMs > 0,
@@ -562,8 +511,8 @@ private fun PlaybackBar(
                 onPlayPause()
             }, modifier = Modifier.testTag("play-pause-button")) {
                 Icon(
-                    if (playback.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    stringResource(if (playback.isPlaying) R.string.pause else R.string.play),
+                    if (playback.playWhenReady) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    stringResource(if (playback.playWhenReady) R.string.pause else R.string.play),
                 )
             }
             IconButton(onClick = {
@@ -590,8 +539,6 @@ private fun PlaybackBar(
 @Composable
 private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
     val message = when (error.kind) {
-        ErrorKind.CREDENTIALS_REQUIRED -> stringResource(R.string.credentials_required)
-        ErrorKind.NO_ACTIVE_DEVICE -> stringResource(R.string.no_active_device)
         ErrorKind.LOGIN -> stringResource(R.string.login_failed)
         ErrorKind.VERIFICATION_CODE -> stringResource(R.string.verification_code_failed)
         ErrorKind.REQUEST -> stringResource(R.string.request_failed)

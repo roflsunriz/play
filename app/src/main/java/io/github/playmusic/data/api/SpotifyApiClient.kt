@@ -3,6 +3,7 @@ package io.github.playmusic.data.api
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.playmusic.data.auth.AppConstants
+import io.github.playmusic.data.auth.DesktopClientProfile
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URI
@@ -67,10 +68,10 @@ class SpotifyApiClient(
         featureId: String? = null,
     ): Response {
         var token = sessionManager.accessToken()
-        var clientToken = sessionManager.clientToken()
+        var clientToken = if (sessionManager.usesBrowserAuthorization()) null else sessionManager.clientToken()
         var response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId)
         if (response.status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-            clientToken = sessionManager.clientToken(forceRefresh = true)
+            if (clientToken != null) clientToken = sessionManager.clientToken(forceRefresh = true)
             token = sessionManager.accessToken(forceRefresh = true)
             response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId)
         }
@@ -90,7 +91,7 @@ class SpotifyApiClient(
         protoBody: ByteArray?,
         contentType: String,
         token: String,
-        clientToken: String,
+        clientToken: String?,
         acceptProto: Boolean,
         stringBody: String?,
         featureId: String?,
@@ -103,10 +104,13 @@ class SpotifyApiClient(
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
             connection.setRequestProperty("Authorization", "Bearer $token")
-            connection.setRequestProperty("Client-Token", clientToken)
-            connection.setRequestProperty("User-Agent", AppConstants.SPOTIFY_USER_AGENT)
-            connection.setRequestProperty("Spotify-App-Version", AppConstants.CLIENT_VERSION)
-            connection.setRequestProperty("App-Platform", "Android")
+            if (clientToken == null) DesktopClientProfile.headers.forEach(connection::setRequestProperty)
+            else {
+                connection.setRequestProperty("Client-Token", clientToken)
+                connection.setRequestProperty("User-Agent", AppConstants.SPOTIFY_USER_AGENT)
+                connection.setRequestProperty("Spotify-App-Version", AppConstants.CLIENT_VERSION)
+                connection.setRequestProperty("App-Platform", "Android")
+            }
             connection.setRequestProperty("Accept-Language", "ja-JP")
             connection.setRequestProperty("Time-Zone", java.util.TimeZone.getDefault().id)
             featureId?.let { connection.setRequestProperty("Client-Feature-Id", it) }

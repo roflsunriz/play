@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">Conecta tu cuenta</string>
-    <string name="setup_description">Inicia sesión con tus credenciales del servicio para ver tu biblioteca.</string>
-    <string name="username">Nombre de usuario</string>
-    <string name="password">Contraseña</string>
-    <string name="login">Iniciar sesión</string>
-    <string name="premium_required">La reproducción depende de las condiciones de tu cuenta.</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Álbumes</string>
     <string name="tracks">Canciones</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">Repetición desactivada</string>
     <string name="repeat_context">Repetir playlist</string>
     <string name="repeat_track">Repetir una canción</string>
-    <string name="no_active_device">Inicia la reproducción en la aplicación del servicio e inténtalo de nuevo.</string>
     <string name="settings">Ajustes</string>
     <string name="supplied_by_spotify">Contenido del servicio</string>
     <string name="open_on_spotify">Abrir en la aplicación del servicio</string>
-    <string name="preview">Reproducir vista previa</string>
     <string name="login_failed">No se pudo iniciar sesión.</string>
     <string name="request_failed">La solicitud falló.</string>
     <string name="error_title">Se produjo un error</string>
     <string name="dismiss">Cerrar</string>
-    <string name="artwork_cache_note">Las imágenes se guardan en caché hasta 128 MiB.</string>
-    <string name="credentials_required">Introduce tu nombre de usuario y contraseña.</string>
     <string name="verification_code">Código de verificación</string>
     <string name="verify">Verificar</string>
     <string name="cancel">Cancelar</string>
@@ -42,4 +33,18 @@
     <string name="code_challenge_description_generic">Introduce el código enviado a tu correo</string>
     <string name="verification_code_failed">El código de verificación no se aceptó. Introduce el código más reciente.</string>
     <string name="untitled_playlist">Playlist sin título</string>
+    <string name="browser_login">Iniciar sesión en el navegador</string>
+    <string name="browser_login_description">Conecta tu cuenta en el navegador para cargar tu biblioteca y los detalles de la música.</string>
+    <string name="browser_login_waiting">Completa el inicio de sesión en el navegador. Si se solicita, introduce este código. Play continuará automáticamente.</string>
+    <string name="browser_login_open">Abrir página de inicio de sesión</string>
+    <string name="browser_reconnect">Volver a conectar la cuenta</string>
+    <string name="back">Atrás</string>
+    <string name="track_unavailable">Esta canción no está disponible.</string>
+    <string name="open_album">Abrir álbum: %1$s</string>
+    <string name="detail_not_loaded">No se pudieron cargar los detalles. Prueba a actualizar.</string>
+    <plurals name="track_count">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="many">%1$d canciones</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
 </resources>

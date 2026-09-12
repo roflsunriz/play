@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">اربط حسابك</string>
-    <string name="setup_description">سجّل الدخول باسم المستخدم وكلمة المرور للخدمة لعرض مكتبتك.</string>
-    <string name="username">اسم المستخدم</string>
-    <string name="password">كلمة المرور</string>
-    <string name="login">تسجيل الدخول</string>
-    <string name="premium_required">يعتمد توفر التشغيل على شروط حسابك.</string>
     <string name="playlists">قوائم التشغيل</string>
     <string name="albums">الألبومات</string>
     <string name="tracks">الأغاني</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">إيقاف التكرار</string>
     <string name="repeat_context">تكرار قائمة التشغيل</string>
     <string name="repeat_track">تكرار أغنية واحدة</string>
-    <string name="no_active_device">ابدأ التشغيل في تطبيق الخدمة، ثم حاول مرة أخرى.</string>
     <string name="settings">الإعدادات</string>
     <string name="supplied_by_spotify">محتوى الخدمة</string>
     <string name="open_on_spotify">فتح في تطبيق الخدمة</string>
-    <string name="preview">تشغيل المعاينة</string>
     <string name="login_failed">تعذر تسجيل الدخول.</string>
     <string name="request_failed">فشل الطلب.</string>
     <string name="error_title">حدث خطأ</string>
     <string name="dismiss">إغلاق</string>
-    <string name="artwork_cache_note">تُخزّن الصور مؤقتًا بحد أقصى 128 MiB.</string>
-    <string name="credentials_required">أدخل اسم المستخدم وكلمة المرور.</string>
     <string name="verification_code">رمز التحقق</string>
     <string name="verify">تحقق</string>
     <string name="cancel">إلغاء</string>
@@ -42,4 +33,21 @@
     <string name="code_challenge_description_generic">أدخل الرمز المرسل إلى بريدك الإلكتروني</string>
     <string name="verification_code_failed">لم يُقبل رمز التحقق. أدخل أحدث رمز.</string>
     <string name="untitled_playlist">قائمة تشغيل بلا عنوان</string>
+    <string name="browser_login">تسجيل الدخول عبر المتصفح</string>
+    <string name="browser_login_description">اربط حسابك في المتصفح لتحميل مكتبتك وتفاصيل الموسيقى.</string>
+    <string name="browser_login_waiting">أكمل تسجيل الدخول في المتصفح. أدخل هذا الرمز إذا طُلب منك ذلك. سيتابع Play تلقائيًا.</string>
+    <string name="browser_login_open">فتح صفحة تسجيل الدخول</string>
+    <string name="browser_reconnect">إعادة ربط الحساب</string>
+    <string name="back">رجوع</string>
+    <string name="track_unavailable">هذه الأغنية غير متاحة.</string>
+    <string name="open_album">فتح الألبوم: %1$s</string>
+    <string name="detail_not_loaded">تعذر تحميل التفاصيل. حاول التحديث.</string>
+    <plurals name="track_count">
+        <item quantity="zero">%1$d أغنية</item>
+        <item quantity="one">%1$d أغنية</item>
+        <item quantity="two">%1$d أغنيتان</item>
+        <item quantity="few">%1$d أغانٍ</item>
+        <item quantity="many">%1$d أغنية</item>
+        <item quantity="other">%1$d أغنية</item>
+    </plurals>
 </resources>

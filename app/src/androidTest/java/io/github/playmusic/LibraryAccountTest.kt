@@ -18,8 +18,9 @@ class LibraryAccountTest {
         assertTrue("Refresh must return a token", app.sessionManager.accessToken(forceRefresh = true).isNotBlank())
         val saved = checkNotNull(SecureSessionStore(context).loadSession())
         assertTrue("Refreshed session must be persisted", !saved.expiresSoon())
-        assertTrue("Stored credential must be retained", saved.storedCredential?.isNotEmpty() == true)
-        Log.i(TAG, "verified stored-credential refresh and saved session")
+        assertTrue("Refresh credentials must be retained",
+            !saved.refreshToken.isNullOrBlank() || saved.storedCredential?.isNotEmpty() == true)
+        Log.i(TAG, "verified authentication refresh and saved session")
     }
 
     @Test
@@ -48,6 +49,7 @@ class LibraryAccountTest {
         val items = app.repository.search("Nirvana")
         assertTrue("Search must return content", items.isNotEmpty())
         assertTrue("Search must return titled content", items.all { it.title.isNotBlank() })
+        assertTrue("Search must include albums and tracks", items.map { it.kind }.containsAll(listOf(ContentKind.ALBUM, ContentKind.TRACK)))
         Log.i(TAG, "verified search count=${items.size}")
     }
 
@@ -68,7 +70,7 @@ class LibraryAccountTest {
         @JvmStatic
         fun requireSignedInTestAccount() {
             assumeTrue(InstrumentationRegistry.getArguments().getString("liveAccount") == "true")
-            app = AppContainer(context)
+            app = (context.applicationContext as PlayApplication).container
             check(app.sessionStore.loadSession() != null) { "Sign in on the target device first" }
         }
     }

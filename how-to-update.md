@@ -4,13 +4,13 @@
 
 - `COMMON-AGENTS.md`と`AGENTS.md`を全文確認し、`git status --short --branch`で既存差分を確認する。
 - JDK 17以上と、ビルド設定が指定するAndroid SDKを用意する。バージョンの正本は`app/build.gradle.kts`と`gradle/libs.versions.toml`。
-- 認証とライブラリはネイティブAPIを使う。[通信の根拠と記録](docs/api-contracts.md)を先に確認する。
+- 新規認証はブラウザーでのデバイス認証、保存一覧はネイティブAPI、作品の詳細と検索はカタログAPIを使う。[通信の根拠と記録](docs/api-contracts.md)を先に確認する。
 
 ## 修正と検証
 
 1. 依存関係を更新する場合は、公式リリースの変更点・修正版・互換条件を確認する。
 2. APIを変更する場合は、実応答または対象APKのprotobuf定義と照合する。未知のフィールド番号や国・契約種別を固定値として推測で埋め込まない。
-3. 新しい解析用APKはGit管理外の`service-apks/`へ置く。AAPT2でパッケージ・バージョン・SDKを確認し、JADXで認証、ライブラリ、プレイヤーの変更を調べる。
+3. 参照クライアントのバージョン・インストール条件・認証方式を記録してから通信を照合する。2026-09-12夜以降の調査はWindows版を優先しており、Android参照版の改変調査は中断している。解析用APKはGit管理外の`service-apks/`へ置く。
 4. 通信原本はGit管理外の`captures/`に置く。検索の検証データは`tools/import-search-capture.py`で抽出し、個人情報を確認してからテストへ追加する。
 5. 修正箇所のテストを実行し、その後で次を実行する。
 
@@ -29,7 +29,11 @@ WindowsでSDK・コンパイラの共有キャッシュにAccessDeniedException�
 
 2つ目のコマンドは生成済みメタデータから実際のAAPT2バージョンを読み、Windows・Linux・macOS用の検証値をGradleに生成させる。未使用の旧依存を除く必要がある場合は元のメタデータを退避してから全体を再生成し、共通するアーティファクトのハッシュが変わっていないことを比較する。`gradle/verification-metadata.xml`を手編集しない。
 
-7. OSV-Scannerで依存関係を監査する。オフラインDBを使った場合は更新日時を記録する。既存の例外と緩和策は`gradle/osv-scanner.toml`および`SECURITY.md`を確認する。
+7. OSV-Scannerで依存関係を監査する。依存情報の外部送信を伴う照会が許可されない環境では、公開DBをダウンロードしてローカルで照合する。DBの更新日時も記録する。既存の例外と緩和策は`gradle/osv-scanner.toml`および`SECURITY.md`を確認する。
+
+```powershell
+osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gradle/osv-scanner.toml --offline-vulnerabilities --download-offline-databases
+```
 8. [検証手順](verification.md)に従い、画面操作、ログイン、ライブラリ、再起動後の認証保持を確認する。実アカウントの検証は対象端末を明示して実行する。
 9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
 
@@ -55,3 +59,5 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 ## 復旧
 
 不具合のある更新は対象コミットをrevertし、既存の認証情報を保ったまま以前のAPKへ戻す。暗号化セッションの形式を変更するときはスキーマ番号と移行・破損時の処理を同時に検証する。外部APIが変わった場合、失敗を空一覧へ置き換えて隠さず、利用者へ取得失敗を示す。
+
+セッション形式3は旧形式2を読み込んだ際に暗号化して移行する。形式3を未対応の古いAPKへ戻すと保存認証を読めないため、再ログインが必要になる。旧APKへの切り戻しで認証状態を保持できるとは扱わない。本人がブラウザー認証中の端末には再インストール・強制終了・instrumentationを実行せず、完了または期限切れを確認する。

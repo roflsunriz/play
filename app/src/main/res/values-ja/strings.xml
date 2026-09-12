@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">Play</string>
     <string name="setup_title">アカウントを接続</string>
-    <string name="setup_description">サービスのユーザー名とパスワードでログインし、ライブラリを表示します。</string>
-    <string name="username">ユーザー名</string>
-    <string name="password">パスワード</string>
-    <string name="login">ログイン</string>
-    <string name="premium_required">再生できる内容はアカウントの利用条件によって異なります。</string>
     <string name="playlists">プレイリスト</string>
     <string name="albums">アルバム</string>
     <string name="tracks">楽曲</string>
@@ -24,17 +19,13 @@
     <string name="repeat_off">リピートなし</string>
     <string name="repeat_context">プレイリストリピート</string>
     <string name="repeat_track">1曲リピート</string>
-    <string name="no_active_device">サービスのアプリで再生を開始してから、もう一度お試しください。</string>
     <string name="settings">設定</string>
     <string name="supplied_by_spotify">サービス提供コンテンツ</string>
     <string name="open_on_spotify">サービスのアプリで開く</string>
-    <string name="preview">プレビュー再生</string>
     <string name="login_failed">ログインに失敗しました。</string>
     <string name="request_failed">リクエストに失敗しました。</string>
     <string name="error_title">エラーが発生しました</string>
     <string name="dismiss">閉じる</string>
-    <string name="artwork_cache_note">アートワークは最大128 MiBまでキャッシュします。</string>
-    <string name="credentials_required">ユーザー名とパスワードを入力してください。</string>
     <string name="verification_code">確認コード</string>
     <string name="verify">確認</string>
     <string name="cancel">キャンセル</string>
@@ -42,4 +33,16 @@
     <string name="code_challenge_description_generic">メールに送信されたコードを入力してください</string>
     <string name="verification_code_failed">確認コードを受け付けられませんでした。最新のコードを入力してください。</string>
     <string name="untitled_playlist">無題のプレイリスト</string>
+    <string name="browser_login">ブラウザーでログイン</string>
+    <string name="browser_login_description">ブラウザーでアカウントを接続して、ライブラリや楽曲の詳細を読み込みます。</string>
+    <string name="browser_login_waiting">ブラウザーで認証を完了してください。コードを求められた場合は下のコードを入力します。完了すると自動でPlayに接続します。</string>
+    <string name="browser_login_open">認証ページを開く</string>
+    <string name="browser_reconnect">アカウントを再接続</string>
+    <string name="back">戻る</string>
+    <plurals name="track_count">
+        <item quantity="other">%1$d曲</item>
+    </plurals>
+    <string name="track_unavailable">この楽曲は再生できません。</string>
+    <string name="open_album">アルバムを開く：%1$s</string>
+    <string name="detail_not_loaded">詳細を読み込めませんでした。更新して再試行してください。</string>
 </resources>

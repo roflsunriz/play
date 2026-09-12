@@ -1,0 +1,99 @@
+{
+  "data": {
+    "searchV2": {
+      "albumsV2": {
+        "items": [
+          {
+            "__typename": "AlbumResponseWrapper",
+            "data": {
+              "__typename": "Album",
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "coverArt": {
+                "sources": [
+                  {
+                    "height": 300,
+                    "url": "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6",
+                    "width": 300
+                  },
+                  {
+                    "height": 64,
+                    "url": "https://i.scdn.co/image/ab67616d00004851fbc71c99f9c1296c56dd51b6",
+                    "width": 64
+                  },
+                  {
+                    "height": 640,
+                    "url": "https://i.scdn.co/image/ab67616d0000b273fbc71c99f9c1296c56dd51b6",
+                    "width": 640
+                  }
+                ]
+              },
+              "date": {
+                "year": 1991
+              },
+              "name": "Nevermind (Remastered)",
+              "playability": {
+                "playable": true,
+                "reason": "PLAYABLE"
+              },
+              "uri": "spotify:album:2UJcKiJxNryhL050F5Z1Fk"
+            }
+          },
+          {
+            "__typename": "AlbumResponseWrapper",
+            "data": {
+              "__typename": "Album",
+              "artists": {
+                "items": [
+                  {
+                    "profile": {
+                      "name": "ニルヴァーナ"
+                    },
+                    "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+                  }
+                ]
+              },
+              "coverArt": {
+                "sources": [
+                  {
+                    "height": 300,
+                    "url": "https://i.scdn.co/image/ab67616d00001e02c4f52ef8782f0e8ede4c1aaf",
+                    "width": 300
+                  },
+                  {
+                    "height": 64,
+                    "url": "https://i.scdn.co/image/ab67616d00004851c4f52ef8782f0e8ede4c1aaf",
+                    "width": 64
+                  },
+                  {
+                    "height": 640,
+                    "url": "https://i.scdn.co/image/ab67616d0000b273c4f52ef8782f0e8ede4c1aaf",
+                    "width": 640
+                  }
+                ]
+              },
+              "date": {
+                "year": 1993
+              },
+              "name": "In Utero",
+              "playability": {
+                "playable": true,
+                "reason": "PLAYABLE"
+              },
+              "uri": "spotify:album:7wOOA7l306K8HfBKfPoafr"
+            }
+          }
+        ],
+        "totalCount": 199
+      }
+    }
+  }
+}

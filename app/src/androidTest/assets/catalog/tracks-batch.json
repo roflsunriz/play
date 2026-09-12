@@ -1,0 +1,88 @@
+{
+  "data": {
+    "tracks": [
+      {
+        "__typename": "Track",
+        "albumOfTrack": {
+          "coverArt": {
+            "sources": [
+              {
+                "height": 300,
+                "url": "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6",
+                "width": 300
+              },
+              {
+                "height": 64,
+                "url": "https://i.scdn.co/image/ab67616d00004851fbc71c99f9c1296c56dd51b6",
+                "width": 64
+              },
+              {
+                "height": 640,
+                "url": "https://i.scdn.co/image/ab67616d0000b273fbc71c99f9c1296c56dd51b6",
+                "width": 640
+              }
+            ]
+          },
+          "name": "Nevermind (Remastered)",
+          "uri": "spotify:album:2UJcKiJxNryhL050F5Z1Fk"
+        },
+        "artists": {
+          "items": [
+            {
+              "profile": {
+                "name": "ニルヴァーナ"
+              },
+              "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+            }
+          ]
+        },
+        "duration": {
+          "totalMilliseconds": 301920
+        },
+        "name": "Smells Like Teen Spirit",
+        "uri": "spotify:track:4CeeEOM32jQcH3eN9Q2dGj"
+      },
+      {
+        "__typename": "Track",
+        "albumOfTrack": {
+          "coverArt": {
+            "sources": [
+              {
+                "height": 300,
+                "url": "https://i.scdn.co/image/ab67616d00001e02fbc71c99f9c1296c56dd51b6",
+                "width": 300
+              },
+              {
+                "height": 64,
+                "url": "https://i.scdn.co/image/ab67616d00004851fbc71c99f9c1296c56dd51b6",
+                "width": 64
+              },
+              {
+                "height": 640,
+                "url": "https://i.scdn.co/image/ab67616d0000b273fbc71c99f9c1296c56dd51b6",
+                "width": 640
+              }
+            ]
+          },
+          "name": "Nevermind (Remastered)",
+          "uri": "spotify:album:2UJcKiJxNryhL050F5Z1Fk"
+        },
+        "artists": {
+          "items": [
+            {
+              "profile": {
+                "name": "ニルヴァーナ"
+              },
+              "uri": "spotify:artist:6olE6TJLqED3rqDCT0FyPh"
+            }
+          ]
+        },
+        "duration": {
+          "totalMilliseconds": 255080
+        },
+        "name": "In Bloom",
+        "uri": "spotify:track:2mvffzYUJ9Ld9xhsF5DUjU"
+      }
+    ]
+  }
+}

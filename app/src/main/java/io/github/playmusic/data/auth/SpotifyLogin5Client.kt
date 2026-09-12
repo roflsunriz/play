@@ -96,6 +96,7 @@ class SpotifyLogin5Client(
 
     private suspend fun authenticate(loginRequest: LoginRequest, deviceId: String): LoginOutcome =
         withContext(Dispatchers.IO) {
+            // The device SDK token is platform-specific, independently of the Login5 audience.
             val clientToken = clientTokenClient.acquire(AppConstants.SPOTIFY_CLIENT_ID, deviceId).token
             var currentRequest = loginRequest
             repeat(MAX_LOGIN_TRIES) { attempt ->

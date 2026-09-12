@@ -1,7 +1,7 @@
 package io.github.playmusic
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -14,10 +14,10 @@ class SetupScreenTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun setupRequiresCredentialsBeforeLogin() {
-        composeRule.onNodeWithTag("username-input").assertIsDisplayed()
-        composeRule.onNodeWithTag("password-input").assertIsDisplayed()
-        composeRule.onNodeWithTag("login-button").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
+    fun setupStartsWithBrowserAuthorization() {
+        composeRule.onNodeWithTag("username-input").assertDoesNotExist()
+        composeRule.onNodeWithTag("password-input").assertDoesNotExist()
+        composeRule.onNodeWithTag("browser-login-button").performScrollTo().assertIsDisplayed().assertIsEnabled()
         captureScreen(composeRule.onRoot(), "setup")
     }
 }
