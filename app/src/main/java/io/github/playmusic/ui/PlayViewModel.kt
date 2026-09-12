@@ -7,6 +7,7 @@ import io.github.playmusic.AppContainer
 import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.auth.LoginVerificationRequiredException
 import io.github.playmusic.data.auth.SpotifyAuthException
+import io.github.playmusic.data.auth.BrowserAuthorizationClient
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.Playback
@@ -27,6 +28,7 @@ enum class LibrarySection(val kind: ContentKind?) {
 
 enum class ErrorKind {
     LOGIN,
+    LOGIN_REQUIRED,
     VERIFICATION_CODE,
     REQUEST,
 }
@@ -58,16 +60,20 @@ data class PlayUiState(
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
+    private val initialSession = runCatching { container.sessionStore.loadSession() }
     private val mutableState = MutableStateFlow(
         PlayUiState(
-            username = container.sessionStore.loadSession()?.username.orEmpty(),
-            isLoggedIn = container.sessionStore.loadSession() != null,
-            isBrowserAuthorized = container.sessionStore.loadSession()?.refreshToken != null,
+            username = initialSession.getOrNull()?.username.orEmpty(),
+            isLoggedIn = initialSession.getOrNull() != null,
+            isBrowserAuthorized = initialSession.getOrNull()?.refreshToken != null,
+            error = initialSession.exceptionOrNull()?.let { UiError(ErrorKind.REQUEST, it.message) },
         ),
     )
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
     private var contentRequestJob: Job? = null
     private var browserAuthorizationJob: Job? = null
+    private var pendingAuthorization: BrowserAuthorizationClient.Pending? = null
+    private var authorizationGeneration = 0L
     private var legacyLoginJob: Job? = null
     private var playbackRequestJob: Job? = null
     private var playbackSnapshotJob: Job? = null
@@ -81,20 +87,27 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         if (mutableState.value.isLoggedIn) refreshAll()
     }
 
-    fun beginBrowserLogin() {
+    fun beginBrowserLogin(completedMessage: String) {
         if (mutableState.value.isAuthorizing) return
+        val generation = ++authorizationGeneration
         contentRequestJob?.cancel()
         legacyLoginJob?.cancel()
         playbackRequestJob?.cancel()
         mutableState.value = mutableState.value.copy(isAuthorizing = true, isLoading = false,
             browserAuthorization = null, loginPending = null, error = null)
         browserAuthorizationJob = viewModelScope.launch {
+            var ownedAuthorization: BrowserAuthorizationClient.Pending? = null
             try {
-                val authorization = container.deviceAuthorizationClient.begin()
+                container.startLoginWaiting()
+                val authorization = container.browserAuthorizationClient.begin()
+                ownedAuthorization = authorization
+                pendingAuthorization = authorization
                 mutableState.value = mutableState.value.copy(browserAuthorization =
-                    BrowserAuthorizationUi(authorization.userCode, authorization.verificationUri))
-                val tokens = container.deviceAuthorizationClient.awaitAuthorization(authorization)
+                    BrowserAuthorizationUi(authorization.authorizationUrl))
+                val tokens = container.browserAuthorizationClient.awaitAuthorization(authorization, completedMessage, container::returnToApp)
                 val username = container.accessPointIdentity.username(tokens.accessToken, container.sessionStore.loadDeviceId())
+                val previousUsername = mutableState.value.username
+                check(previousUsername.isBlank() || previousUsername == username) { "Login returned a different account" }
                 if (mutableState.value.username != username) container.localPlayback.clear()
                 container.sessionManager.replaceSession(io.github.playmusic.data.model.AuthSession(
                     username = username,
@@ -109,12 +122,22 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 if (exception is CancellationException) throw exception
                 mutableState.value = mutableState.value.copy(isAuthorizing = false, browserAuthorization = null,
                     error = UiError(ErrorKind.LOGIN, exception.message))
+            } finally {
+                ownedAuthorization?.close()
+                if (authorizationGeneration == generation) {
+                    if (pendingAuthorization === ownedAuthorization) pendingAuthorization = null
+                    container.stopLoginWaiting()
+                }
             }
         }
     }
 
     fun cancelBrowserLogin() {
+        authorizationGeneration++
         browserAuthorizationJob?.cancel()
+        pendingAuthorization?.close()
+        pendingAuthorization = null
+        container.stopLoginWaiting()
         mutableState.value = mutableState.value.copy(isAuthorizing = false, browserAuthorization = null, error = null)
     }
 
@@ -243,7 +266,10 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun play(content: SpotifyContent) {
-        if (!mutableState.value.isBrowserAuthorized) { beginBrowserLogin(); return }
+        if (!mutableState.value.isBrowserAuthorized) {
+            mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.LOGIN_REQUIRED))
+            return
+        }
         executePlaybackRequest {
             val detail = mutableState.value.detail
             val tracks = when (content.kind) {
@@ -287,14 +313,20 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun logout() {
+        authorizationGeneration++
         contentRequestJob?.cancel()
         browserAuthorizationJob?.cancel()
+        pendingAuthorization?.close()
+        pendingAuthorization = null
+        container.stopLoginWaiting()
         legacyLoginJob?.cancel()
         playbackRequestJob?.cancel()
         playbackSnapshotJob?.cancel()
-        container.sessionManager.clearSession()
+        val clearFailure = runCatching { container.sessionManager.clearSession() }.exceptionOrNull()
         detailHistory.clear()
-        mutableState.value = PlayUiState()
+        mutableState.value = if (clearFailure == null) PlayUiState()
+            else mutableState.value.copy(isAuthorizing = false, browserAuthorization = null, loginPending = null,
+                isLoading = false, error = UiError(ErrorKind.REQUEST, clearFailure.message))
         viewModelScope.launch {
             try { container.localPlayback.clear() }
             catch (exception: Exception) {
@@ -309,6 +341,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun reportLoginFailure(message: String?) {
+        cancelBrowserLogin()
         mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.LOGIN, message))
     }
 
@@ -339,7 +372,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 if (exception is BrowserAuthorizationRequiredException) {
-                    beginBrowserLogin()
+                    mutableState.value = mutableState.value.copy(isLoading = false, error = UiError(ErrorKind.LOGIN_REQUIRED))
                     return@launch
                 }
                 if (exception is LoginVerificationRequiredException) {
@@ -361,6 +394,17 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 )
             }
         }
+
+    override fun onCleared() {
+        authorizationGeneration++
+        pendingAuthorization?.close()
+        container.stopLoginWaiting()
+    }
+
+    fun markBrowserOpened() {
+        val pending = mutableState.value.browserAuthorization ?: return
+        mutableState.value = mutableState.value.copy(browserAuthorization = pending.copy(browserOpened = true))
+    }
 
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

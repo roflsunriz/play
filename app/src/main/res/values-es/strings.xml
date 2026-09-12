@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">Conecta tu cuenta</string>
+    <string name="setup_title">Iniciar sesión</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Álbumes</string>
     <string name="tracks">Canciones</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">Introduce el código enviado a tu correo</string>
     <string name="verification_code_failed">El código de verificación no se aceptó. Introduce el código más reciente.</string>
     <string name="untitled_playlist">Playlist sin título</string>
-    <string name="browser_login">Iniciar sesión en el navegador</string>
-    <string name="browser_login_description">Conecta tu cuenta en el navegador para cargar tu biblioteca y los detalles de la música.</string>
-    <string name="browser_login_waiting">Completa el inicio de sesión en el navegador. Si se solicita, introduce este código. Play continuará automáticamente.</string>
-    <string name="browser_login_open">Abrir página de inicio de sesión</string>
-    <string name="browser_reconnect">Volver a conectar la cuenta</string>
+    <string name="browser_login">Iniciar sesión</string>
+    <string name="browser_login_description">Inicia sesión para acceder a tu biblioteca y reproducir música en este dispositivo.</string>
+    <string name="browser_login_waiting">Completa el inicio de sesión en el navegador. Play continuará automáticamente.</string>
     <string name="back">Atrás</string>
     <string name="track_unavailable">Esta canción no está disponible.</string>
     <string name="open_album">Abrir álbum: %1$s</string>
@@ -47,4 +45,7 @@
         <item quantity="many">%1$d canciones</item>
         <item quantity="other">%1$d canciones</item>
     </plurals>
+    <string name="browser_login_complete">Volviendo a Play…</string>
+    <string name="login_required">Inicia sesión para acceder a los detalles y reproducir música.</string>
+    <string name="browser_unavailable">No hay ningún navegador disponible. Activa un navegador y vuelve a intentarlo.</string>
 </resources>

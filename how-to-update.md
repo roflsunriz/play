@@ -4,7 +4,7 @@
 
 - `COMMON-AGENTS.md`と`AGENTS.md`を全文確認し、`git status --short --branch`で既存差分を確認する。
 - JDK 17以上と、ビルド設定が指定するAndroid SDKを用意する。バージョンの正本は`app/build.gradle.kts`と`gradle/libs.versions.toml`。
-- 新規認証はブラウザーでのデバイス認証、保存一覧はネイティブAPI、作品の詳細と検索はカタログAPIを使う。[通信の根拠と記録](docs/api-contracts.md)を先に確認する。
+- 新規認証は通常のブラウザーログインと自動コールバック、保存一覧はネイティブAPI、作品の詳細と検索はカタログAPIを使う。[通信の根拠と記録](docs/api-contracts.md)を先に確認する。再生にペアリングを要求する方式へ戻さない。
 
 ## 修正と検証
 
@@ -35,6 +35,9 @@ WindowsでSDK・コンパイラの共有キャッシュにAccessDeniedException�
 osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gradle/osv-scanner.toml --offline-vulnerabilities --download-offline-databases
 ```
 8. [検証手順](verification.md)に従い、画面操作、ログイン、ライブラリ、再起動後の認証保持を確認する。実アカウントの検証は対象端末を明示して実行する。
+
+実音源の確認は、ログイン済みの許可された端末で `LivePlaybackTest` に `livePlayback=true` を指定する。先頭から完走させる場合は `fullTrack=true` も指定し、終了まで再インストールや別のinstrumentationを実行しない。プレイヤーの音量だけを一時的に0にし、終了時に復元する。ログインの自動復帰を変更した場合は `BrowserReturnTest` を `externalBrowserProbe=true` で確認する。
+
 9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
 
 ## 許可済み端末の通信確認

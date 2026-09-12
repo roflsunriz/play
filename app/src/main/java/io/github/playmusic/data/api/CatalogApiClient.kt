@@ -14,7 +14,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URI
 
-class BrowserAuthorizationRequiredException : Exception("Reconnect the account in your browser")
+class BrowserAuthorizationRequiredException : Exception("Sign in to access music content")
 
 class CatalogApiClient(
     private val session: SessionTokens,

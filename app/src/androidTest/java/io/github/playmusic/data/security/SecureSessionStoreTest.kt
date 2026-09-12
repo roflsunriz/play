@@ -7,7 +7,7 @@ import android.util.Base64
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.api.SessionManager
-import io.github.playmusic.data.auth.DeviceAuthorizationClient
+import io.github.playmusic.data.auth.BrowserAuthorizationClient
 import io.github.playmusic.data.auth.SpotifyClientTokenClient
 import io.github.playmusic.data.auth.SpotifyLogin5Client
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -79,6 +80,23 @@ class SecureSessionStoreTest {
         assertFalse(context.getSharedPreferences("unused", 0).all.values.joinToString().contains("browser-refresh-secret"))
     }
 
+    @Test fun persistenceFailureIsReportedInsteadOfClaimingTheLoginWasSaved() {
+        val backing = context.getSharedPreferences("unused", 0)
+        val preferences = object : SharedPreferences by backing {
+            override fun edit(): SharedPreferences.Editor = object : SharedPreferences.Editor by backing.edit() {
+                override fun putString(key: String?, value: String?): SharedPreferences.Editor = this
+                override fun commit() = false
+                override fun apply() { throw AssertionError("Session writes must finish before returning") }
+            }
+        }
+        val failing = object : ContextWrapper(context) {
+            override fun getSharedPreferences(name: String, mode: Int): SharedPreferences = preferences
+        }
+        assertThrows(IllegalStateException::class.java) {
+            SecureSessionStore(failing).saveSession(AuthSession("synthetic", "synthetic", null, 0, "synthetic"))
+        }
+    }
+
     @Test fun schemaTwoMigratesInPlaceWithoutLosingCredentialsOrDeviceIdentity() {
         val store = SecureSessionStore(context)
         val device = store.loadDeviceId()
@@ -111,7 +129,7 @@ class SecureSessionStoreTest {
             val started = CountDownLatch(1)
             val continueResponse = CountDownLatch(1)
             val clientTokens = SpotifyClientTokenClient(openConnection = { error("Unexpected legacy authentication") })
-            val oauth = DeviceAuthorizationClient(openConnection = { uri ->
+            val oauth = BrowserAuthorizationClient(openConnection = { uri ->
                 object : HttpURLConnection(uri.toURL()) {
                     override fun getOutputStream() = ByteArrayOutputStream()
                     override fun getResponseCode(): Int {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">Подключите аккаунт</string>
+    <string name="setup_title">Войти</string>
     <string name="playlists">Плейлисты</string>
     <string name="albums">Альбомы</string>
     <string name="tracks">Треки</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">Введите код, отправленный на вашу почту</string>
     <string name="verification_code_failed">Код подтверждения не принят. Введите последний код.</string>
     <string name="untitled_playlist">Плейлист без названия</string>
-    <string name="browser_login">Войти через браузер</string>
-    <string name="browser_login_description">Подключите аккаунт в браузере, чтобы загрузить медиатеку и сведения о музыке.</string>
-    <string name="browser_login_waiting">Завершите вход в браузере. Если потребуется код, введите его ниже. Play продолжит автоматически.</string>
-    <string name="browser_login_open">Открыть страницу входа</string>
-    <string name="browser_reconnect">Подключить аккаунт заново</string>
+    <string name="browser_login">Войти</string>
+    <string name="browser_login_description">Войдите, чтобы открыть медиатеку и слушать музыку на этом устройстве.</string>
+    <string name="browser_login_waiting">Завершите вход в браузере. Play продолжит автоматически.</string>
     <string name="back">Назад</string>
     <string name="track_unavailable">Этот трек недоступен.</string>
     <string name="open_album">Открыть альбом: %1$s</string>
@@ -48,4 +46,7 @@
         <item quantity="many">%1$d треков</item>
         <item quantity="other">%1$d трека</item>
     </plurals>
+    <string name="browser_login_complete">Возврат в Play…</string>
+    <string name="login_required">Войдите, чтобы открыть сведения о музыке и начать воспроизведение.</string>
+    <string name="browser_unavailable">Браузер недоступен. Включите браузер и повторите попытку.</string>
 </resources>

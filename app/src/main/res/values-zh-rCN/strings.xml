@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">连接账号</string>
+    <string name="setup_title">登录</string>
     <string name="playlists">播放列表</string>
     <string name="albums">专辑</string>
     <string name="tracks">歌曲</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">输入发送至您邮箱的验证码</string>
     <string name="verification_code_failed">验证码未被接受，请输入最新验证码。</string>
     <string name="untitled_playlist">未命名播放列表</string>
-    <string name="browser_login">通过浏览器登录</string>
-    <string name="browser_login_description">在浏览器中关联账户，以加载音乐库和音乐详情。</string>
-    <string name="browser_login_waiting">请在浏览器中完成登录。如需验证码，请输入下方代码。Play 将自动继续。</string>
-    <string name="browser_login_open">打开登录页面</string>
-    <string name="browser_reconnect">重新关联账户</string>
+    <string name="browser_login">登录</string>
+    <string name="browser_login_description">登录以访问音乐库并在此设备上播放音乐。</string>
+    <string name="browser_login_waiting">请在浏览器中完成登录。Play 将自动继续。</string>
     <string name="back">返回</string>
     <string name="track_unavailable">此歌曲无法播放。</string>
     <string name="open_album">打开专辑：%1$s</string>
@@ -45,4 +43,7 @@
     <plurals name="track_count">
         <item quantity="other">%1$d 首歌曲</item>
     </plurals>
+    <string name="browser_login_complete">正在返回 Play…</string>
+    <string name="login_required">请登录以查看音乐详情和播放音乐。</string>
+    <string name="browser_unavailable">没有可用的浏览器。请启用浏览器后重试。</string>
 </resources>

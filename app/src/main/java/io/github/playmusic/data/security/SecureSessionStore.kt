@@ -4,7 +4,6 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import androidx.core.content.edit
 import io.github.playmusic.data.model.AuthSession
 import org.json.JSONObject
 import java.security.KeyStore
@@ -20,13 +19,13 @@ class SecureSessionStore(context: Context) {
     fun loadDeviceId(): String {
         preferences.getString(KEY_DEVICE_ID, null)?.let { return it }
         val deviceId = "0${SecureRandom().generateDeviceId()}"
-        preferences.edit { putString(KEY_DEVICE_ID, deviceId) }
+        check(preferences.edit().putString(KEY_DEVICE_ID, deviceId).commit()) { "Device identity could not be saved" }
         return deviceId
     }
 
     fun loadSession(): AuthSession? {
         val encoded = preferences.getString(KEY_SESSION, null) ?: return null
-        return runCatching {
+        val (session, schema) = runCatching {
             val parts = encoded.split('.', limit = 2)
             require(parts.size == 2)
             val iv = Base64.decode(parts[0], Base64.NO_WRAP)
@@ -45,12 +44,14 @@ class SecureSessionStore(context: Context) {
                 refreshToken = json.optString("refreshToken").takeIf(String::isNotBlank),
             )
             require(session.username.isNotBlank() && session.accessToken.isNotBlank())
-            if (schema < SESSION_SCHEMA_VERSION) saveSession(session)
-            session
+            session to schema
         }.getOrElse {
             clearSession()
-            null
+            return null
         }
+        // A failed migration write must not be mistaken for corrupted encrypted data.
+        if (schema < SESSION_SCHEMA_VERSION) saveSession(session)
+        return session
     }
 
     fun saveSession(session: AuthSession) {
@@ -67,11 +68,12 @@ class SecureSessionStore(context: Context) {
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
         val encoded = listOf(cipher.iv, cipher.doFinal(json))
             .joinToString(".") { Base64.encodeToString(it, Base64.NO_WRAP) }
-        preferences.edit { putString(KEY_SESSION, encoded) }
+        // Rotated refresh credentials must reach disk before the caller can finish or the process can exit.
+        check(preferences.edit().putString(KEY_SESSION, encoded).commit()) { "Login information could not be saved" }
     }
 
     fun clearSession() {
-        preferences.edit { remove(KEY_SESSION) }
+        check(preferences.edit().remove(KEY_SESSION).commit()) { "Login information could not be cleared" }
     }
 
     private fun getOrCreateKey(): SecretKey {

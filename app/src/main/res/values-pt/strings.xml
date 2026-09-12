@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">Conecte sua conta</string>
+    <string name="setup_title">Entrar</string>
     <string name="playlists">Playlists</string>
     <string name="albums">Álbuns</string>
     <string name="tracks">Músicas</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">Insira o código enviado para o seu e-mail</string>
     <string name="verification_code_failed">O código de verificação não foi aceito. Digite o código mais recente.</string>
     <string name="untitled_playlist">Playlist sem título</string>
-    <string name="browser_login">Entrar pelo navegador</string>
-    <string name="browser_login_description">Conecte sua conta no navegador para carregar sua biblioteca e os detalhes das músicas.</string>
-    <string name="browser_login_waiting">Conclua o login no navegador. Se solicitado, digite este código. O Play continuará automaticamente.</string>
-    <string name="browser_login_open">Abrir página de login</string>
-    <string name="browser_reconnect">Reconectar conta</string>
+    <string name="browser_login">Entrar</string>
+    <string name="browser_login_description">Entre para acessar sua biblioteca e ouvir música neste dispositivo.</string>
+    <string name="browser_login_waiting">Conclua o login no navegador. O Play continuará automaticamente.</string>
     <string name="back">Voltar</string>
     <string name="track_unavailable">Esta música não está disponível.</string>
     <string name="open_album">Abrir álbum: %1$s</string>
@@ -47,4 +45,7 @@
         <item quantity="many">%1$d músicas</item>
         <item quantity="other">%1$d músicas</item>
     </plurals>
+    <string name="browser_login_complete">Voltando ao Play…</string>
+    <string name="login_required">Entre para acessar os detalhes e ouvir música.</string>
+    <string name="browser_unavailable">Nenhum navegador disponível. Ative um navegador e tente novamente.</string>
 </resources>

@@ -2,7 +2,30 @@
 
 ## 2026-09-13の結果
 
-Windows版を基準にした新しい認証・カタログ・端末内再生の実装を検証した。本人によるPlayのブラウザー認証が未完了のため、実楽曲のフル再生を完了とは扱わない。
+### 通常ログインへの変更後
+
+- ペアリング用の認証コード・ポーリング・コード表示を廃止し、通常ログインと同一端末への自動復帰へ変更した。
+- JVM61件成功。PKCEの照合、state・パス・重複パラメーターの拒否、キャンセル時のリスナー解放、更新トークンの継続利用を確認した。
+- 分離AVDの実ブラウザーから合成ログイン結果を返す検証で、Playが一旦背景へ移り、追加タップなしで前面へ戻ることを確認した。`BrowserReturnTest`は`externalBrowserProbe=true`を明示して分離AVDだけで実行する。
+- 通常ログインへ変更後の表示・認証・詳細・再生・キャッシュ・保存のAVD検証は32件成功した。`build/qa/normal-login-full-avd.log`。
+- 日本語横画面の認証検証14件、アラビア語狭幅の画面検証6件も成功。確認コード入力直後はIMEとスクロールの配置確定を待ち、確認ボタン全体が表示されることを確認する。
+- 実機のブラウザーに保存されたログイン状態を使い、パスワードやペアリングコードを入力せず、通常ログインと暗号化保存が完了した。
+- 実アカウントの検証6件成功。保存アルバム39件、曲1,384件、プレイリスト67件、検索90件、認証の自動更新を確認した。`build/qa/normal-login-live-library.log`。
+- 実機でログイン中のプロセス凍結を観測したため、ログイン待機だけを前景サービスで維持するよう修正した。実機の既定ブラウザーでも、12秒間背景に置いた後の合成応答から自動復帰するテストに成功した。`build/qa/normal-login-phone-browser-return.log`。
+- 旧保存認証の無操作移行は未解決。AP認証・保存資格情報での再接続後のKeymasterが403、音声配信情報はHTTP 200・media空だった。記録は`build/qa/no-pairing-device-probe.log`、`no-pairing-native-device.log`、`no-pairing-shape-device.log`。この方法を有効な代替として採用していない。
+- 実曲のライセンス取得とフル再生も成功。長さ301,920msの音源を先頭から終端まで再生し、90秒へのシーク、一時停止・再開を確認した。`build/qa/normal-login-live-playback.log`。
+- 続けて、2曲の実音源で次・前・1曲リピート・全曲リピート・シャッフルの操作を確認した。`build/qa/normal-login-live-queue.log`。検証中はプレイヤーのゲインだけを0にし、終了時に復元した。端末全体の音量設定は変更していない。
+- 実画面でも検索からアルバム詳細へ移動し、画像、タイトル、アーティスト、発売日、13曲の収録一覧を確認した。画像は非公開の`captures/play-actual-album-detail.png`。
+- 再生検証後にPlayのプロセスを停止・再起動し、ログインやペアリングの画面へ戻らず保存一覧を表示できることを確認した。
+- 長時間の検証後に更新認証の`invalid_grant`を観測し、更新トークンが毎回入れ替わることを確認した。保存を非同期完了待ちから書き込み完了確認へ変更し、null応答と不正な型も区別した。修正後は連続更新、プロセス再起動後の連続更新、期限切れ状態からの自動更新が成功した。`build/qa/consecutive-refresh-live.log`、`refresh-restart-and-details.log`。
+- 新しい認証で、保存プレイリストの詳細から64曲中64曲のメタデータを取得できることを確認した。
+- 保存完了保証を含む最終APKでも、実アカウント9件、実音源の再生操作1件、AVDの認証・保存検証15件が成功した。`build/qa/final-live-account.log`、`final-live-playback-controls.log`、`rotation-final-avd.log`。
+
+### 切り替え前の検証記録
+
+以下は切り替え前の状態であり、最新の確認結果は上記を参照する。
+
+Windows版を基準にした新しい認証・カタログ・端末内再生の実装を検証した時点では、Playのブラウザー認証が未完了で、実楽曲のフル再生は未確認だった。
 
 | 検証 | 結果 |
 | --- | --- |
@@ -79,7 +102,7 @@ adb devices
 $testDevice = Read-Host '検証用AVDの端末ID'
 adb -s $testDevice install -r -t app/build/outputs/apk/debug/app-debug.apk
 adb -s $testDevice install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb -s $testDevice shell am instrument -w -e class io.github.playmusic.HomeScreenTest,io.github.playmusic.SetupScreenTest,io.github.playmusic.SessionVerificationScreenTest,io.github.playmusic.BrowserLoginScreenTest,io.github.playmusic.ContentDetailScreenTest,io.github.playmusic.PlaybackUiTest,io.github.playmusic.CatalogJsonTest,io.github.playmusic.DeviceAuthorizationClientTest,io.github.playmusic.LocalPlaybackTest,io.github.playmusic.data.cache.TrackCacheTest,io.github.playmusic.data.security.SecureSessionStoreTest io.github.playmusic.test/androidx.test.runner.AndroidJUnitRunner
+adb -s $testDevice shell am instrument -w -e class io.github.playmusic.HomeScreenTest,io.github.playmusic.SetupScreenTest,io.github.playmusic.SessionVerificationScreenTest,io.github.playmusic.BrowserLoginScreenTest,io.github.playmusic.ContentDetailScreenTest,io.github.playmusic.PlaybackUiTest,io.github.playmusic.CatalogJsonTest,io.github.playmusic.BrowserAuthorizationClientTest,io.github.playmusic.LocalPlaybackTest,io.github.playmusic.data.cache.TrackCacheTest,io.github.playmusic.data.security.SecureSessionStoreTest io.github.playmusic.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 画面テストは検索入力、タブ、更新、メニュー、ログアウト、無題項目、再生操作の通知、確認コードの入力・キャンセル・復帰、エラーの種類と閉じる操作を確認する。再生操作の通知テストは、実デバイスで音が鳴ることの証明ではない。保存テストは独立したpreferencesへ架空セッションを書き、再読込、破損時の除去、端末IDの保持を確認する。
@@ -100,10 +123,10 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 
 再起動時の保持は、Playを強制終了し、再起動してログイン画面へ戻らず一覧を取得できることを確認する。アプリのプロセス再起動と保存認証の強制更新は確認済み。端末OSの再起動は今回は実行していない。
 
-## 残る検証と再開条件
+## 確認済みの到達点と検証範囲
 
-- Play自身のブラウザー認証を完了し、保存アルバム・曲・プレイリストの一覧と詳細、既知の検索語で3種類の検索を確認する。参照Windows版の実応答をPlayの成功扱いにしない。
-- Playの端末内で、実楽曲のライセンス取得、曲の長さ、1分以降へのシーク、曲の終端、前後移動、反復とランダム再生、背景再生を確認する。証明書要求のHTTP 200や合成音源テストだけでは確認済みとしない。
-- 認証を完了した後でプロセスを再起動し、新しい更新トークンによる認証保持を確認する。旧方式の保持は確認済みだが、新しい実認証と端末OSの再起動は未確認。
+- 通常ログイン後、保存一覧・検索・作品詳細と、端末内の実楽曲の再生・シーク・前後移動・反復を確認した。再生用のペアリング操作は不要。
+- 合成音源に加え、実楽曲を最初から最後まで再生して確認した。音を聞いて評価する試聴ではなく、ミュート状態でライセンス取得・再生進行・終端を検証した。
+- 端末OS全体の再起動、他機種・他アカウント・異なる契約や地域での実楽曲確認は未実施。
 - 触覚はOSのAPIへ接続しているが、端末設定を変えた際の体感確認は未実施。
 - 監査後に公開される脆弱性、新しいホスト側CI、署名済みリリースの配布は未検証。リリース時に再確認する。

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">আপনার অ্যাকাউন্ট যুক্ত করুন</string>
+    <string name="setup_title">সাইন ইন করুন</string>
     <string name="playlists">প্লেলিস্ট</string>
     <string name="albums">অ্যালবাম</string>
     <string name="tracks">গান</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">ইমেইলে পাঠানো কোডটি লিখুন</string>
     <string name="verification_code_failed">যাচাইকরণ কোড গ্রহণ করা হয়নি। সর্বশেষ কোড লিখুন।</string>
     <string name="untitled_playlist">শিরোনামহীন প্লেলিস্ট</string>
-    <string name="browser_login">ব্রাউজার দিয়ে সাইন ইন করুন</string>
-    <string name="browser_login_description">আপনার লাইব্রেরি ও গানের বিবরণ লোড করতে ব্রাউজারে অ্যাকাউন্ট সংযুক্ত করুন।</string>
-    <string name="browser_login_waiting">ব্রাউজারে সাইন ইন সম্পূর্ণ করুন। কোড চাইলে এই কোডটি লিখুন। Play স্বয়ংক্রিয়ভাবে এগিয়ে যাবে।</string>
-    <string name="browser_login_open">সাইন ইন পৃষ্ঠা খুলুন</string>
-    <string name="browser_reconnect">অ্যাকাউন্ট আবার সংযুক্ত করুন</string>
+    <string name="browser_login">সাইন ইন করুন</string>
+    <string name="browser_login_description">এই ডিভাইসে লাইব্রেরি খুলতে ও গান চালাতে সাইন ইন করুন।</string>
+    <string name="browser_login_waiting">ব্রাউজারে সাইন ইন সম্পূর্ণ করুন। Play স্বয়ংক্রিয়ভাবে এগিয়ে যাবে।</string>
     <string name="back">ফিরে যান</string>
     <string name="track_unavailable">এই গানটি উপলভ্য নয়।</string>
     <string name="open_album">অ্যালবাম খুলুন: %1$s</string>
@@ -46,4 +44,7 @@
         <item quantity="one">%1$dটি গান</item>
         <item quantity="other">%1$dটি গান</item>
     </plurals>
+    <string name="browser_login_complete">Play-তে ফিরে যাওয়া হচ্ছে…</string>
+    <string name="login_required">গানের বিবরণ দেখতে ও গান চালাতে সাইন ইন করুন।</string>
+    <string name="browser_unavailable">কোনো ব্রাউজার উপলভ্য নেই। একটি ব্রাউজার চালু করে আবার চেষ্টা করুন।</string>
 </resources>

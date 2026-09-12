@@ -3,7 +3,7 @@ package io.github.playmusic.data.api
 import io.github.playmusic.data.auth.SpotifyAuthException
 import io.github.playmusic.data.auth.SpotifyClientTokenClient
 import io.github.playmusic.data.auth.SpotifyLogin5Client
-import io.github.playmusic.data.auth.DeviceAuthorizationClient
+import io.github.playmusic.data.auth.BrowserAuthorizationClient
 import io.github.playmusic.data.auth.LoginVerificationRequiredException
 import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.data.model.AuthSession
@@ -21,7 +21,7 @@ class SessionManager(
     private val store: SecureSessionStore,
     private val login5Client: SpotifyLogin5Client,
     private val clientTokenClient: SpotifyClientTokenClient,
-    private val deviceAuthorizationClient: DeviceAuthorizationClient = DeviceAuthorizationClient(),
+    private val browserAuthorizationClient: BrowserAuthorizationClient = BrowserAuthorizationClient(),
 ) : SessionTokens {
     private val refreshMutex = Mutex()
     private val sessionChangeLock = Any()
@@ -53,7 +53,7 @@ class SessionManager(
         }
         if (!forceRefresh && !session.expiresSoon()) return@withLock session.accessToken
         session.refreshToken?.let { refreshToken ->
-            val refreshed = deviceAuthorizationClient.refresh(refreshToken)
+            val refreshed = browserAuthorizationClient.refresh(refreshToken)
             saveRefreshedSession(session.copy(
                 accessToken = refreshed.accessToken,
                 refreshToken = refreshed.refreshToken ?: refreshToken,

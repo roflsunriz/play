@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">اربط حسابك</string>
+    <string name="setup_title">تسجيل الدخول</string>
     <string name="playlists">قوائم التشغيل</string>
     <string name="albums">الألبومات</string>
     <string name="tracks">الأغاني</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">أدخل الرمز المرسل إلى بريدك الإلكتروني</string>
     <string name="verification_code_failed">لم يُقبل رمز التحقق. أدخل أحدث رمز.</string>
     <string name="untitled_playlist">قائمة تشغيل بلا عنوان</string>
-    <string name="browser_login">تسجيل الدخول عبر المتصفح</string>
-    <string name="browser_login_description">اربط حسابك في المتصفح لتحميل مكتبتك وتفاصيل الموسيقى.</string>
-    <string name="browser_login_waiting">أكمل تسجيل الدخول في المتصفح. أدخل هذا الرمز إذا طُلب منك ذلك. سيتابع Play تلقائيًا.</string>
-    <string name="browser_login_open">فتح صفحة تسجيل الدخول</string>
-    <string name="browser_reconnect">إعادة ربط الحساب</string>
+    <string name="browser_login">تسجيل الدخول</string>
+    <string name="browser_login_description">سجّل الدخول للوصول إلى مكتبتك وتشغيل الموسيقى على هذا الجهاز.</string>
+    <string name="browser_login_waiting">أكمل تسجيل الدخول في المتصفح. سيتابع Play تلقائيًا.</string>
     <string name="back">رجوع</string>
     <string name="track_unavailable">هذه الأغنية غير متاحة.</string>
     <string name="open_album">فتح الألبوم: %1$s</string>
@@ -50,4 +48,7 @@
         <item quantity="many">%1$d أغنية</item>
         <item quantity="other">%1$d أغنية</item>
     </plurals>
+    <string name="browser_login_complete">جارٍ العودة إلى Play…</string>
+    <string name="login_required">سجّل الدخول للوصول إلى تفاصيل الموسيقى وتشغيلها.</string>
+    <string name="browser_unavailable">لا يتوفر متصفح. فعّل متصفحًا ثم حاول مرة أخرى.</string>
 </resources>

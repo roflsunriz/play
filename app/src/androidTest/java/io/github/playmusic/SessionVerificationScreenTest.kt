@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -70,7 +72,15 @@ class SessionVerificationScreenTest {
         composeRule.waitUntil(5_000) { viewModel.state.value.loginPending != null }
         composeRule.onNodeWithTag("code-input").assertIsDisplayed().performTextInput("123456")
         captureScreen(composeRule.onRoot(), "verification-code")
-        composeRule.onNodeWithTag("code-submit-button").performScrollTo().assertIsDisplayed().performClick()
+        val submit = composeRule.onNodeWithTag("code-submit-button")
+        // IME insets and focus scrolling can still be settling after text input.
+        composeRule.waitUntil(5_000) {
+            submit.performScrollTo()
+            val full = submit.getUnclippedBoundsInRoot()
+            val visible = submit.getBoundsInRoot()
+            full.bottom > full.top && visible.bottom - visible.top == full.bottom - full.top
+        }
+        submit.assertIsDisplayed().performClick()
         composeRule.waitUntil(5_000) { viewModel.state.value.items.isNotEmpty() }
         composeRule.onNodeWithTag("content-playlist-saved").assertIsDisplayed()
         assertNull(viewModel.state.value.loginPending)
@@ -90,6 +100,22 @@ class SessionVerificationScreenTest {
             assertNull(viewModel.state.value.loginPending)
             assertTrue(viewModel.state.value.isLoggedIn)
             assertEquals(1, requests.get())
+            assertArrayEquals(byteArrayOf(1, 2, 3), SecureSessionStore(context).loadSession()?.storedCredential)
+        }
+    }
+
+    @Test
+    fun playbackDoesNotStartASeparatePairingOrBrowserFlow() {
+        val (viewModel, _) = createModel(expired = false, libraryStatus = 404)
+        render(viewModel)
+        composeRule.waitUntil(5_000) { viewModel.state.value.error != null }
+        composeRule.runOnIdle {
+            viewModel.clearError()
+            viewModel.play(io.github.playmusic.data.model.SpotifyContent("test", "spotify:track:0000000000000000000001",
+                "Synthetic track", "", null, io.github.playmusic.data.model.ContentKind.TRACK))
+            assertEquals(ErrorKind.LOGIN_REQUIRED, viewModel.state.value.error?.kind)
+            assertTrue(!viewModel.state.value.isAuthorizing)
+            assertNull(viewModel.state.value.browserAuthorization)
             assertArrayEquals(byteArrayOf(1, 2, 3), SecureSessionStore(context).loadSession()?.storedCredential)
         }
     }

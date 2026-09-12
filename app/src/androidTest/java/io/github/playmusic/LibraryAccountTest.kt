@@ -14,6 +14,34 @@ import org.junit.Test
 /** Opt in with liveAccount=true on a test account with saved playlists, albums and tracks. */
 class LibraryAccountTest {
     @Test
+    fun browserAuthorizationIsSaved() {
+        val session = checkNotNull(app.sessionStore.loadSession())
+        val ready = !session.refreshToken.isNullOrBlank()
+        Log.i(TAG, "content authorization saved=$ready")
+        Log.i(TAG, "refresh placeholder=${session.refreshToken == "null"} expired=${session.expiresSoon()}")
+        assertTrue("A completed normal login must be saved", ready)
+    }
+
+    @Test
+    fun consecutiveRefreshesUseTheSavedCredentials(): Unit = runBlocking {
+        val before = app.sessionStore.loadSession()?.refreshToken
+        repeat(2) {
+            assertTrue(app.sessionManager.accessToken(forceRefresh = true).isNotBlank())
+            assertTrue(checkNotNull(app.sessionStore.loadSession()).expiresSoon() == false)
+        }
+        Log.i(TAG, "consecutive refreshes completed, rotation=${before != app.sessionStore.loadSession()?.refreshToken}")
+    }
+
+    @Test
+    fun expiredSavedAuthorizationRenewsWithoutOpeningLogin(): Unit = runBlocking {
+        val session = checkNotNull(app.sessionStore.loadSession())
+        app.sessionStore.saveSession(session.copy(expiresAtEpochMs = 0))
+        assertTrue(app.sessionManager.accessToken().isNotBlank())
+        assertTrue(!checkNotNull(app.sessionStore.loadSession()).expiresSoon())
+        Log.i(TAG, "expired saved authorization renewed automatically")
+    }
+
+    @Test
     fun storedCredentialRefreshIsSaved(): Unit = runBlocking {
         assertTrue("Refresh must return a token", app.sessionManager.accessToken(forceRefresh = true).isNotBlank())
         val saved = checkNotNull(SecureSessionStore(context).loadSession())
@@ -36,6 +64,17 @@ class LibraryAccountTest {
             val directory = context.filesDir.resolve("verification-captures").apply { mkdirs() }
             directory.resolve("rootlist.pb").writeBytes(response.bodyBytes)
         }
+    }
+
+    @Test
+    fun playlistDetailsReturnTheMusicItems(): Unit = runBlocking {
+        val playlists = app.repository.library(ContentKind.PLAYLIST)
+        val details = playlists.take(3).map { app.repository.detail(it) }
+        val populated = details.firstOrNull { it.tracks.isNotEmpty() }
+        assertTrue("This test account must contain a playlist with music", populated != null)
+        val detail = checkNotNull(populated)
+        assertTrue("Playlist tracks need metadata", detail.tracks.all { it.title.isNotBlank() && it.durationMs > 0 })
+        Log.i(TAG, "verified playlist details tracks=${detail.tracks.size} total=${detail.totalTracks}")
     }
 
     @Test

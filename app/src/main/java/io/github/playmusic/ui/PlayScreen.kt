@@ -92,6 +92,8 @@ import io.github.playmusic.data.model.SpotifyContent
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val completedMessage = stringResource(R.string.browser_login_complete)
+    val onLogin: () -> Unit = { viewModel.beginBrowserLogin(completedMessage) }
     val pending = state.loginPending
     if (pending != null) {
         CodeChallengeScreen(
@@ -104,9 +106,10 @@ fun PlayRoute(viewModel: PlayViewModel) {
         BrowserLoginScreen(
             pending = state.browserAuthorization,
             isAuthorizing = state.isAuthorizing,
-            onBegin = viewModel::beginBrowserLogin,
+            onBegin = onLogin,
             onCancel = viewModel::cancelBrowserLogin,
             onFailure = viewModel::reportLoginFailure,
+            onBrowserOpened = viewModel::markBrowserOpened,
         )
     } else {
         HomeScreen(
@@ -123,13 +126,13 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onSeek = viewModel::seek,
             onShuffle = viewModel::toggleShuffle,
             onRepeat = viewModel::cycleRepeat,
-            onBrowserLogin = viewModel::beginBrowserLogin,
+            onBrowserLogin = onLogin,
             onOpenContent = viewModel::openDetail,
             onBack = viewModel::closeDetail,
             onPlayDetailTrack = viewModel::playDetailTrack,
         )
     }
-    state.error?.let { ErrorDialog(it, viewModel::clearError) }
+    state.error?.let { ErrorDialog(it, viewModel::clearError, onLogin) }
 }
 
 @Composable
@@ -232,8 +235,8 @@ internal fun HomeScreen(
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(
-                            modifier = Modifier.testTag("browser-reconnect-button"),
-                            text = { Text(stringResource(R.string.browser_reconnect)) },
+                            modifier = Modifier.testTag("account-login-button"),
+                            text = { Text(stringResource(R.string.browser_login)) },
                             onClick = { menuExpanded = false; onBrowserLogin() },
                         )
                         DropdownMenuItem(
@@ -537,9 +540,10 @@ private fun PlaybackBar(
 }
 
 @Composable
-private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
+private fun ErrorDialog(error: UiError, onDismiss: () -> Unit, onLogin: () -> Unit) {
     val message = when (error.kind) {
         ErrorKind.LOGIN -> stringResource(R.string.login_failed)
+        ErrorKind.LOGIN_REQUIRED -> stringResource(R.string.login_required)
         ErrorKind.VERIFICATION_CODE -> stringResource(R.string.verification_code_failed)
         ErrorKind.REQUEST -> stringResource(R.string.request_failed)
     }
@@ -556,8 +560,15 @@ private fun ErrorDialog(error: UiError, onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.testTag("error-dismiss-button")) {
-                Text(stringResource(R.string.dismiss))
+            Row {
+                if (error.kind == ErrorKind.LOGIN_REQUIRED) {
+                    TextButton(onClick = onLogin, modifier = Modifier.testTag("error-login-button")) {
+                        Text(stringResource(R.string.browser_login))
+                    }
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("error-dismiss-button")) {
+                    Text(stringResource(R.string.dismiss))
+                }
             }
         },
         icon = { Icon(Icons.Default.Close, contentDescription = null) },

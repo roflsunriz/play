@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Play</string>
-    <string name="setup_title">アカウントを接続</string>
+    <string name="setup_title">ログイン</string>
     <string name="playlists">プレイリスト</string>
     <string name="albums">アルバム</string>
     <string name="tracks">楽曲</string>
@@ -33,11 +33,9 @@
     <string name="code_challenge_description_generic">メールに送信されたコードを入力してください</string>
     <string name="verification_code_failed">確認コードを受け付けられませんでした。最新のコードを入力してください。</string>
     <string name="untitled_playlist">無題のプレイリスト</string>
-    <string name="browser_login">ブラウザーでログイン</string>
-    <string name="browser_login_description">ブラウザーでアカウントを接続して、ライブラリや楽曲の詳細を読み込みます。</string>
-    <string name="browser_login_waiting">ブラウザーで認証を完了してください。コードを求められた場合は下のコードを入力します。完了すると自動でPlayに接続します。</string>
-    <string name="browser_login_open">認証ページを開く</string>
-    <string name="browser_reconnect">アカウントを再接続</string>
+    <string name="browser_login">ログイン</string>
+    <string name="browser_login_description">ログインして、この端末でライブラリや楽曲を利用します。</string>
+    <string name="browser_login_waiting">ブラウザーでログインを完了してください。完了後、自動で処理を続けます。</string>
     <string name="back">戻る</string>
     <plurals name="track_count">
         <item quantity="other">%1$d曲</item>
@@ -45,4 +43,7 @@
     <string name="track_unavailable">この楽曲は再生できません。</string>
     <string name="open_album">アルバムを開く：%1$s</string>
     <string name="detail_not_loaded">詳細を読み込めませんでした。更新して再試行してください。</string>
+    <string name="browser_login_complete">Playに戻ります…</string>
+    <string name="login_required">楽曲の詳細と再生を利用するにはログインが必要です。</string>
+    <string name="browser_unavailable">ブラウザーを利用できません。端末のブラウザーを有効にして再試行してください。</string>
 </resources>
