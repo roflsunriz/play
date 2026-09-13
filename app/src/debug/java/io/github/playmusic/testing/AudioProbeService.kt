@@ -1,17 +1,13 @@
 package io.github.playmusic.testing
 
-import android.content.Context
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.Format
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.analytics.AnalyticsListener
-import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.drm.KeyRequestInfo
 import androidx.media3.session.MediaSession
@@ -25,12 +21,8 @@ import kotlin.math.sqrt
 class AudioProbeService : PlaybackService() {
     override val cacheDirectoryName = "audio_probe_cache"
 
-    override fun createRenderers(): RenderersFactory = object : DefaultRenderersFactory(this) {
-        override fun buildAudioSink(context: Context, enableFloatOutput: Boolean,
-            enableAudioOutputPlaybackParameters: Boolean): AudioSink = DefaultAudioSink.Builder(context)
-            .setAudioProcessors(arrayOf(TeeAudioProcessor(LevelMeter())))
-            .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParameters).build()
-    }
+    override fun createAudioProcessors(): Array<AudioProcessor> =
+        super.createAudioProcessors() + TeeAudioProcessor(LevelMeter())
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         super.onGetSession(controllerInfo).also { session ->
@@ -71,6 +63,7 @@ class AudioProbeService : PlaybackService() {
                 if (count >= rate * channels) {
                     val rms = sqrt(sum / count)
                     seconds++
+                    rmsSeconds[seconds] = rms
                     Log.i(TAG, "decoded second=$seconds rms=$rms channels=$channels")
                     if (rms > 0.001) {
                         audibleSeconds.add(seconds)
@@ -87,7 +80,9 @@ class AudioProbeService : PlaybackService() {
         const val TAG = "PlayAudioProbe"
         @Volatile var audibleLateSeconds = 0
         private val audibleSeconds = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
-        fun resetMeasurements() { audibleLateSeconds = 0; audibleSeconds.clear() }
+        private val rmsSeconds = java.util.concurrent.ConcurrentHashMap<Int, Double>()
+        fun resetMeasurements() { audibleLateSeconds = 0; audibleSeconds.clear(); rmsSeconds.clear() }
         fun audibleSecondsIn(first: Int, last: Int): Int = (first..last).count(audibleSeconds::contains)
+        fun rmsAt(second: Int): Double? = rmsSeconds[second]
     }
 }

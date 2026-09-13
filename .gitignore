@@ -11,3 +11,4 @@ local.properties
 .kotlin/
 __pycache__/
 session/
+.signing/

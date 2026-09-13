@@ -3,10 +3,10 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
-val releaseStorePath = providers.gradleProperty("play.release.storeFile").orNull
-val releaseStorePassword = providers.gradleProperty("play.release.storePassword").orNull
-val releaseKeyAlias = providers.gradleProperty("play.release.keyAlias").orNull
-val releaseKeyPassword = providers.gradleProperty("play.release.keyPassword").orNull
+val releaseStorePath = providers.gradleProperty("play.release.storeFile").orElse(providers.environmentVariable("PLAY_STORE_FILE")).orNull
+val releaseStorePassword = providers.gradleProperty("play.release.storePassword").orElse(providers.environmentVariable("PLAY_STORE_PASSWORD")).orNull
+val releaseKeyAlias = providers.gradleProperty("play.release.keyAlias").orElse(providers.environmentVariable("PLAY_KEY_ALIAS")).orNull
+val releaseKeyPassword = providers.gradleProperty("play.release.keyPassword").orElse(providers.environmentVariable("PLAY_KEY_PASSWORD")).orNull
 
 android {
     namespace = "io.github.playmusic"
@@ -16,8 +16,8 @@ android {
         applicationId = "io.github.playmusic"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

@@ -12,6 +12,9 @@ import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.audio.EqualizerSettings
+import io.github.playmusic.data.audio.EqualizerPreset
+import io.github.playmusic.data.audio.settings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +77,7 @@ data class PlayUiState(
     val playlistToDelete: SpotifyContent? = null,
     val isDeletingPlaylist: Boolean = false,
     val playlistDeletionFailed: Boolean = false,
+    val audioEffectsOpen: Boolean = false,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -87,6 +91,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         ),
     )
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
+    val audioEffectsState get() = container.audioEffects.state
     private var contentRequestJob: Job? = null
     private val libraryJobs = mutableMapOf<LibrarySection, Job>()
     private val detailPrefetcher = DetailPrefetcher(viewModelScope,
@@ -120,6 +125,21 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             refreshPlayback()
         }
     }
+
+    fun openAudioEffects() { mutableState.value = mutableState.value.copy(audioEffectsOpen = true) }
+
+    fun closeAudioEffects() {
+        container.audioEffects.requestSave()
+        mutableState.value = mutableState.value.copy(audioEffectsOpen = false)
+    }
+
+    fun updateAudioEffects(settings: EqualizerSettings) { container.audioEffects.setSettings(settings) }
+    fun applyEqualizerPreset(preset: EqualizerPreset) { container.audioEffects.setSettings(preset.settings()) }
+    fun loadEqualizerSlot(index: Int) { container.audioEffects.loadSlot(index) }
+    fun saveEqualizerSlot(index: Int, name: String) { container.audioEffects.saveSlot(index, name) }
+    fun renameEqualizerSlot(index: Int, name: String) { container.audioEffects.renameSlot(index, name) }
+    fun deleteEqualizerSlot(index: Int) { container.audioEffects.deleteSlot(index) }
+    fun retryAudioEffectsSave() { container.audioEffects.requestSave() }
 
     fun beginBrowserLogin(completedMessage: String) {
         if (mutableState.value.isAuthorizing) return

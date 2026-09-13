@@ -86,8 +86,24 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 ## CI・配布
 
 - Linuxでは`gradlew`の実行属性が必要。`git ls-files --stage gradlew`のmodeが`100755`であることを確認する。
-- リリースAPKには署名設定が必要。生成・署名・配布の正本は`.github/workflows/release.yml`。
+- `app/build.gradle.kts`のversionName/versionCodeと、CHANGELOGの対応するバージョンをそろえる。mainのCIが成功したコミットに`v<versionName>`タグを作成してプッシュする。
+- `.github/workflows/release.yml`はタグとAPKのバージョンを照合し、JVM・lint・最適化したreleaseビルドを行う。成功したrunの`play-v<versionName>-unsigned`成果物にunsigned APK、output-metadata.json、抽出済み変更履歴が入る。
+- 署名鍵はローカル管理とし、CIへ送信しない。リリースビルドの成功・head SHA・タグが一致することを確認してから成果物を取得し、`tools/sign-release.ps1`で署名する。このスクリプトは対象IDとバージョン、debuggableでないことを確認し、署名検証とSHA-256ファイル生成まで行う。
 - CIや実機の未実施項目を成功と記録しない。サービス側のエラーはHTTPの結果とメタデータ内の結果を分けて記録する。
+
+ローカル署名にはBuild Tools 37.0.0とJDK 17を使う。`PLAY_STORE_PASSWORD`と`PLAY_KEY_PASSWORD`は実行プロセスの環境変数に設定し、コマンド引数やログへ展開しない。鍵は`.signing/play-release.p12`、aliasは`play-release`。このWindows環境のパスワードは`.signing/release-password.dpapi`に暗号化して保持している。復号するときはファイル末尾の改行を`Trim()`で除き、同じWindowsユーザーの`ConvertTo-SecureString`を使う。`.signing/`はGit管理外とし、鍵と復旧可能なパスワードを安全に保管する。
+
+```powershell
+.\tools\sign-release.ps1 -Apk <CIから取得したunsigned APK> -Version 0.2.0 `
+  -KeyStore .signing/play-release.p12 -KeyAlias play-release `
+  -Output build/outputs/play-0.2.0.apk -AndroidSdk $env:ANDROID_HOME
+```
+
+パスとバージョンは対象リリースに合わせる。署名証明書SHA-256を`SECURITY.md`と照合し、`apksigner verify --verbose --print-certs`の成功も確認する。配布は署名済みAPKと隣の`.sha256`だけとし、`gh release create`の`--verify-tag`と`--notes-file`で抽出済み変更履歴を使用する。公開後はGitHubからAPKを取得してハッシュと署名をもう一度照合し、実機へ入っている最終APKも一致確認する。GitHubへプッシュする前に依存関係の脆弱性監査を再実行する。
+
+既存開発版の実機は、初回だけローカルの署名履歴による移行が必要。`tools/sign-release.ps1`へ`-Lineage .signing/legacy-to-release.lineage`を付けるとAndroid 9以降用の移行APKを作る。このAPKはv3署名専用であり、一般配布のAPKとして扱わない。分離AVDの`ReleaseUpgradeFixtureTest`（`prepareReleaseUpgrade=true`、ranchu限定）で暗号化ログイン・保存一覧・5スロットを準備し、移行APK→通常リリースAPKの順に`install -r`して画面から保持を確認する。実機で署名不一致になっても認証やデータを消して対処しない。共用の開発秘密鍵を外部へ送らない。
+
+音質設定の変更では、`AudioEffectsScreenTest`を日本語縦画面、英語800×360、アラビア語960×1800で実行する。30番目までの調整、5スロットの保存・呼び出し・上書き・名前変更・削除、IMEと保存失敗を検査する。`AudioEffectsRouteTest`は実際のメニュー接続と、画面を戻ったときの一覧位置保持を検査する。保存・DSP・実音源の検証方法は[音質設定の設計](docs/audio-effects.md)を参照する。
 
 ## 復旧
 

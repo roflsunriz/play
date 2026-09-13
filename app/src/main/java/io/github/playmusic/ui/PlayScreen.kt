@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -115,6 +116,11 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onFailure = viewModel::reportLoginFailure,
             onBrowserOpened = viewModel::markBrowserOpened,
         )
+    } else if (state.audioEffectsOpen) {
+        val effects by viewModel.audioEffectsState.collectAsStateWithLifecycle()
+        AudioEffectsScreen(effects, viewModel::updateAudioEffects, viewModel::applyEqualizerPreset,
+            viewModel::loadEqualizerSlot, viewModel::saveEqualizerSlot, viewModel::renameEqualizerSlot,
+            viewModel::deleteEqualizerSlot, viewModel::retryAudioEffectsSave, viewModel::closeAudioEffects)
     } else if (state.playlistEditor != null) {
         PlaylistEditorScreen(
             state = checkNotNull(state.playlistEditor),
@@ -153,6 +159,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onLibrarySortChanged = viewModel::updateLibrarySort,
                 onViewportChanged = viewModel::prefetchDetails,
                 onPlaylistSyncRetry = viewModel::retryPlaylistSync,
+                onAudioEffects = viewModel::openAudioEffects,
             )
         }
     }
@@ -249,6 +256,7 @@ internal fun HomeScreen(
     onLibrarySortChanged: (LibrarySort) -> Unit = {},
     onViewportChanged: (List<SpotifyContent>) -> Unit = {},
     onPlaylistSyncRetry: () -> Unit = onRefresh,
+    onAudioEffects: () -> Unit = {},
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
@@ -310,6 +318,10 @@ internal fun HomeScreen(
                         Icon(Icons.Default.MoreVert, stringResource(R.string.settings))
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.audio_effects_title)) },
+                            leadingIcon = { Icon(Icons.Default.Equalizer, null) },
+                            modifier = Modifier.testTag("audio-effects-menu-item"),
+                            onClick = { menuExpanded = false; onAudioEffects() })
                         if (!state.isLoggedIn) DropdownMenuItem(
                             modifier = Modifier.testTag("account-login-button"),
                             text = { Text(stringResource(R.string.browser_login)) },

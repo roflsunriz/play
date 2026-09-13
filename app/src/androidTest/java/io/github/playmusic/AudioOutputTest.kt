@@ -6,10 +6,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SpotifyContent
 import io.github.playmusic.data.playback.LocalPlayback
+import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.testing.AudioProbeService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -20,6 +22,8 @@ class AudioOutputTest {
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveAudio") == "true")
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val app = (context.applicationContext as PlayApplication).container
+        val exerciseEqualizer = InstrumentationRegistry.getArguments().getString("thirtyBands") == "true"
+        val originalEffects = if (exerciseEqualizer) withTimeout(5_000) { app.audioEffects.state.first { it.isReady } }.settings else null
         val uri = InstrumentationRegistry.getArguments().getString("trackUri")
             ?: "spotify:track:4CeeEOM32jQcH3eN9Q2dGj"
         val track = app.repository.detail(SpotifyContent(uri.substringAfterLast(':'), uri,
@@ -29,6 +33,8 @@ class AudioOutputTest {
         val errors = launch { playback.errors.collect { failure = it } }
         AudioProbeService.resetMeasurements()
         try {
+            if (exerciseEqualizer) app.audioEffects.setSettings(EqualizerSettings(true, -6f,
+                List(30) { if (it % 2 == 0) 3f else -3f }))
             ActivityScenario.launch(MainActivity::class.java).use {
                 playback.play(listOf(track))
                 withTimeout(60_000) {
@@ -63,6 +69,10 @@ class AudioOutputTest {
             try { playback.clear() } finally {
                 try { playback.release() } finally {
                     context.stopService(Intent(context, AudioProbeService::class.java))
+                    if (originalEffects != null) {
+                        app.audioEffects.setSettings(originalEffects)
+                        assertTrue("Restore the original sound settings", app.audioEffects.persistNow())
+                    }
                 }
             }
         }
