@@ -44,6 +44,12 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 プレイリスト編集は、許可された実アカウントで`PlaylistAccountTest`に`livePlaylists=true`を指定して検証する。テストが作る非公開リストだけを変更し、名前・説明・画像の実取得、収録曲、削除、既存一覧の維持まで確認する。前回の検証用URIがrootlistに残る場合は新規作成を停止するため、対象を確認して削除してから再実行する。画面は分離AVDで`PlaylistEditorScreenTest`、`PlaylistArtworkTest`、`PlaylistViewModelTest`を実行し、キーボードが表示された低い横画面とRTLも確認する。
 
+一覧・検索・再生画面は分離AVDで`HomeScreenTest`、`ContentDetailScreenTest`、`ExpandedPlayerScreenTest`、`LibraryBrowsingTest`を実行する。日本語の縦画面、低い英語横画面、アラビア語の狭幅で表示と操作を確認する。遅延一覧で未表示の項目へ移動するときは、一覧の`performScrollToKey`を使ってから完全可視性を検査する。
+
+実アカウントでの画面連携は`LiveBrowsingScreenTest`へ`liveBrowsing=true`を指定する。ライブラリと検索を読み取り、既存曲を1曲再生・一時停止して拡大プレイヤーまで検査する。既存プレイリストの変更は行わない。`LibraryAccountTest#searchReturnsContent`では英語、日本語、短い検索語を確認する。
+
+一覧と検索結果の保持はアカウント別のメモリ内で行う。詳細の先読みは可視範囲と近傍を対象に同時2件、保持は24件・合計6000曲まで。手動更新、プレイリスト変更、ログアウトの無効化を変更する場合は、`AccountMemoryCacheTest`と`LibraryBrowsingTest`で通信の重複、古い応答、失敗時の再試行、アカウント分離も確認する。
+
 9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
 
 ## 許可済み端末の通信確認

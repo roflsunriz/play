@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_filter_hint">Filtrar por nome, criador, descrição…</string>
+    <string name="clear_filter">Limpar filtro</string>
+    <string name="no_filter_results">Nenhum item correspondente.</string>
+    <string name="sort_by">Ordenar por</string>
+    <string name="sort_selected">Selecionado</string>
+    <string name="sort_library_order">Ordem da biblioteca</string>
+    <string name="sort_title">Nome A–Z</string>
+    <string name="sort_title_descending">Nome Z–A</string>
+    <string name="sort_creator">Criador</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_track_count">Mais músicas</string>
+    <string name="sort_duration">Mais curtas primeiro</string>
+    <string name="sort_duration_descending">Mais longas primeiro</string>
+    <string name="suggested_content">Sugestões da sua biblioteca</string>
+    <string name="matching_suggestions">Correspondências na biblioteca</string>
+    <string name="search_results">Resultados da pesquisa</string>
+    <plurals name="library_result_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="many">%1$d itens</item>
+        <item quantity="other">%1$d itens</item>
+    </plurals>
+</resources>

@@ -34,6 +34,7 @@ class AppContainer(
         api = SpotifyApiClient(sessionManager, apiConnection),
         sessionManager = sessionManager,
         catalog = CatalogApiClient(sessionManager, apiConnection),
+        accountIdentity = { sessionStore.loadSession()?.username },
     )
 
     private val applicationContext = context.applicationContext

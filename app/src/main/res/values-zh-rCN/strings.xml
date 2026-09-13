@@ -20,8 +20,6 @@
     <string name="repeat_context">循环播放列表</string>
     <string name="repeat_track">单曲循环</string>
     <string name="settings">设置</string>
-    <string name="supplied_by_spotify">服务提供的内容</string>
-    <string name="open_on_spotify">在服务应用中打开</string>
     <string name="login_failed">登录失败。</string>
     <string name="request_failed">请求失败。</string>
     <string name="error_title">出现错误</string>

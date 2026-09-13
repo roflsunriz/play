@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">打开播放器</string>
+    <string name="player_now_playing">正在播放</string>
+    <string name="player_close">关闭播放器</string>
+    <string name="player_artwork">专辑封面</string>
+    <string name="player_no_track">暂无播放内容</string>
+    <string name="player_untitled_track">未命名歌曲</string>
+    <string name="player_buffering">正在加载音频…</string>
+    <string name="player_seek">播放位置</string>
+    <string name="player_position_description">%1$s，共%2$s</string>
+    <string name="player_elapsed">已播放：%1$s</string>
+    <string name="player_duration">时长：%1$s</string>
+    <string name="player_repeat">循环播放</string>
+    <string name="player_shuffle_on">随机播放已开启</string>
+    <string name="player_shuffle_off">随机播放已关闭</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

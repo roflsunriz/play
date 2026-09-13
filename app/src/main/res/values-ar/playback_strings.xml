@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">فتح المشغّل</string>
+    <string name="player_now_playing">قيد التشغيل</string>
+    <string name="player_close">إغلاق المشغّل</string>
+    <string name="player_artwork">غلاف الألبوم</string>
+    <string name="player_no_track">لا يتم تشغيل أي محتوى</string>
+    <string name="player_untitled_track">مقطع بلا عنوان</string>
+    <string name="player_buffering">جارٍ تحميل الصوت…</string>
+    <string name="player_seek">موضع التشغيل</string>
+    <string name="player_position_description">%1$s من %2$s</string>
+    <string name="player_elapsed">الوقت المنقضي: %1$s</string>
+    <string name="player_duration">المدة: %1$s</string>
+    <string name="player_repeat">تكرار</string>
+    <string name="player_shuffle_on">التشغيل العشوائي مفعّل</string>
+    <string name="player_shuffle_off">التشغيل العشوائي متوقف</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

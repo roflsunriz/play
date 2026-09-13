@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
 
 enum class LibrarySection(val kind: ContentKind?) {
     PLAYLISTS(ContentKind.PLAYLIST),
@@ -50,6 +52,14 @@ data class PlayUiState(
     val playback: Playback = Playback(),
     val isLoading: Boolean = false,
     val searchQuery: String = "",
+    val libraryQuery: String = "",
+    val playlistSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
+    val trackSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
+    val libraries: Map<LibrarySection, List<SpotifyContent>> = emptyMap(),
+    val suggestedItems: List<SpotifyContent> = emptyList(),
+    val searchSuggestions: List<SpotifyContent> = emptyList(),
+    val searchResults: List<SpotifyContent> = emptyList(),
+    val searchPreviewFailed: Boolean = false,
     val error: UiError? = null,
     val loginPending: LoginPending? = null,
     val browserAuthorization: BrowserAuthorizationUi? = null,
@@ -75,6 +85,13 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     )
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
     private var contentRequestJob: Job? = null
+    private val libraryJobs = mutableMapOf<LibrarySection, Job>()
+    private var prefetchJob: Job? = null
+    private var prefetchUris: List<String> = emptyList()
+    private var accountGeneration = 0L
+    private val searchCache = object : LinkedHashMap<String, List<SpotifyContent>>(24, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<SpotifyContent>>?): Boolean = size > 24
+    }
     private var browserAuthorizationJob: Job? = null
     private var pendingAuthorization: BrowserAuthorizationClient.Pending? = null
     private var authorizationGeneration = 0L
@@ -91,12 +108,16 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { container.localPlayback.errors.collect {
             if (mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, it))
         } }
-        if (mutableState.value.isLoggedIn) refreshAll()
+        if (mutableState.value.isLoggedIn) {
+            prefetchLibraries()
+            refreshPlayback()
+        }
     }
 
     fun beginBrowserLogin(completedMessage: String) {
         if (mutableState.value.isAuthorizing) return
         val generation = ++authorizationGeneration
+        cancelBrowsing()
         contentRequestJob?.cancel()
         legacyLoginJob?.cancel()
         playbackRequestJob?.cancel()
@@ -124,7 +145,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                     refreshToken = checkNotNull(tokens.refreshToken),
                 ))
                 mutableState.value = PlayUiState(username = username, isLoggedIn = true, isBrowserAuthorized = true)
-                refreshAll()
+                prefetchLibraries()
+                refreshPlayback()
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 mutableState.value = mutableState.value.copy(isAuthorizing = false, browserAuthorization = null,
@@ -211,49 +233,103 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             isLoading = false,
             loginPending = null,
         )
-        refreshAll()
+        prefetchLibraries()
+        refreshPlayback()
     }
 
     fun selectSection(section: LibrarySection) {
         if (section == mutableState.value.selectedSection && mutableState.value.selectedContent == null) return
         contentRequestJob?.cancel()
+        prefetchJob?.cancel()
+        prefetchUris = emptyList()
         detailHistory.clear()
-        mutableState.value = mutableState.value.copy(selectedSection = section, items = emptyList(), isLoading = false,
+        val current = mutableState.value
+        val cached = current.libraries[section] ?: section.kind?.let(container.repository::peekLibrary)
+        mutableState.value = current.copy(selectedSection = section,
+            items = if (section == LibrarySection.SEARCH) current.searchResults else visibleItems(section, cached.orEmpty()),
+            isLoading = cached == null && section != LibrarySection.SEARCH,
             error = null, selectedContent = null, detail = null)
         if (section != LibrarySection.SEARCH) loadLibrary(section)
+        else if (current.searchQuery.isNotBlank() && !searchCache.containsKey(current.searchQuery.trim())) search()
+    }
+
+    fun updateLibraryQuery(query: String) {
+        mutableState.value = mutableState.value.copy(libraryQuery = query)
+        updateVisibleItems()
+    }
+
+    fun updateLibrarySort(sort: LibrarySort) {
+        val current = mutableState.value
+        val kind = current.selectedSection.kind ?: return
+        if (sort !in LibrarySort.options(kind)) return
+        mutableState.value = when (current.selectedSection) {
+            LibrarySection.PLAYLISTS -> current.copy(playlistSort = sort)
+            LibrarySection.TRACKS -> current.copy(trackSort = sort)
+            else -> current
+        }
+        updateVisibleItems()
     }
 
     fun updateSearchQuery(query: String) {
-        mutableState.value = mutableState.value.copy(searchQuery = query)
+        contentRequestJob?.cancel()
+        val cached = searchCache[query.trim()].orEmpty()
+        mutableState.value = mutableState.value.copy(searchQuery = query, searchResults = cached,
+            items = cached, isLoading = false, searchPreviewFailed = false, searchSuggestions = searchSuggestions(query))
+        if (query.isNotBlank()) search(waitForTyping = true)
     }
 
-    fun search() {
+    fun search() = search(waitForTyping = false)
+
+    private fun search(waitForTyping: Boolean, forceRefresh: Boolean = false) {
         contentRequestJob?.cancel()
-        val query = mutableState.value.searchQuery
-        contentRequestJob = executeRequest {
-            val items = container.repository.search(query)
-            mutableState.value = mutableState.value.copy(items = items)
+        val query = mutableState.value.searchQuery.trim()
+        if (query.isBlank()) return
+        val cached = searchCache[query]
+        if (cached != null && !forceRefresh) {
+            mutableState.value = mutableState.value.copy(items = cached, searchResults = cached, isLoading = false)
+            return
+        }
+        val generation = accountGeneration
+        contentRequestJob = viewModelScope.launch {
+            if (waitForTyping) delay(350)
+            mutableState.value = mutableState.value.copy(isLoading = true, error = null, searchPreviewFailed = false)
+            try {
+                val items = container.repository.search(query)
+                if (generation == accountGeneration && mutableState.value.searchQuery.trim() == query &&
+                    mutableState.value.selectedSection == LibrarySection.SEARCH) {
+                    searchCache[query] = items
+                    mutableState.value = mutableState.value.copy(items = items, searchResults = items, isLoading = false)
+                }
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                // Typing previews keep local matches useful when the network is unavailable.
+                if (!waitForTyping) handleRequestFailure(exception)
+                else mutableState.value = mutableState.value.copy(isLoading = false, searchPreviewFailed = true)
+            }
         }
     }
 
     fun refreshAll() {
         val selectedContent = mutableState.value.selectedContent
-        if (selectedContent != null) loadDetail(selectedContent, rememberCurrent = false)
-        else if (mutableState.value.selectedSection == LibrarySection.SEARCH) search()
-        else loadLibrary(mutableState.value.selectedSection)
+        if (selectedContent != null) loadDetail(selectedContent, rememberCurrent = false, forceRefresh = true)
+        else if (mutableState.value.selectedSection == LibrarySection.SEARCH) search(waitForTyping = false, forceRefresh = true)
+        else loadLibrary(mutableState.value.selectedSection, forceRefresh = true)
         refreshPlayback()
     }
 
     fun openDetail(content: SpotifyContent) = loadDetail(content, rememberCurrent = true)
 
-    private fun loadDetail(content: SpotifyContent, rememberCurrent: Boolean) {
+    private fun loadDetail(content: SpotifyContent, rememberCurrent: Boolean, forceRefresh: Boolean = false) {
         contentRequestJob?.cancel()
         val current = mutableState.value.detail
         if (rememberCurrent && current != null && current.content.uri != content.uri) detailHistory.addLast(current)
-        mutableState.value = mutableState.value.copy(selectedContent = content, detail = null, error = null)
+        val cached = container.repository.peekDetail(content)
+        mutableState.value = mutableState.value.copy(selectedContent = content, detail = cached, error = null,
+            isLoading = cached == null)
+        if (cached != null && !forceRefresh) return
         contentRequestJob = executeRequest {
-            val detail = container.repository.detail(content)
-            mutableState.value = mutableState.value.copy(detail = detail)
+            val detail = container.repository.detail(content, forceRefresh)
+            mutableState.value = mutableState.value.copy(detail = detail, selectedContent = detail.content)
         }
     }
 
@@ -262,6 +338,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         val previous = detailHistory.removeLastOrNull()
         mutableState.value = mutableState.value.copy(selectedContent = previous?.content, detail = previous,
             isLoading = false, error = null)
+        updateVisibleItems()
     }
 
     fun createPlaylist() {
@@ -337,12 +414,11 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                     container.repository.updatePlaylistMetadata(target, editor.name.trim(), editor.description, editor.imageJpeg, editor.removeImage)
                 } else target
                 written = updated
-                val current = mutableState.value
-                val items = if (current.items.any { it.uri == updated.uri }) {
-                    current.items.map { if (it.uri == updated.uri) updated else it }
-                } else if (current.selectedSection == LibrarySection.PLAYLISTS) listOf(updated) + current.items else current.items
-                mutableState.value = current.copy(playlistEditor = null, items = items)
-                loadDetail(updated, rememberCurrent = false)
+                updatePlaylistInLibrary(updated)
+                mutableState.value = mutableState.value.copy(playlistEditor = null)
+                searchCache.clear()
+                loadDetail(updated, rememberCurrent = false, forceRefresh = true)
+                loadLibrary(LibrarySection.PLAYLISTS, forceRefresh = true)
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 val current = mutableState.value.playlistEditor ?: return@launch
@@ -375,9 +451,14 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 container.repository.deletePlaylist(content)
                 detailHistory.clear()
+                searchCache.clear()
+                val libraries = mutableState.value.libraries.mapValues { (_, items) -> items.filterNot { it.uri == content.uri } }
                 mutableState.value = mutableState.value.copy(playlistToDelete = null, isDeletingPlaylist = false,
-                    selectedContent = null, detail = null, items = mutableState.value.items.filterNot { it.uri == content.uri })
-                refreshAll()
+                    selectedContent = null, detail = null, libraries = libraries,
+                    searchResults = mutableState.value.searchResults.filterNot { it.uri == content.uri },
+                    suggestedItems = librarySuggestions(libraries))
+                updateVisibleItems()
+                loadLibrary(LibrarySection.PLAYLISTS, forceRefresh = true)
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 mutableState.value = mutableState.value.copy(isDeletingPlaylist = false, playlistDeletionFailed = true)
@@ -442,6 +523,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
 
     fun logout() {
         authorizationGeneration++
+        cancelBrowsing()
         contentRequestJob?.cancel()
         browserAuthorizationJob?.cancel()
         pendingAuthorization?.close()
@@ -451,6 +533,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         playbackRequestJob?.cancel()
         playbackSnapshotJob?.cancel()
         val clearFailure = runCatching { container.sessionManager.clearSession() }.exceptionOrNull()
+        if (clearFailure == null) container.repository.clearCache()
         playlistWriteJob?.cancel()
         playlistImageJob?.cancel()
         playlistEditorGeneration++
@@ -476,13 +559,109 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.LOGIN, message))
     }
 
-    private fun loadLibrary(section: LibrarySection) {
-        val kind = section.kind ?: return
-        contentRequestJob?.cancel()
-        contentRequestJob = executeRequest {
-            val items = container.repository.library(kind)
-            mutableState.value = mutableState.value.copy(items = items)
+    private fun prefetchLibraries() {
+        val section = mutableState.value.selectedSection.takeUnless { it == LibrarySection.SEARCH } ?: LibrarySection.PLAYLISTS
+        loadLibrary(section, warmOthers = true)
+    }
+
+    private fun visibleItems(section: LibrarySection, source: List<SpotifyContent>): List<SpotifyContent> {
+        val current = mutableState.value
+        return when (section) {
+            LibrarySection.PLAYLISTS -> presentLibrary(source, current.libraryQuery, current.playlistSort)
+            LibrarySection.TRACKS -> presentLibrary(source, "", current.trackSort)
+            else -> source
         }
+    }
+
+    private fun updateVisibleItems() {
+        val current = mutableState.value
+        mutableState.value = current.copy(items = if (current.selectedSection == LibrarySection.SEARCH) current.searchResults
+            else visibleItems(current.selectedSection, current.libraries[current.selectedSection].orEmpty()))
+    }
+
+    private fun searchSuggestions(query: String): List<SpotifyContent> = if (query.isBlank()) emptyList() else
+        presentLibrary(mutableState.value.libraries.values.flatten().distinctBy { it.uri }, query, LibrarySort.LIBRARY_ORDER).take(6)
+
+    private fun updatePlaylistInLibrary(content: SpotifyContent) {
+        val current = mutableState.value
+        val old = current.libraries[LibrarySection.PLAYLISTS].orEmpty()
+        val updated = if (old.any { it.uri == content.uri }) old.map { if (it.uri == content.uri) content else it }
+            else listOf(content) + old
+        val libraries = current.libraries + (LibrarySection.PLAYLISTS to updated)
+        mutableState.value = current.copy(libraries = libraries, suggestedItems = librarySuggestions(libraries),
+            searchResults = current.searchResults.map { if (it.uri == content.uri) content else it })
+        updateVisibleItems()
+    }
+
+    private fun loadLibrary(section: LibrarySection, forceRefresh: Boolean = false, warmOthers: Boolean = false) {
+        val kind = section.kind ?: return
+        if (libraryJobs[section]?.isActive == true && !forceRefresh) return
+        val cached = mutableState.value.libraries[section] ?: container.repository.peekLibrary(kind)
+        if (cached != null && !forceRefresh) {
+            publishLibrary(section, cached)
+            if (warmOthers) LibrarySection.entries.filter { it.kind != null && it != section }.forEach { loadLibrary(it) }
+            return
+        }
+        libraryJobs[section]?.cancel()
+        if (mutableState.value.selectedSection == section && mutableState.value.selectedContent == null)
+            mutableState.value = mutableState.value.copy(isLoading = true, error = null)
+        val generation = accountGeneration
+        libraryJobs[section] = viewModelScope.launch {
+            try {
+                val items = container.repository.library(kind, forceRefresh)
+                if (generation != accountGeneration) return@launch
+                publishLibrary(section, items)
+                if (warmOthers) LibrarySection.entries.filter { it.kind != null && it != section }.forEach { loadLibrary(it) }
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                if (generation == accountGeneration && mutableState.value.selectedSection == section &&
+                    mutableState.value.selectedContent == null) handleRequestFailure(exception)
+            }
+        }
+    }
+
+    private fun publishLibrary(section: LibrarySection, items: List<SpotifyContent>) {
+        val current = mutableState.value
+        val libraries = current.libraries + (section to items)
+        mutableState.value = current.copy(libraries = libraries, suggestedItems = librarySuggestions(libraries),
+            items = if (current.selectedSection == section) visibleItems(section, items) else current.items,
+            isLoading = if (current.selectedSection == section && current.selectedContent == null) false else current.isLoading)
+        mutableState.value = mutableState.value.copy(searchSuggestions = searchSuggestions(mutableState.value.searchQuery))
+    }
+
+    fun prefetchDetails(contents: List<SpotifyContent>) {
+        val candidates = contents.filter { it.kind == ContentKind.PLAYLIST || it.kind == ContentKind.ALBUM }
+            .distinctBy { it.uri }.take(12)
+        val uris = candidates.map { it.uri }
+        if (uris == prefetchUris || !mutableState.value.isLoggedIn) return
+        prefetchUris = uris
+        prefetchJob?.cancel()
+        val generation = accountGeneration
+        prefetchJob = viewModelScope.launch {
+            coroutineScope {
+                candidates.forEach { content -> launch {
+                    try {
+                        val detail = container.repository.detail(content)
+                        if (generation == accountGeneration && content.kind == ContentKind.PLAYLIST &&
+                            mutableState.value.libraries[LibrarySection.PLAYLISTS]?.any { it.uri == content.uri } == true)
+                            updatePlaylistInLibrary(detail.content)
+                    } catch (exception: Exception) {
+                        if (exception is CancellationException) throw exception
+                        // Opening or explicitly refreshing the item remains the retry path.
+                    }
+                } }
+            }
+        }
+    }
+
+    private fun cancelBrowsing() {
+        accountGeneration++
+        contentRequestJob?.cancel()
+        libraryJobs.values.forEach { it.cancel() }
+        libraryJobs.clear()
+        prefetchJob?.cancel()
+        prefetchUris = emptyList()
+        searchCache.clear()
     }
 
     private fun executePlaybackRequest(block: suspend () -> Unit): Job {
@@ -502,31 +681,24 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 if (showLoading) mutableState.value = mutableState.value.copy(isLoading = false)
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
-                if (exception is BrowserAuthorizationRequiredException) {
-                    mutableState.value = mutableState.value.copy(isLoading = false, error = UiError(ErrorKind.LOGIN_REQUIRED))
-                    return@launch
-                }
-                if (exception is LoginVerificationRequiredException) {
-                    mutableState.value = mutableState.value.copy(
-                        isLoading = false,
-                        error = null,
-                        loginPending = LoginPending(
-                            username = exception.username,
-                            deviceId = container.sessionStore.loadDeviceId(),
-                            loginContext = exception.challenge.loginContext,
-                            maskedTarget = exception.challenge.maskedTarget,
-                        ),
-                    )
-                    return@launch
-                }
-                mutableState.value = mutableState.value.copy(
-                    isLoading = if (showLoading) false else mutableState.value.isLoading,
-                    error = UiError(ErrorKind.REQUEST, exception.message),
-                )
+                handleRequestFailure(exception, showLoading)
             }
         }
 
+    private fun handleRequestFailure(exception: Exception, showLoading: Boolean = true) {
+        if (exception is BrowserAuthorizationRequiredException) {
+            mutableState.value = mutableState.value.copy(isLoading = false, error = UiError(ErrorKind.LOGIN_REQUIRED))
+        } else if (exception is LoginVerificationRequiredException) {
+            mutableState.value = mutableState.value.copy(isLoading = false, error = null,
+                loginPending = LoginPending(exception.username, container.sessionStore.loadDeviceId(),
+                    exception.challenge.loginContext, exception.challenge.maskedTarget))
+        } else mutableState.value = mutableState.value.copy(
+            isLoading = if (showLoading) false else mutableState.value.isLoading,
+            error = UiError(ErrorKind.REQUEST, exception.message))
+    }
+
     override fun onCleared() {
+        cancelBrowsing()
         authorizationGeneration++
         pendingAuthorization?.close()
         container.stopLoginWaiting()

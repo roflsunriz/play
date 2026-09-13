@@ -20,8 +20,6 @@
     <string name="repeat_context">প্লেলিস্ট রিপিট</string>
     <string name="repeat_track">একটি গান রিপিট</string>
     <string name="settings">সেটিংস</string>
-    <string name="supplied_by_spotify">পরিষেবার কনটেন্ট</string>
-    <string name="open_on_spotify">পরিষেবার অ্যাপে খুলুন</string>
     <string name="login_failed">লগ ইন ব্যর্থ হয়েছে।</string>
     <string name="request_failed">অনুরোধ ব্যর্থ হয়েছে।</string>
     <string name="error_title">একটি সমস্যা হয়েছে</string>

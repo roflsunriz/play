@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">Abrir player</string>
+    <string name="player_now_playing">Em reprodução</string>
+    <string name="player_close">Fechar player</string>
+    <string name="player_artwork">Capa do álbum</string>
+    <string name="player_no_track">Nada em reprodução</string>
+    <string name="player_untitled_track">Faixa sem título</string>
+    <string name="player_buffering">Carregando áudio…</string>
+    <string name="player_seek">Posição de reprodução</string>
+    <string name="player_position_description">%1$s de %2$s</string>
+    <string name="player_elapsed">Tempo decorrido: %1$s</string>
+    <string name="player_duration">Duração: %1$s</string>
+    <string name="player_repeat">Repetir</string>
+    <string name="player_shuffle_on">Aleatório ativado</string>
+    <string name="player_shuffle_off">Aleatório desativado</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

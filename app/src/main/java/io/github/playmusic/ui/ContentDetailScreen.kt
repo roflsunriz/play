@@ -1,13 +1,13 @@
 package io.github.playmusic.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,13 +15,18 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,61 +59,106 @@ internal fun ContentDetailScreen(
 ) {
     val haptics = LocalHapticFeedback.current
     val content = detail?.content ?: selected
+    val playlistMetadata = detail?.playlistMetadata?.takeIf { content.kind == ContentKind.PLAYLIST }
+    val owner = content.ownerName?.takeIf(String::isNotBlank) ?: playlistMetadata?.ownerUsername?.takeIf(String::isNotBlank)
+    val description = (playlistMetadata?.description ?: content.description)?.takeIf(String::isNotBlank)
+    val trackCount = detail?.totalTracks ?: content.trackCount
+    val releaseDate = (detail?.releaseDate ?: content.releaseDate)?.takeIf(String::isNotBlank)
+    val playable = detail != null && content.isPlayable != false &&
+        (content.kind == ContentKind.TRACK || detail.tracks.any { it.isPlayable != false })
+    val play = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onPlay(content) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("content-detail"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item {
+        content.imageUrl?.let { url ->
+            item(key = "artwork") {
+                AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(156.dp).clip(RoundedCornerShape(10.dp)).testTag("detail-artwork"))
+            }
+        }
+        item(key = "title") {
             Column(Modifier.fillMaxWidth()) {
-                content.imageUrl?.let { url ->
-                    AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(156.dp).clip(RoundedCornerShape(10.dp)).testTag("detail-artwork"))
-                    Spacer(Modifier.height(16.dp))
-                }
                 Text(content.title.ifBlank { stringResource(R.string.untitled_playlist) },
                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
                     modifier = Modifier.testTag("detail-title"))
-                if (content.subtitle.isNotBlank()) Text(content.subtitle, modifier = Modifier.testTag("detail-artists"))
-                detail?.playlistMetadata?.description?.takeIf(String::isNotBlank)?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("detail-description"))
+                if (content.kind == ContentKind.PLAYLIST) {
+                    owner?.let {
+                        Text(stringResource(R.string.detail_creator, it), style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.testTag("detail-creator"))
+                    }
+                } else if (content.subtitle.isNotBlank()) {
+                    Text(content.subtitle, modifier = Modifier.testTag("detail-artists"))
                 }
-                detail?.releaseDate?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-                if (detail != null && content.kind != ContentKind.TRACK) {
-                    Text(pluralStringResource(R.plurals.track_count, detail.totalTracks, detail.totalTracks),
-                        modifier = Modifier.testTag("detail-track-count"))
-                }
-                if (content.durationMs > 0) Text(durationLabel(content.durationMs), modifier = Modifier.testTag("detail-duration"))
-                Spacer(Modifier.height(12.dp))
-                Button(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onPlay(content) },
-                    enabled = detail != null && content.isPlayable != false &&
-                        (content.kind == ContentKind.TRACK || detail.tracks.any { it.isPlayable != false }),
-                    modifier = Modifier.testTag("detail-play-button")) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Text(stringResource(R.string.play))
-                }
-                if (content.isPlayable == false) Text(stringResource(R.string.track_unavailable))
-                if (detail?.playlistMetadata?.canEdit == true) {
-                    TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onEditPlaylist() },
-                        modifier = Modifier.testTag("edit-playlist-button")) {
-                        Text(stringResource(R.string.edit_playlist))
+            }
+        }
+        description?.let {
+            item(key = "description") {
+                Text(remember(it) { readableDescription(it) }, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("detail-description"))
+            }
+        }
+        releaseDate?.let {
+            item(key = "release-date") { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("detail-release-date")) }
+        }
+        if (trackCount != null && content.kind != ContentKind.TRACK) {
+            item(key = "track-count") {
+                Text(pluralStringResource(R.plurals.track_count, trackCount, trackCount), modifier = Modifier.testTag("detail-track-count"))
+            }
+        }
+        if (content.durationMs > 0) {
+            item(key = "duration") { Text(durationLabel(content.durationMs), modifier = Modifier.testTag("detail-duration")) }
+        }
+        item(key = "actions") {
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val compact = maxWidth < 240.dp && (playlistMetadata?.canEdit == true || playlistMetadata?.canDelete == true)
+                Row(Modifier.fillMaxWidth().testTag("detail-actions"), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(if (maxWidth < 176.dp) 0.dp else 8.dp)) {
+                    if (compact) {
+                        FilledIconButton(onClick = play, enabled = playable,
+                            modifier = Modifier.size(48.dp).testTag("detail-play-button")) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.play))
+                        }
+                    } else {
+                        Button(onClick = play, enabled = playable,
+                            modifier = Modifier.weight(1f, fill = false).testTag("detail-play-button")) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
+                            Text(stringResource(R.string.play), modifier = Modifier.weight(1f, fill = false))
+                        }
+                    }
+                    if (playlistMetadata?.canEdit == true) {
+                        IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onEditPlaylist() },
+                            modifier = Modifier.size(48.dp).testTag("edit-playlist-button")) {
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_playlist))
+                        }
+                    }
+                    if (playlistMetadata?.canDelete == true) {
+                        IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onDeletePlaylist() },
+                            modifier = Modifier.size(48.dp).testTag("delete-playlist-button")) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.delete_playlist),
+                                tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
-                if (detail?.playlistMetadata?.canDelete == true) {
-                    TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onDeletePlaylist() },
-                        modifier = Modifier.testTag("delete-playlist-button")) {
-                        Text(stringResource(R.string.delete_playlist), color = MaterialTheme.colorScheme.error)
-                    }
+            }
+        }
+        if (content.isPlayable == false) {
+            item(key = "unavailable") { Text(stringResource(R.string.track_unavailable)) }
+        }
+        if (content.albumUri != null && content.albumTitle != null) {
+            item(key = "album") {
+                TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onOpen(SpotifyContent(content.albumUri.substringAfterLast(':'), content.albumUri,
+                    content.albumTitle, content.subtitle, content.imageUrl, ContentKind.ALBUM)) },
+                    modifier = Modifier.testTag("detail-album-button")) {
+                    Text(stringResource(R.string.open_album, content.albumTitle))
                 }
-                if (content.albumUri != null && content.albumTitle != null) {
-                    TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onOpen(SpotifyContent(content.albumUri.substringAfterLast(':'), content.albumUri,
-                        content.albumTitle, content.subtitle, content.imageUrl, ContentKind.ALBUM)) },
-                        modifier = Modifier.testTag("detail-album-button")) {
-                        Text(stringResource(R.string.open_album, content.albumTitle))
-                    }
-                }
-                if (detail == null && !isLoading) {
+            }
+        }
+        if (detail == null && !isLoading) {
+            item(key = "retry") {
+                Column {
                     Text(stringResource(R.string.detail_not_loaded))
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("detail-retry-button")) {
                         Text(stringResource(R.string.refresh))
@@ -125,7 +175,7 @@ internal fun ContentDetailScreen(
                     Text((index + 1).toString(), style = MaterialTheme.typography.labelMedium)
                     Column(Modifier.weight(1f)) {
                         Text(track.title, fontWeight = FontWeight.Medium)
-                        Text(track.subtitle, style = MaterialTheme.typography.bodySmall)
+                        if (track.subtitle.isNotBlank()) Text(track.subtitle, style = MaterialTheme.typography.bodySmall)
                     }
                     if (track.durationMs > 0) Text(durationLabel(track.durationMs), style = MaterialTheme.typography.labelMedium)
                 }

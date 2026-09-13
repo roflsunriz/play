@@ -21,6 +21,16 @@ Windows参照版の要求と実応答を基準に認証・カタログ・音声�
 
 2026-09-13の無音化調査では、[公開再生SDK](https://sdk.scdn.co/embedded/index.js)の配信形式・DRM初期化手順も照合した。形式10は128 kbps、11は256 kbps、12と13は複数DRM向け、14と15はCBCS向け。旧seektableとMP4内の初期化情報は一致したが、新しいsidecarとは一部が異なった。最終的には既存MP4の初期化情報を変更せず、認証要求の修正で音声が正常になった。ライセンスHTTP 200や再生位置だけを成功判定にしない。実測の条件は[検証記録](../verification.md)を参照する。
 
+### 一覧メタデータ・検索・先読み
+
+rootlistの`meta_items`は元のitemsと同じ位置で関連付ける。公開配信コードのencode/decodeと照合し、`MetaItem.attributes`はfield2、`length`はint32のfield3、`ownerUsername`はstringのfield5、`statusCode`はsint32のfield9と確認した。説明は既存のListAttributes field2を使う。空URIはページ内の位置を保った後でRepositoryが除く。確認資料はGit管理外の`build/qa/playlist-source/`にある公開bundleの控え。
+
+作成者は表示名が存在する応答では表示名を使い、ネイティブrootlistでは提供されたユーザー名を使う。未提供の説明・曲数・日付はnullとし、既知の空説明や0件と区別する。リスト長はサービスの総要素数であり、曲以外を含む場合がある。アルバムと楽曲は既存のカタログ応答からアーティスト、親アルバム、日付、長さなどを読み取る。
+
+検索のnullスロット、null union、`NotFound`、`RestrictedContent`は既知の取得不能項目として除く。正しいURIと名前を持つ再生不可曲は残す。未知のwrapper、`GenericError`、通信やGraphQLの失敗は検索結果の空配列へ置き換えない。修正後、実機の保存済み認証で英語・日本語・1文字の4検索語が成功した。
+
+一覧3種類と作品詳細はアカウント別のメモリに保持し、アルバムと楽曲が使う同じcollection pagingも共有する。詳細は同時2件、保持は24件か計6000項目まで。手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`SpotifyRepositoryCacheTest`、`LibraryBrowsingTest`にある。
+
 ### 再生用認証の自己取得
 
 `PlaybackAuthorizationProvider`はPlayが保存した通常ログインを元に処理し、参照アプリから取得した値を製品へ組み込まない。処理はHTTPで完結し、ブラウザーや外部プレイヤーを開かない。

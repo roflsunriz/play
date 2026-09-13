@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">प्लेयर खोलें</string>
+    <string name="player_now_playing">अभी चल रहा है</string>
+    <string name="player_close">प्लेयर बंद करें</string>
+    <string name="player_artwork">एल्बम की तस्वीर</string>
+    <string name="player_no_track">कुछ भी नहीं चल रहा है</string>
+    <string name="player_untitled_track">बिना शीर्षक का गाना</string>
+    <string name="player_buffering">ऑडियो लोड हो रहा है…</string>
+    <string name="player_seek">प्लेबैक की स्थिति</string>
+    <string name="player_position_description">%2$s में से %1$s</string>
+    <string name="player_elapsed">बीता समय: %1$s</string>
+    <string name="player_duration">अवधि: %1$s</string>
+    <string name="player_repeat">दोहराएँ</string>
+    <string name="player_shuffle_on">शफ़ल चालू</string>
+    <string name="player_shuffle_off">शफ़ल बंद</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

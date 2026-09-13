@@ -20,8 +20,6 @@
     <string name="repeat_context">پلے لسٹ ریپیٹ</string>
     <string name="repeat_track">ایک گانا ریپیٹ</string>
     <string name="settings">ترتیبات</string>
-    <string name="supplied_by_spotify">سروس کا مواد</string>
-    <string name="open_on_spotify">سروس کی ایپ میں کھولیں</string>
     <string name="login_failed">لاگ ان ناکام ہو گیا۔</string>
     <string name="request_failed">درخواست ناکام ہو گئی۔</string>
     <string name="error_title">کچھ غلط ہو گیا</string>

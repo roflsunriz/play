@@ -20,8 +20,6 @@
     <string name="repeat_context">Repetir playlist</string>
     <string name="repeat_track">Repetir uma música</string>
     <string name="settings">Configurações</string>
-    <string name="supplied_by_spotify">Conteúdo do serviço</string>
-    <string name="open_on_spotify">Abrir no aplicativo do serviço</string>
     <string name="login_failed">Falha no login.</string>
     <string name="request_failed">Falha na solicitação.</string>
     <string name="error_title">Algo deu errado</string>

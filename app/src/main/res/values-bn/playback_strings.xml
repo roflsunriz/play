@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">প্লেয়ার খুলুন</string>
+    <string name="player_now_playing">এখন চলছে</string>
+    <string name="player_close">প্লেয়ার বন্ধ করুন</string>
+    <string name="player_artwork">অ্যালবামের ছবি</string>
+    <string name="player_no_track">কিছুই চলছে না</string>
+    <string name="player_untitled_track">শিরোনামহীন গান</string>
+    <string name="player_buffering">অডিও লোড হচ্ছে…</string>
+    <string name="player_seek">প্লেব্যাকের অবস্থান</string>
+    <string name="player_position_description">%2$s-এর মধ্যে %1$s</string>
+    <string name="player_elapsed">অতিবাহিত সময়: %1$s</string>
+    <string name="player_duration">সময়কাল: %1$s</string>
+    <string name="player_repeat">পুনরাবৃত্তি</string>
+    <string name="player_shuffle_on">এলোমেলো প্লেব্যাক চালু</string>
+    <string name="player_shuffle_off">এলোমেলো প্লেব্যাক বন্ধ</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

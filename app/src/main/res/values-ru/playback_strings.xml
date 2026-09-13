@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">Открыть плеер</string>
+    <string name="player_now_playing">Сейчас играет</string>
+    <string name="player_close">Закрыть плеер</string>
+    <string name="player_artwork">Обложка альбома</string>
+    <string name="player_no_track">Ничего не воспроизводится</string>
+    <string name="player_untitled_track">Трек без названия</string>
+    <string name="player_buffering">Загрузка аудио…</string>
+    <string name="player_seek">Позиция воспроизведения</string>
+    <string name="player_position_description">%1$s из %2$s</string>
+    <string name="player_elapsed">Прошло: %1$s</string>
+    <string name="player_duration">Длительность: %1$s</string>
+    <string name="player_repeat">Повтор</string>
+    <string name="player_shuffle_on">Перемешивание включено</string>
+    <string name="player_shuffle_off">Перемешивание выключено</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

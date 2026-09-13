@@ -4,6 +4,7 @@ import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.SpotifyContent
 import io.github.playmusic.data.model.PlaylistMetadata
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -21,12 +22,20 @@ class SpotifyRepository(
     private val api: SpotifyApiClient,
     private val sessionManager: SessionTokens,
     private val catalog: CatalogApiClient = CatalogApiClient(sessionManager),
+    private val accountIdentity: (() -> String?)? = null,
 ) {
     private val playlists = PlaylistApiClient(api, sessionManager)
+    private val libraries = AccountMemoryCache<ContentKind, List<SpotifyContent>>(3, 3, { 1 }, 3)
+    private val collections = AccountMemoryCache<String, List<String>>(1, 1, { 1 }, 1)
+    private val details = AccountMemoryCache<String, ContentDetail>(24, 6000, { it.tracks.size.coerceAtLeast(1) }, 2)
 
-    suspend fun createPlaylist(name: String, description: String = ""): SpotifyContent = playlists.create(name, description)
+    suspend fun createPlaylist(name: String, description: String = ""): SpotifyContent = writePlaylist {
+        playlists.create(name, description).copy(ownerName = sessionManager.username(), description = description, trackCount = 0)
+    }
 
-    suspend fun completePlaylistCreation(content: SpotifyContent): SpotifyContent = playlists.completeCreation(content)
+    suspend fun completePlaylistCreation(content: SpotifyContent): SpotifyContent = writePlaylist(content.uri) {
+        playlists.completeCreation(content)
+    }
 
     suspend fun playlistMetadata(content: SpotifyContent): PlaylistMetadata = playlists.metadata(content)
 
@@ -36,26 +45,69 @@ class SpotifyRepository(
         description: String,
         imageJpeg: ByteArray? = null,
         removeImage: Boolean = false,
-    ): SpotifyContent = playlists.update(content, name, description, imageJpeg, removeImage)
+    ): SpotifyContent = writePlaylist(content.uri) {
+        playlists.update(content, name, description, imageJpeg, removeImage).copy(description = description)
+    }
 
-    suspend fun deletePlaylist(content: SpotifyContent) = playlists.delete(content)
+    suspend fun deletePlaylist(content: SpotifyContent) = writePlaylist(content.uri) { playlists.delete(content) }
 
-    suspend fun addPlaylistTracks(content: SpotifyContent, trackUris: List<String>) = playlists.addTracks(content, trackUris)
+    suspend fun addPlaylistTracks(content: SpotifyContent, trackUris: List<String>) = writePlaylist(content.uri) {
+        playlists.addTracks(content, trackUris)
+    }
 
-    suspend fun removePlaylistTracks(content: SpotifyContent, trackUris: List<String>) = playlists.removeTracks(content, trackUris)
+    suspend fun removePlaylistTracks(content: SpotifyContent, trackUris: List<String>) = writePlaylist(content.uri) {
+        playlists.removeTracks(content, trackUris)
+    }
 
-    suspend fun library(kind: ContentKind): List<SpotifyContent> = coroutineScope {
+    suspend fun library(kind: ContentKind, forceRefresh: Boolean = false): List<SpotifyContent> {
+        if (kind !in LIBRARY_KINDS) return emptyList()
+        val account = currentAccount()
+        val invalidateDetails = if (forceRefresh) details.invalidationFor(account) {
+            it.startsWith("spotify:${kind.name.lowercase()}:")
+        } else null
+        val result = libraries.get(account, kind, forceRefresh) {
+            checkAccount(account)
+            loadLibrary(kind, forceRefresh).also { checkAccount(account) }
+        }
+        checkAccount(account)
+        invalidateDetails?.invoke()
+        return result
+    }
+
+    fun peekLibrary(kind: ContentKind): List<SpotifyContent>? {
+        val account = peekAccount() ?: return null
+        return libraries.peek(account, kind)
+    }
+
+    fun peekDetail(content: SpotifyContent): ContentDetail? {
+        val account = peekAccount() ?: return null
+        return details.peek(account, content.uri)
+    }
+
+    fun clearCache() { libraries.clear(); collections.clear(); details.clear() }
+
+    private suspend fun loadLibrary(kind: ContentKind, forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
         when (kind) {
             ContentKind.PLAYLIST -> libraryPlaylists()
-            ContentKind.ALBUM -> libraryAlbums()
-            ContentKind.TRACK -> libraryTracks()
+            ContentKind.ALBUM -> libraryAlbums(forceRefresh)
+            ContentKind.TRACK -> libraryTracks(forceRefresh)
             else -> emptyList()
         }
     }
 
     suspend fun search(query: String): List<SpotifyContent> = catalog.search(query)
 
-    suspend fun detail(content: SpotifyContent): ContentDetail {
+    suspend fun detail(content: SpotifyContent, forceRefresh: Boolean = false): ContentDetail {
+        val account = currentAccount()
+        val result = details.get(account, content.uri, forceRefresh) {
+            checkAccount(account)
+            loadDetail(content).also { checkAccount(account) }
+        }
+        checkAccount(account)
+        return result
+    }
+
+    private suspend fun loadDetail(content: SpotifyContent): ContentDetail {
         if (content.kind != ContentKind.PLAYLIST) return catalog.detail(content)
         val uris = mutableListOf<String>()
         var offset = 0
@@ -76,7 +128,11 @@ class SpotifyRepository(
         } while (offset < total)
         val metadata = checkNotNull(first)
         val updated = content.copy(title = metadata.name ?: content.title,
-            imageUrl = metadata.images["default"] ?: metadata.images.values.firstOrNull() ?: content.imageUrl)
+            imageUrl = metadata.images["default"] ?: metadata.images.values.firstOrNull(),
+            ownerName = metadata.ownerUsername,
+            subtitle = metadata.ownerUsername.orEmpty(),
+            description = metadata.description,
+            trackCount = total)
         return ContentDetail(updated, catalog.tracks(uris), total,
             playlistMetadata = playlists.metadata(metadata, content.uri))
     }
@@ -111,7 +167,7 @@ class SpotifyRepository(
                     throw SpotifyApiException(metadata.status, "Playlist metadata request failed")
                 }
                 val attributes = metadata?.attributes
-                if (attributes != null) playlistContent(item.uri, attributes)
+                if (attributes != null) playlistContent(item.uri, attributes, metadata.ownerUsername, metadata.length)
                 else fetchPlaylistDetail(item.uri)
             } }.awaitAll().filterNotNull()
         }
@@ -128,34 +184,78 @@ class SpotifyRepository(
         }
         val detail = SpClientProto.parsePlaylist(response.bodyBytes)
         check(detail.hasAttributes) { "Playlist metadata is missing attributes" }
-        return playlistContent(uri, SpClientProto.PlaylistAttributes(detail.name, detail.images, detail.deletedByOwner))
+        return playlistContent(uri, SpClientProto.PlaylistAttributes(detail.name, detail.images, detail.deletedByOwner, detail.description),
+            detail.ownerUsername, detail.totalLength)
     }
 
-    private fun playlistContent(uri: String, attributes: SpClientProto.PlaylistAttributes): SpotifyContent? {
+    private fun playlistContent(uri: String, attributes: SpClientProto.PlaylistAttributes,
+        ownerName: String? = null, trackCount: Int? = null): SpotifyContent? {
         if (attributes.deletedByOwner) return null
         return SpotifyContent(
             id = uri.removePrefix("spotify:playlist:"),
             uri = uri,
             title = attributes.name.orEmpty(),
-            subtitle = "",
+            subtitle = ownerName.orEmpty(),
             imageUrl = attributes.images["default"]
                 ?: attributes.images["xlarge"]
                 ?: attributes.images.values.firstOrNull(),
             kind = ContentKind.PLAYLIST,
+            ownerName = ownerName,
+            description = attributes.description,
+            trackCount = trackCount,
         )
     }
 
-    private suspend fun libraryAlbums(): List<SpotifyContent> = coroutineScope {
-        val uris = collectionUris("collection").filter { it.startsWith("spotify:album:") }
+    private suspend fun currentAccount(): String {
+        val account = try { sessionManager.username() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { clearCache(); throw error }
+        if (accountIdentity != null && accountIdentity.invoke() != account) {
+            clearCache()
+            throw CancellationException("Account changed during content retrieval")
+        }
+        return account
+    }
+
+    private suspend fun checkAccount(expected: String) {
+        if (currentAccount() != expected) throw CancellationException("Account changed during content retrieval")
+    }
+
+    private fun peekAccount(): String? {
+        val reader = accountIdentity ?: return null
+        val account = try { reader() } catch (_: Exception) { null }
+        if (account == null) clearCache()
+        return account
+    }
+
+    private suspend fun <T> writePlaylist(uri: String? = null, block: suspend () -> T): T {
+        val account = currentAccount()
+        try { return block() }
+        finally {
+            libraries.invalidate(account, ContentKind.PLAYLIST)
+            if (uri != null) details.invalidate(account, uri)
+        }
+    }
+
+    private suspend fun libraryAlbums(forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
+        val uris = collectionUris("collection", forceRefresh).filter { it.startsWith("spotify:album:") }
         catalog.albums(uris)
     }
 
-    private suspend fun libraryTracks(): List<SpotifyContent> = coroutineScope {
-        val uris = collectionUris("collection").filter { it.startsWith("spotify:track:") }
+    private suspend fun libraryTracks(forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
+        val uris = collectionUris("collection", forceRefresh).filter { it.startsWith("spotify:track:") }
         catalog.tracks(uris)
     }
 
-    private suspend fun collectionUris(kind: String): List<String> {
+    private suspend fun collectionUris(kind: String, forceRefresh: Boolean): List<String> {
+        val account = currentAccount()
+        return collections.get(account, kind, forceRefresh) {
+            checkAccount(account)
+            loadCollectionUris(kind).also { checkAccount(account) }
+        }
+    }
+
+    private suspend fun loadCollectionUris(kind: String): List<String> {
         val username = sessionManager.username()
         val uris = linkedSetOf<String>()
         val seenTokens = mutableSetOf<String>()
@@ -181,5 +281,6 @@ class SpotifyRepository(
         const val PLAYLIST_PAGE_SIZE = 120
         const val COLLECTION_PAGE_SIZE = 200
         const val MAX_PARALLEL_REQUESTS = 6
+        val LIBRARY_KINDS = setOf(ContentKind.PLAYLIST, ContentKind.ALBUM, ContentKind.TRACK)
     }
 }

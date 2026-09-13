@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expand_player">Ouvrir le lecteur</string>
+    <string name="player_now_playing">Lecture en cours</string>
+    <string name="player_close">Fermer le lecteur</string>
+    <string name="player_artwork">Pochette de l’album</string>
+    <string name="player_no_track">Aucune lecture en cours</string>
+    <string name="player_untitled_track">Morceau sans titre</string>
+    <string name="player_buffering">Chargement du son…</string>
+    <string name="player_seek">Position de lecture</string>
+    <string name="player_position_description">%1$s sur %2$s</string>
+    <string name="player_elapsed">Temps écoulé : %1$s</string>
+    <string name="player_duration">Durée : %1$s</string>
+    <string name="player_repeat">Répéter</string>
+    <string name="player_shuffle_on">Lecture aléatoire activée</string>
+    <string name="player_shuffle_off">Lecture aléatoire désactivée</string>
+    <string name="player_unknown_time">--:--</string>
+</resources>

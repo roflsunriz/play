@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_filter_hint">নাম, নির্মাতা, বিবরণ দিয়ে ফিল্টার…</string>
+    <string name="clear_filter">ফিল্টার মুছুন</string>
+    <string name="no_filter_results">কোনো মিল নেই।</string>
+    <string name="sort_by">সাজান</string>
+    <string name="sort_selected">নির্বাচিত</string>
+    <string name="sort_library_order">লাইব্রেরির ক্রম</string>
+    <string name="sort_title">নাম ঊর্ধ্বক্রমে</string>
+    <string name="sort_title_descending">নাম অধঃক্রমে</string>
+    <string name="sort_creator">নির্মাতা</string>
+    <string name="sort_artist">শিল্পী</string>
+    <string name="sort_track_count">বেশি গান আগে</string>
+    <string name="sort_duration">ছোট গান আগে</string>
+    <string name="sort_duration_descending">বড় গান আগে</string>
+    <string name="suggested_content">আপনার লাইব্রেরি থেকে প্রস্তাবিত</string>
+    <string name="matching_suggestions">লাইব্রেরিতে মিলে যাওয়া</string>
+    <string name="search_results">অনুসন্ধানের ফলাফল</string>
+    <plurals name="library_result_count">
+        <item quantity="one">%1$dটি আইটেম</item>
+        <item quantity="other">%1$dটি আইটেম</item>
+    </plurals>
+</resources>

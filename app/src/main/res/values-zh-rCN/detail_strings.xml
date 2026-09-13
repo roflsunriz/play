@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_creator">创建者：%1$s</string>
+</resources>

@@ -20,8 +20,6 @@
     <string name="repeat_context">プレイリストリピート</string>
     <string name="repeat_track">1曲リピート</string>
     <string name="settings">設定</string>
-    <string name="supplied_by_spotify">サービス提供コンテンツ</string>
-    <string name="open_on_spotify">サービスのアプリで開く</string>
     <string name="login_failed">ログインに失敗しました。</string>
     <string name="request_failed">リクエストに失敗しました。</string>
     <string name="error_title">エラーが発生しました</string>

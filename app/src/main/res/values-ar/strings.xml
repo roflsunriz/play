@@ -20,8 +20,6 @@
     <string name="repeat_context">تكرار قائمة التشغيل</string>
     <string name="repeat_track">تكرار أغنية واحدة</string>
     <string name="settings">الإعدادات</string>
-    <string name="supplied_by_spotify">محتوى الخدمة</string>
-    <string name="open_on_spotify">فتح في تطبيق الخدمة</string>
     <string name="login_failed">تعذر تسجيل الدخول.</string>
     <string name="request_failed">فشل الطلب.</string>
     <string name="error_title">حدث خطأ</string>

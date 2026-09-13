@@ -29,6 +29,33 @@ class SpClientLibraryProtoTest {
     }
 
     @Test
+    fun decoratedRootlistReadsDescriptionOwnerAndLengthWithoutShiftingBlankUris() {
+        val contents = ProtoWire.fieldBytes(3, ProtoWire.fieldString(1, "")) +
+            ProtoWire.fieldBytes(3, ProtoWire.fieldString(1, "spotify:playlist:valid")) +
+            ProtoWire.fieldBytes(4, ProtoWire.fieldBytes(2, ProtoWire.fieldString(1, "Unused")) +
+                ProtoWire.fieldString(5, "unused-owner") + ProtoWire.fieldVarint(3, 999)) +
+            ProtoWire.fieldBytes(4, ProtoWire.fieldBytes(2, ProtoWire.fieldString(1, "") + ProtoWire.fieldString(2, "Description")) +
+                ProtoWire.fieldString(5, "actual-owner") + ProtoWire.fieldVarint(3, 42) + ProtoWire.fieldVarint(9, 400))
+        val item = SpClientProto.parseRootlist(ProtoWire.fieldBytes(5, contents)).items.single { it.uri.isNotBlank() }
+        assertEquals("spotify:playlist:valid", item.uri)
+        assertEquals("", item.metadata?.attributes?.name)
+        assertEquals("Description", item.metadata?.attributes?.description)
+        assertEquals("actual-owner", item.metadata?.ownerUsername)
+        assertEquals(42, item.metadata?.length)
+        assertEquals(200, item.metadata?.status)
+    }
+
+    @Test
+    fun absentCountsStayUnknownAndOverflowedCountsFail() {
+        assertEquals(null, SpClientProto.parsePlaylist(LibraryFixtures.playlist("Playlist")).totalLength)
+        val overflow = ProtoWire.fieldVarint(2, Int.MAX_VALUE.toLong() + 1)
+        assertTrue(runCatching { SpClientProto.parsePlaylist(overflow) }.isFailure)
+        val contents = ProtoWire.fieldBytes(3, ProtoWire.fieldString(1, "spotify:playlist:one")) +
+            ProtoWire.fieldBytes(4, ProtoWire.fieldVarint(3, Int.MAX_VALUE.toLong() + 1))
+        assertTrue(runCatching { SpClientProto.parseRootlist(ProtoWire.fieldBytes(5, contents)) }.isFailure)
+    }
+
+    @Test
     fun collectionReadsScalarTimestampRemovalAndBothTokens() {
         val parsed = SpClientProto.parseCollectionPage(
             LibraryFixtures.collection(listOf("spotify:track:first"), "synthetic-next") +

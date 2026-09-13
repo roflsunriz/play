@@ -7,11 +7,20 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextClearance
+import io.github.playmusic.ui.LibrarySort
+import io.github.playmusic.ui.presentLibrary
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollToKey
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentKind
@@ -28,7 +37,7 @@ import org.junit.Test
 
 class HomeScreenTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
 
     @Test
     fun untitledPlaylistHasALocalizedTitleAndRemainsClickable() {
@@ -36,7 +45,7 @@ class HomeScreenTest {
         var played = false
         val title = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.untitled_playlist)
         composeRule.setContent {
-            PlayTheme {
+            TestTheme {
                 HomeScreen(
                     state = PlayUiState(isLoggedIn = true, items = listOf(item)),
                     onSectionSelected = {}, onSearchChanged = {}, onSearch = {}, onRefresh = {}, onLogout = {},
@@ -62,7 +71,7 @@ class HomeScreenTest {
         var repeated = false
 
         composeRule.setContent {
-            PlayTheme {
+            TestTheme {
                 HomeScreen(
                     state = PlayUiState(
                         isLoggedIn = true,
@@ -119,7 +128,7 @@ class HomeScreenTest {
         var selected: LibrarySection? = null
 
         composeRule.setContent {
-            PlayTheme {
+            TestTheme {
                 HomeScreen(
                     state = state,
                     onSectionSelected = { selected = it },
@@ -144,6 +153,7 @@ class HomeScreenTest {
         composeRule.onNodeWithTag("section-playlists").performClick()
         composeRule.onNodeWithTag("refresh-button").performClick()
         composeRule.onNodeWithTag("settings-button").performClick()
+        composeRule.onNodeWithTag("account-login-button").assertDoesNotExist()
         composeRule.onNodeWithTag("logout-button").performClick()
 
         composeRule.runOnIdle {
@@ -152,5 +162,68 @@ class HomeScreenTest {
             assertTrue(loggedOut)
             assertEquals(LibrarySection.PLAYLISTS, selected)
         }
+    }
+
+    @Test
+    fun metadataFilterSortAndClearRemainUsable() {
+        val a = SpotifyContent("a", "spotify:playlist:a", "Alpha", "", null, ContentKind.PLAYLIST,
+            ownerName = "Alice", description = "Quiet &amp; calm evening", trackCount = 12)
+        val b = SpotifyContent("b", "spotify:playlist:b", "Beta", "", null, ContentKind.PLAYLIST,
+            ownerName = "Bob", description = "Running", trackCount = 30)
+        val source = listOf(b, a)
+        var state by mutableStateOf(PlayUiState(isLoggedIn = true, items = source))
+        composeRule.setContent { TestTheme {
+            HomeScreen(state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+                onLibraryQueryChanged = { query -> state = state.copy(libraryQuery = query,
+                    items = presentLibrary(source, query, state.playlistSort)) },
+                onLibrarySortChanged = { sort -> state = state.copy(playlistSort = sort,
+                    items = presentLibrary(source, state.libraryQuery, sort)) })
+        } }
+        composeRule.onNodeWithTag("playlist-filter-input").performTextInput("Alice quiet")
+        composeRule.onNodeWithTag("content-playlist-b").assertDoesNotExist()
+        composeRule.onNodeWithTag("content-playlist-a").assertIsDisplayed()
+        composeRule.onNodeWithText("Quiet & calm evening", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("clear-library-filter").performClick()
+        composeRule.onNodeWithTag("library-sort-button").performClick()
+        composeRule.onNodeWithTag("sort-title").performClick()
+        composeRule.runOnIdle { assertEquals(listOf(a, b), state.items) }
+        captureScreen(composeRule.onRoot(), "playlist-filter-sort")
+    }
+
+    @Test
+    fun miniPlayerOpensArtworkControllerAndReturnsToTheLibrary() {
+        val track = SpotifyContent("now", "spotify:track:now", "Now playing", "Artist", null, ContentKind.TRACK,
+            durationMs = 180_000, albumTitle = "Album")
+        val items = (0..30).map { track.copy(id = "row$it", uri = "spotify:track:row$it", title = "Track $it") }
+        composeRule.setContent { TestTheme {
+            HomeScreen(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.TRACKS, items = items,
+                playback = Playback(item = track, durationMs = 180_000)), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+        } }
+        composeRule.onNodeWithTag("content-list").performScrollToKey("spotify:track:row15")
+        composeRule.onNodeWithTag("mini-player-info", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithTag("expanded-player-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("expanded-player-back").performClick()
+        composeRule.onNodeWithTag("content-track-row15").assertIsDisplayed()
+    }
+
+    @Test
+    fun searchShowsSuggestedContentBeforeTypingAndMatchingCandidatesAfterTyping() {
+        val suggested = SpotifyContent("suggested", "spotify:album:suggested", "Suggested album", "Artist", null, ContentKind.ALBUM)
+        var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,
+            suggestedItems = listOf(suggested)))
+        composeRule.setContent { TestTheme {
+            HomeScreen(state, {}, { state = state.copy(searchQuery = it, searchSuggestions = listOf(suggested)) },
+                {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+        } }
+        composeRule.onNodeWithTag("suggested-heading").assertIsDisplayed()
+        composeRule.onNodeWithTag("content-album-suggested").assertIsDisplayed()
+        composeRule.onNodeWithTag("search-input").performTextInput("Suggested")
+        composeRule.onNodeWithTag("matching-suggestions-heading").assertIsDisplayed()
+        captureScreen(composeRule.onRoot(), "search-suggestions")
+    }
+
+    @Composable
+    private fun TestTheme(content: @Composable () -> Unit) {
+        PlayTheme { Surface(Modifier.fillMaxSize()) { content() } }
     }
 }

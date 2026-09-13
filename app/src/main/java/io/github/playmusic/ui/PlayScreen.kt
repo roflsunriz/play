@@ -1,15 +1,13 @@
 package io.github.playmusic.ui
 
-import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,21 +17,16 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -47,7 +40,6 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -70,15 +62,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -86,16 +79,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import io.github.playmusic.R
-import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
+import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.model.SpotifyContent
 
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val routeStates = rememberSaveableStateHolder()
     val context = LocalContext.current
     val pickPlaylistImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) viewModel.loadPlaylistImage(context.contentResolver, uri)
@@ -131,28 +124,33 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onCancel = viewModel::closePlaylistEditor,
         )
     } else {
-        HomeScreen(
-            state = state,
-            onSectionSelected = viewModel::selectSection,
-            onSearchChanged = viewModel::updateSearchQuery,
-            onSearch = viewModel::search,
-            onRefresh = viewModel::refreshAll,
-            onLogout = viewModel::logout,
-            onPlay = viewModel::play,
-            onPlayPause = viewModel::togglePlayPause,
-            onNext = viewModel::next,
-            onPrevious = viewModel::previous,
-            onSeek = viewModel::seek,
-            onShuffle = viewModel::toggleShuffle,
-            onRepeat = viewModel::cycleRepeat,
-            onBrowserLogin = onLogin,
-            onOpenContent = viewModel::openDetail,
-            onBack = viewModel::closeDetail,
-            onPlayDetailTrack = viewModel::playDetailTrack,
-            onCreatePlaylist = viewModel::createPlaylist,
-            onEditPlaylist = viewModel::editPlaylist,
-            onDeletePlaylist = viewModel::requestPlaylistDeletion,
-        )
+        routeStates.SaveableStateProvider("home:${state.username}") {
+            HomeScreen(
+                state = state,
+                onSectionSelected = viewModel::selectSection,
+                onSearchChanged = viewModel::updateSearchQuery,
+                onSearch = viewModel::search,
+                onRefresh = viewModel::refreshAll,
+                onLogout = viewModel::logout,
+                onPlay = viewModel::play,
+                onPlayPause = viewModel::togglePlayPause,
+                onNext = viewModel::next,
+                onPrevious = viewModel::previous,
+                onSeek = viewModel::seek,
+                onShuffle = viewModel::toggleShuffle,
+                onRepeat = viewModel::cycleRepeat,
+                onBrowserLogin = onLogin,
+                onOpenContent = viewModel::openDetail,
+                onBack = viewModel::closeDetail,
+                onPlayDetailTrack = viewModel::playDetailTrack,
+                onCreatePlaylist = viewModel::createPlaylist,
+                onEditPlaylist = viewModel::editPlaylist,
+                onDeletePlaylist = viewModel::requestPlaylistDeletion,
+                onLibraryQueryChanged = viewModel::updateLibraryQuery,
+                onLibrarySortChanged = viewModel::updateLibrarySort,
+                onViewportChanged = viewModel::prefetchDetails,
+            )
+        }
     }
     state.playlistToDelete?.let {
         DeletePlaylistDialog(it, state.isDeletingPlaylist, state.playlistDeletionFailed,
@@ -243,20 +241,48 @@ internal fun HomeScreen(
     onCreatePlaylist: () -> Unit = {},
     onEditPlaylist: () -> Unit = {},
     onDeletePlaylist: () -> Unit = {},
+    onLibraryQueryChanged: (String) -> Unit = {},
+    onLibrarySortChanged: (LibrarySort) -> Unit = {},
+    onViewportChanged: (List<SpotifyContent>) -> Unit = {},
 ) {
+    var playerExpanded by rememberSaveable { mutableStateOf(false) }
+    val listStates = rememberSaveableStateHolder()
+    if (playerExpanded && state.playback.item != null) {
+        ExpandedPlayerScreen(state.playback, onPlayPause, onNext, onPrevious, onSeek, onShuffle, onRepeat,
+            onBack = { playerExpanded = false })
+        return
+    }
     BackHandler(enabled = state.selectedContent != null, onBack = onBack)
     val haptics = LocalHapticFeedback.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val window = LocalWindowInfo.current.containerSize
+    val compactHeader = with(LocalDensity.current) { window.height.toDp() < 480.dp && window.width.toDp() >= 600.dp }
     var menuExpanded by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold) },
+                title = {
+                    if (compactHeader && state.selectedContent == null && state.selectedSection == LibrarySection.PLAYLISTS)
+                        LibraryFilterInput(state.libraryQuery, onLibraryQueryChanged, Modifier.fillMaxWidth())
+                    else if (compactHeader && state.selectedContent == null && state.selectedSection == LibrarySection.SEARCH)
+                        CatalogSearchInput(state.searchQuery, onSearchChanged, onSearch, Modifier.fillMaxWidth())
+                    else Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold)
+                },
                 navigationIcon = {
                     if (state.selectedContent != null) IconButton(onClick = onBack, modifier = Modifier.testTag("detail-back-button")) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
+                    if (compactHeader && state.selectedContent == null) {
+                        when (state.selectedSection) {
+                            LibrarySection.PLAYLISTS -> LibrarySortMenu(ContentKind.PLAYLIST, state.playlistSort, onLibrarySortChanged, compact = true)
+                            LibrarySection.TRACKS -> LibrarySortMenu(ContentKind.TRACK, state.trackSort, onLibrarySortChanged, compact = true)
+                            LibrarySection.SEARCH -> IconButton(onClick = { keyboard?.hide(); onSearch() }, enabled = state.searchQuery.isNotBlank(),
+                                modifier = Modifier.testTag("search-button")) { Icon(Icons.Default.Search, stringResource(R.string.search_action)) }
+                            else -> Unit
+                        }
+                    }
                     if (state.selectedSection == LibrarySection.PLAYLISTS && state.selectedContent == null) {
                         IconButton(onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -272,7 +298,7 @@ internal fun HomeScreen(
                         Icon(Icons.Default.MoreVert, stringResource(R.string.settings))
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                        DropdownMenuItem(
+                        if (!state.isLoggedIn) DropdownMenuItem(
                             modifier = Modifier.testTag("account-login-button"),
                             text = { Text(stringResource(R.string.browser_login)) },
                             onClick = { menuExpanded = false; onBrowserLogin() },
@@ -301,6 +327,7 @@ internal fun HomeScreen(
                         onSeek = onSeek,
                         onShuffle = onShuffle,
                         onRepeat = onRepeat,
+                        onOpenPlayer = { playerExpanded = true },
                     )
                 }
                 AppNavigation(state.selectedSection, onSectionSelected)
@@ -309,19 +336,23 @@ internal fun HomeScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (state.selectedContent != null) {
-                ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
-                    onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist)
-            } else if (state.selectedSection == LibrarySection.SEARCH) {
-                SearchContent(
-                    query = state.searchQuery,
-                    items = state.items,
-                    onQueryChanged = onSearchChanged,
-                    onSearch = onSearch,
-                    onPlay = onPlay,
-                    onOpen = onOpenContent,
-                )
+                listStates.SaveableStateProvider("detail:${state.selectedContent.uri}") {
+                    ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
+                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist)
+                }
             } else {
-                ContentList(state.items, onPlay, onOpenContent)
+                listStates.SaveableStateProvider(state.selectedSection.name) {
+                    if (state.selectedSection == LibrarySection.SEARCH) SearchContent(
+                        query = state.searchQuery, items = state.items, suggestions = state.suggestedItems,
+                        matchingSuggestions = state.searchSuggestions,
+                        previewFailed = state.searchPreviewFailed,
+                        onQueryChanged = onSearchChanged, onSearch = onSearch, onPlay = onPlay,
+                        onOpen = onOpenContent, onViewportChanged = onViewportChanged, showInput = !compactHeader)
+                    else LibraryContent(state.selectedSection, state.items,
+                        if (state.selectedSection == LibrarySection.PLAYLISTS) state.libraryQuery else "",
+                        if (state.selectedSection == LibrarySection.PLAYLISTS) state.playlistSort else state.trackSort,
+                        onLibraryQueryChanged, onLibrarySortChanged, onPlay, onOpenContent, onViewportChanged, showControls = !compactHeader)
+                }
             }
             if (state.isLoading) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center).testTag("loading-indicator"))
@@ -352,122 +383,6 @@ private fun AppNavigation(selected: LibrarySection, onSelected: (LibrarySection)
 }
 
 @Composable
-private fun SearchContent(
-    query: String,
-    items: List<SpotifyContent>,
-    onQueryChanged: (String) -> Unit,
-    onSearch: () -> Unit,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
-) {
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChanged,
-                placeholder = { Text(stringResource(R.string.search_hint)) },
-                singleLine = true,
-                modifier = Modifier.weight(1f).testTag("search-input"),
-            )
-            FilledIconButton(
-                onClick = onSearch,
-                enabled = query.isNotBlank(),
-                modifier = Modifier.padding(start = 8.dp).testTag("search-button"),
-            ) {
-                Icon(Icons.Default.Search, stringResource(R.string.search_action))
-            }
-        }
-        ContentList(items, onPlay, onOpen)
-    }
-}
-
-@Composable
-private fun ContentList(
-    items: List<SpotifyContent>,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
-) {
-    if (items.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.empty_library))
-        }
-        return
-    }
-    LazyColumn(
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(items, key = { "${it.kind}-${it.id}" }) { item ->
-            ContentCard(item, onPlay, onOpen)
-        }
-    }
-}
-
-@Composable
-private fun ContentCard(
-    item: SpotifyContent,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
-) {
-    val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
-    Card(
-        onClick = {
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            onOpen(item)
-        },
-        modifier = Modifier.fillMaxWidth().testTag("content-${item.kind.name.lowercase()}-${item.id}"),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (item.imageUrl != null) {
-                AsyncImage(
-                    model = item.imageUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(58.dp).clip(RoundedCornerShape(6.dp)),
-                )
-            } else {
-                Box(Modifier.size(58.dp), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.LibraryMusic, contentDescription = null)
-                }
-            }
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(
-                    item.title.ifBlank { stringResource(R.string.untitled_playlist) },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.testTag("title-${item.kind.name.lowercase()}-${item.id}"),
-                )
-                Text(item.subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
-                Text(stringResource(R.string.supplied_by_spotify), style = MaterialTheme.typography.labelSmall)
-            }
-            IconButton(onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onPlay(item)
-            }, enabled = item.isPlayable != false,
-                modifier = Modifier.testTag("play-${item.kind.name.lowercase()}-${item.id}")) {
-                Icon(Icons.Default.PlayArrow, stringResource(R.string.play))
-            }
-            IconButton(
-                onClick = {
-                    val type = item.kind.name.lowercase()
-                    context.startActivity(Intent(Intent.ACTION_VIEW, "https://open.spotify.com/$type/${item.id}".toUri()))
-                },
-            ) {
-                Icon(Icons.AutoMirrored.Filled.OpenInNew, stringResource(R.string.open_on_spotify))
-            }
-        }
-    }
-}
-
-@Composable
 private fun PlaybackBar(
     playback: Playback,
     onPlayPause: () -> Unit,
@@ -476,6 +391,7 @@ private fun PlaybackBar(
     onSeek: (Long) -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
+    onOpenPlayer: () -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     val windowSize = LocalWindowInfo.current.containerSize
@@ -531,9 +447,10 @@ private fun PlaybackBar(
             )
         }
     }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Column(Modifier.fillMaxWidth().clickable(onClickLabel = stringResource(R.string.expand_player), onClick = onOpenPlayer)
+        .testTag("mini-player").padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).testTag("mini-player-info")) {
                 Text(playback.item?.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     listOfNotNull(playback.item?.subtitle, playback.deviceName).filter(String::isNotBlank).joinToString(" · "),

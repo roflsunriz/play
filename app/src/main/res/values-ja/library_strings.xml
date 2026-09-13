@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_filter_hint">名前・作成者・説明などで絞り込み</string>
+    <string name="clear_filter">絞り込みをクリア</string>
+    <string name="no_filter_results">一致する項目がありません。</string>
+    <string name="sort_by">並び替え</string>
+    <string name="sort_selected">選択中</string>
+    <string name="sort_library_order">ライブラリ順</string>
+    <string name="sort_title">名前の昇順</string>
+    <string name="sort_title_descending">名前の降順</string>
+    <string name="sort_creator">作成者</string>
+    <string name="sort_artist">アーティスト</string>
+    <string name="sort_track_count">曲数が多い順</string>
+    <string name="sort_duration">短い曲から</string>
+    <string name="sort_duration_descending">長い曲から</string>
+    <string name="suggested_content">ライブラリからのおすすめ</string>
+    <string name="matching_suggestions">ライブラリ内の候補</string>
+    <string name="search_results">検索結果</string>
+    <plurals name="library_result_count">
+        <item quantity="other">%1$d件</item>
+    </plurals>
+</resources>

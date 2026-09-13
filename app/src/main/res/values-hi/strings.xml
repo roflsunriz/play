@@ -20,8 +20,6 @@
     <string name="repeat_context">प्लेलिस्ट रिपीट</string>
     <string name="repeat_track">एक गाना रिपीट</string>
     <string name="settings">सेटिंग</string>
-    <string name="supplied_by_spotify">सेवा की सामग्री</string>
-    <string name="open_on_spotify">सेवा के ऐप में खोलें</string>
     <string name="login_failed">लॉग इन विफल रहा।</string>
     <string name="request_failed">अनुरोध विफल रहा।</string>
     <string name="error_title">कुछ गलत हुआ</string>

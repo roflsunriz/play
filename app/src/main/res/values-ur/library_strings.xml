@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_filter_hint">نام، تخلیق کار، تفصیل سے فلٹر کریں…</string>
+    <string name="clear_filter">فلٹر صاف کریں</string>
+    <string name="no_filter_results">کوئی مماثلت نہیں ملی۔</string>
+    <string name="sort_by">ترتیب دیں</string>
+    <string name="sort_selected">منتخب</string>
+    <string name="sort_library_order">لائبریری کی ترتیب</string>
+    <string name="sort_title">نام صعودی ترتیب</string>
+    <string name="sort_title_descending">نام نزولی ترتیب</string>
+    <string name="sort_creator">تخلیق کار</string>
+    <string name="sort_artist">فنکار</string>
+    <string name="sort_track_count">زیادہ گانے پہلے</string>
+    <string name="sort_duration">چھوٹے گانے پہلے</string>
+    <string name="sort_duration_descending">لمبے گانے پہلے</string>
+    <string name="suggested_content">آپ کی لائبریری سے تجاویز</string>
+    <string name="matching_suggestions">لائبریری میں مماثلتیں</string>
+    <string name="search_results">تلاش کے نتائج</string>
+    <plurals name="library_result_count">
+        <item quantity="one">%1$d آئٹم</item>
+        <item quantity="other">%1$d آئٹمز</item>
+    </plurals>
+</resources>

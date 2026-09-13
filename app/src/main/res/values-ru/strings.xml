@@ -20,8 +20,6 @@
     <string name="repeat_context">Повтор плейлиста</string>
     <string name="repeat_track">Повтор одного трека</string>
     <string name="settings">Настройки</string>
-    <string name="supplied_by_spotify">Контент сервиса</string>
-    <string name="open_on_spotify">Открыть в приложении сервиса</string>
     <string name="login_failed">Не удалось войти.</string>
     <string name="request_failed">Ошибка запроса.</string>
     <string name="error_title">Произошла ошибка</string>

@@ -20,6 +20,10 @@ data class SpotifyContent(
     val albumUri: String? = null,
     val albumTitle: String? = null,
     val isPlayable: Boolean? = null,
+    val ownerName: String? = null,
+    val description: String? = null,
+    val trackCount: Int? = null,
+    val releaseDate: String? = null,
 )
 
 data class ContentDetail(

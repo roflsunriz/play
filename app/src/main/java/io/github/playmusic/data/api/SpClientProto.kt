@@ -48,7 +48,12 @@ object SpClientProto {
         val canDelete: Boolean? = null,
     )
 
-    data class PlaylistMetadata(val attributes: PlaylistAttributes?, val status: Int?)
+    data class PlaylistMetadata(
+        val attributes: PlaylistAttributes?,
+        val status: Int?,
+        val ownerUsername: String? = null,
+        val length: Int? = null,
+    )
 
     data class PlaylistDetail(
         val name: String? = null,
@@ -107,7 +112,7 @@ object SpClientProto {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 1 -> revision = reader.readBytes()
-                2 -> totalLength = reader.readVarint().toInt()
+                2 -> totalLength = readCount(reader)
                 3 -> header = reader.readBytes()
                 5 -> contents = parseItems(reader.readBytes())
                 16 -> ownerUsername = reader.readString()
@@ -227,10 +232,14 @@ object SpClientProto {
         val reader = ProtoWire.Reader(bytes)
         var attributes: PlaylistAttributes? = null
         var status: Int? = null
+        var ownerUsername: String? = null
+        var length: Int? = null
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 2 -> attributes = parseHeader(reader.readBytes())
+                3 -> length = readCount(reader)
+                5 -> ownerUsername = reader.readString().takeIf(String::isNotBlank)
                 9 -> {
                     val encoded = reader.readVarint()
                     status = ((encoded ushr 1) xor -(encoded and 1)).toInt()
@@ -238,7 +247,13 @@ object SpClientProto {
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return PlaylistMetadata(attributes, status)
+        return PlaylistMetadata(attributes, status, ownerUsername, length)
+    }
+
+    private fun readCount(reader: ProtoWire.Reader): Int {
+        val value = reader.readVarint()
+        if (value !in 0..Int.MAX_VALUE.toLong()) throw ProtoParseException("Playlist length is invalid")
+        return value.toInt()
     }
 
     private fun parseItem(bytes: ByteArray): PlaylistItem {

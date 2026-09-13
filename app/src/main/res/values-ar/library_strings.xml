@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_filter_hint">تصفية بالاسم أو المنشئ أو الوصف…</string>
+    <string name="clear_filter">مسح التصفية</string>
+    <string name="no_filter_results">لا توجد عناصر مطابقة.</string>
+    <string name="sort_by">ترتيب حسب</string>
+    <string name="sort_selected">محدد</string>
+    <string name="sort_library_order">ترتيب المكتبة</string>
+    <string name="sort_title">الاسم تصاعديًا</string>
+    <string name="sort_title_descending">الاسم تنازليًا</string>
+    <string name="sort_creator">المنشئ</string>
+    <string name="sort_artist">الفنان</string>
+    <string name="sort_track_count">الأكثر مقاطع</string>
+    <string name="sort_duration">الأقصر أولًا</string>
+    <string name="sort_duration_descending">الأطول أولًا</string>
+    <string name="suggested_content">مقترحات من مكتبتك</string>
+    <string name="matching_suggestions">مطابقات في مكتبتك</string>
+    <string name="search_results">نتائج البحث</string>
+    <plurals name="library_result_count">
+        <item quantity="zero">%1$d عنصر</item>
+        <item quantity="one">%1$d عنصر</item>
+        <item quantity="two">%1$d عنصر</item>
+        <item quantity="few">%1$d عناصر</item>
+        <item quantity="many">%1$d عنصرًا</item>
+        <item quantity="other">%1$d عنصر</item>
+    </plurals>
+</resources>

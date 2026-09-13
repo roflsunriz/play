@@ -98,11 +98,13 @@ class LibraryAccountTest {
 
     @Test
     fun searchReturnsContent(): Unit = runBlocking {
-        val items = app.repository.search("Nirvana")
-        assertTrue("Search must return content", items.isNotEmpty())
-        assertTrue("Search must return titled content", items.all { it.title.isNotBlank() })
-        assertTrue("Search must include albums and tracks", items.map { it.kind }.containsAll(listOf(ContentKind.ALBUM, ContentKind.TRACK)))
-        Log.i(TAG, "verified search count=${items.size}")
+        for (query in listOf("Nirvana", "音楽", "jazz", "a")) {
+            val items = app.repository.search(query)
+            assertTrue("Search must return content for $query", items.isNotEmpty())
+            assertTrue("Search must return titled content", items.all { it.title.isNotBlank() })
+            assertTrue("Search must include albums and tracks", items.map { it.kind }.containsAll(listOf(ContentKind.ALBUM, ContentKind.TRACK)))
+            Log.i(TAG, "verified search count=${items.size}")
+        }
     }
 
     private suspend fun verifyLibrary(kind: ContentKind) {

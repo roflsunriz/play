@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_filter_hint">नाम, निर्माता, विवरण से फ़िल्टर करें…</string>
+    <string name="clear_filter">फ़िल्टर हटाएँ</string>
+    <string name="no_filter_results">कोई मेल नहीं मिला।</string>
+    <string name="sort_by">क्रमबद्ध करें</string>
+    <string name="sort_selected">चुना गया</string>
+    <string name="sort_library_order">लाइब्रेरी क्रम</string>
+    <string name="sort_title">नाम आरोही क्रम में</string>
+    <string name="sort_title_descending">नाम अवरोही क्रम में</string>
+    <string name="sort_creator">निर्माता</string>
+    <string name="sort_artist">कलाकार</string>
+    <string name="sort_track_count">अधिक गाने पहले</string>
+    <string name="sort_duration">छोटे गाने पहले</string>
+    <string name="sort_duration_descending">लंबे गाने पहले</string>
+    <string name="suggested_content">आपकी लाइब्रेरी से सुझाव</string>
+    <string name="matching_suggestions">लाइब्रेरी में मेल</string>
+    <string name="search_results">खोज के नतीजे</string>
+    <plurals name="library_result_count">
+        <item quantity="one">%1$d आइटम</item>
+        <item quantity="other">%1$d आइटम</item>
+    </plurals>
+</resources>
