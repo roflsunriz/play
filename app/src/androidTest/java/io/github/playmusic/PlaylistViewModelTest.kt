@@ -161,6 +161,8 @@ class PlaylistViewModelTest {
         @Synchronized fun reply(request: Connection): Reply {
             val path = request.url.path
             return when {
+                path == "/user-profile-view/v3/profile/$USER" -> Reply(bytes =
+                    fieldString(1, "spotify:user:$USER") + fieldString(2, "Test creator"))
                 path == "/playlist/v2/playlist" -> {
                     creates.incrementAndGet()
                     created = true

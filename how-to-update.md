@@ -50,6 +50,8 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 一覧と検索結果の保持はアカウント別のメモリ内で行う。詳細の先読みは可視範囲と近傍を対象に同時2件、保持は24件・合計6000曲まで。手動更新、プレイリスト変更、ログアウトの無効化を変更する場合は、`AccountMemoryCacheTest`と`LibraryBrowsingTest`で通信の重複、古い応答、失敗時の再試行、アカウント分離も確認する。
 
+作成者の表示名は`UserProfileClientTest`でアカウントIDとの区別・返却URI照合・取得不能と通信失敗の違いを確認する。実機では`LibraryAccountTest#playlistOwnersUseTheirPublicProfileNames`を`liveAccount=true`で実行する。画面の検索欄は3タブで同じ部品を使い、`HomeScreenTest`と`LibraryBrowsingTest`で見た目・メタデータ検索・並び替え・タブごとの保持を検証する。
+
 9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
 
 ## 許可済み端末の通信確認

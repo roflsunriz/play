@@ -60,7 +60,9 @@ class SpotifyApiClient(
         path: String,
         query: Map<String, String> = emptyMap(),
         base: String = API_BASE,
-    ): Response = request("GET", base, path, query, null, null, "application/x-protobuf", acceptProto = true)
+        accept: String = "application/protobuf",
+    ): Response = request("GET", base, path, query, null, null, "application/x-protobuf", acceptProto = true,
+        protoAccept = accept)
 
     private suspend fun request(
         method: String,
@@ -73,14 +75,15 @@ class SpotifyApiClient(
         acceptProto: Boolean,
         stringBody: String? = null,
         featureId: String? = null,
+        protoAccept: String = "application/protobuf",
     ): Response {
         var token = sessionManager.accessToken()
         var clientToken = if (sessionManager.usesBrowserAuthorization()) null else sessionManager.clientToken()
-        var response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId)
+        var response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId, protoAccept)
         if (response.status == HttpURLConnection.HTTP_UNAUTHORIZED) {
             if (clientToken != null) clientToken = sessionManager.clientToken(forceRefresh = true)
             token = sessionManager.accessToken(forceRefresh = true)
-            response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId)
+            response = execute(method, base, path, query, body, protoBody, contentType, token, clientToken, acceptProto, stringBody, featureId, protoAccept)
         }
         if (response.status !in 200..299) {
             val message = extractError(response.body)
@@ -102,6 +105,7 @@ class SpotifyApiClient(
         acceptProto: Boolean,
         stringBody: String?,
         featureId: String?,
+        protoAccept: String,
     ): Response = withContext(Dispatchers.IO) {
         val queryString = query.entries.joinToString("&") { (key, value) -> "${encode(key)}=${encode(value)}" }
         val url = "$base$path" + if (queryString.isBlank()) "" else "?$queryString"
@@ -125,7 +129,7 @@ class SpotifyApiClient(
                 "Accept",
                 when {
                     contentType == COLLECTION_CONTENT_TYPE -> contentType
-                    acceptProto -> "application/protobuf"
+                    acceptProto -> protoAccept
                     else -> "application/json"
                 },
             )

@@ -14,6 +14,23 @@ import org.junit.Test
 /** Opt in with liveAccount=true on a test account with saved playlists, albums and tracks. */
 class LibraryAccountTest {
     @Test
+    fun playlistOwnersUseTheirPublicProfileNames(): Unit = runBlocking {
+        val username = app.sessionManager.username()
+        val profiles = io.github.playmusic.data.api.UserProfileClient(SpotifyApiClient(app.sessionManager))
+        val ownName = profiles.profile(username).displayName
+        assertTrue("The signed-in account must have a display name", !ownName.isNullOrBlank())
+        val items = app.repository.library(ContentKind.PLAYLIST, forceRefresh = true)
+        val owned = items.filter { it.ownerUsername == username }
+        assertTrue("This account must own a playlist", owned.isNotEmpty())
+        assertTrue("Owned playlists must use the profile display name", owned.all { it.ownerName == ownName })
+        val another = items.first { it.ownerUsername != null && it.ownerUsername != username && it.ownerName != null }
+        assertTrue("Other creators must also use profile names", another.ownerName == profiles.profile(checkNotNull(another.ownerUsername)).displayName)
+        val detail = app.repository.detail(owned.first())
+        assertTrue("Prefetched or opened details must keep the display name", detail.content.ownerName == ownName)
+        Log.i(TAG, "verified display names and ownership identifiers separately")
+    }
+
+    @Test
     fun playbackAuthorizationCanRenewWithoutAnotherLogin(): Unit = runBlocking {
         val endpoint = java.net.URI(io.github.playmusic.data.playback.StreamingApiClient.LICENSE_URL)
         val first = app.playbackAuthorization.headers(endpoint)

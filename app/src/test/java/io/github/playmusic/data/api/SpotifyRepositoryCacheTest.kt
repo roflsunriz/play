@@ -24,6 +24,21 @@ import java.util.Collections
 
 class SpotifyRepositoryCacheTest {
     @Test
+    fun ownerProfilesAreSharedWithDetailsAndExplicitRefreshUpdatesTheirNames() = runBlocking {
+        val server = Server()
+        val item = server.repository.library(ContentKind.PLAYLIST).single()
+        server.repository.detail(item)
+        assertEquals(1, server.requests.count { it.url.path.startsWith("/user-profile-view/") })
+        server.profileLabel = "Changed"
+        assertEquals("Display account-a", server.repository.library(ContentKind.PLAYLIST).single().ownerName)
+        val refreshed = server.repository.library(ContentKind.PLAYLIST, forceRefresh = true).single()
+        assertEquals("Changed account-a", refreshed.ownerName)
+        assertEquals("account-a", refreshed.ownerUsername)
+        assertEquals("Changed account-a", server.repository.detail(refreshed).content.ownerName)
+        assertEquals(2, server.requests.count { it.url.path.startsWith("/user-profile-view/") })
+    }
+
+    @Test
     fun librariesAreCachedAndAlbumAndTrackReadsShareCollectionPaging() = runBlocking {
         val server = Server()
         val kinds = listOf(ContentKind.PLAYLIST, ContentKind.ALBUM, ContentKind.TRACK)
@@ -38,8 +53,9 @@ class SpotifyRepositoryCacheTest {
         }
         assertEquals(requests, server.requests.size)
         val playlist = loaded[0].single()
-        assertEquals("account-a", playlist.ownerName)
-        assertEquals("account-a", playlist.subtitle)
+        assertEquals("Display account-a", playlist.ownerName)
+        assertEquals("account-a", playlist.ownerUsername)
+        assertEquals("Display account-a", playlist.subtitle)
         assertEquals("Description", playlist.description)
         assertEquals(0, playlist.trackCount)
         val album = loaded[1].single()
@@ -70,7 +86,7 @@ class SpotifyRepositoryCacheTest {
         val old = server.repository.detail(item)
         assertEquals("Original", old.content.title)
         assertEquals("Description", old.content.description)
-        assertEquals("account-a", old.content.ownerName)
+        assertEquals("Display account-a", old.content.ownerName)
         assertEquals(0, old.content.trackCount)
         assertTrue(checkNotNull(old.playlistMetadata).canEdit)
         val count = server.requests.size
@@ -116,7 +132,7 @@ class SpotifyRepositoryCacheTest {
         assertNull(server.repository.peekLibrary(ContentKind.PLAYLIST))
         assertNull(server.repository.peekDetail(item))
         assertNull(server.repository.peekLibrary(ContentKind.TRACK))
-        assertEquals("account-b", server.repository.library(ContentKind.PLAYLIST).single().ownerName)
+        assertEquals("Display account-b", server.repository.library(ContentKind.PLAYLIST).single().ownerName)
         server.repository.library(ContentKind.TRACK)
         assertEquals(2, server.requests.count { it.url.path == "/collection/v2/paging" })
         server.tokens.account = null
@@ -191,6 +207,7 @@ class SpotifyRepositoryCacheTest {
         val tokens = Tokens()
         val requests = Collections.synchronizedList(mutableListOf<Connection>())
         @Volatile var title = "Original"
+        @Volatile var profileLabel = "Display"
         @Volatile var description = "Description"
         @Volatile var hasPlaylist = true
         @Volatile var hasCollection = true
@@ -208,6 +225,10 @@ class SpotifyRepositoryCacheTest {
             }
             if (failReads) return Reply(503, ByteArray(0))
             val body = when {
+                request.url.path.startsWith("/user-profile-view/v3/profile/") -> {
+                    val username = request.url.path.substringAfterLast('/')
+                    fieldString(1, "spotify:user:$username") + fieldString(2, "$profileLabel $username")
+                }
                 request.url.path.endsWith("/rootlist") -> rootlist()
                 request.url.path.startsWith("/playlist/v2/playlist/") -> playlist()
                 request.url.path == "/collection/v2/paging" -> LibraryFixtures.collection(

@@ -20,7 +20,9 @@ internal object CatalogJson {
                 entity.optJSONObject("otherArtists")?.optJSONArray("items")?.objects().orEmpty())
         val artists = artistItems.mapNotNull { it.optJSONObject("profile")?.text("name") ?: it.text("name") }
         val owner = entity.optJSONObject("ownerV2")?.optJSONObject("data")
-        val ownerName = owner?.text("displayName") ?: owner?.text("name") ?: owner?.text("username")
+        val ownerName = owner?.text("displayName") ?: owner?.text("name")
+        val ownerUsername = owner?.text("username") ?: owner?.text("uri")
+            ?.takeIf { it.startsWith("spotify:user:") }?.removePrefix("spotify:user:")
         return SpotifyContent(
             id = uri.substringAfterLast(':'),
             uri = uri,
@@ -33,6 +35,7 @@ internal object CatalogJson {
             albumTitle = parent?.text("name") ?: album?.title,
             isPlayable = entity.optJSONObject("playability")?.let { if (it.has("playable")) it.getBoolean("playable") else null },
             ownerName = ownerName,
+            ownerUsername = ownerUsername,
             description = entity.opt("description") as? String,
             trackCount = entity.optJSONObject("tracksV2")?.count("totalCount"),
             releaseDate = releaseDate(parent ?: entity) ?: album?.releaseDate,

@@ -66,7 +66,9 @@ class CatalogJsonTest {
         assertEquals("Description", parsed.description)
         assertEquals(0, parsed.trackCount)
         playlist.getJSONObject("ownerV2").getJSONObject("data").remove("displayName")
-        assertEquals("owner-id", CatalogJson.content(playlist, ContentKind.PLAYLIST).ownerName)
+        val unresolved = CatalogJson.content(playlist, ContentKind.PLAYLIST)
+        assertEquals("owner-id", unresolved.ownerUsername)
+        assertEquals(null, unresolved.ownerName)
     }
 
     @Test

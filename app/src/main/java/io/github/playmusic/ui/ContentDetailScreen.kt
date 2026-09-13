@@ -60,7 +60,7 @@ internal fun ContentDetailScreen(
     val haptics = LocalHapticFeedback.current
     val content = detail?.content ?: selected
     val playlistMetadata = detail?.playlistMetadata?.takeIf { content.kind == ContentKind.PLAYLIST }
-    val owner = content.ownerName?.takeIf(String::isNotBlank) ?: playlistMetadata?.ownerUsername?.takeIf(String::isNotBlank)
+    val owner = content.ownerName?.takeIf(String::isNotBlank)
     val description = (playlistMetadata?.description ?: content.description)?.takeIf(String::isNotBlank)
     val trackCount = detail?.totalTracks ?: content.trackCount
     val releaseDate = (detail?.releaseDate ?: content.releaseDate)?.takeIf(String::isNotBlank)

@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.assertTextEquals
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import org.junit.Assume.assumeTrue
@@ -28,6 +29,24 @@ class LiveBrowsingScreenTest {
         composeRule.waitUntil(90_000) { listOf(ContentKind.PLAYLIST, ContentKind.ALBUM, ContentKind.TRACK)
             .all { app.repository.peekLibrary(it) != null } }
         captureScreen(composeRule.onRoot(), "live-playlist-metadata")
+        val album = checkNotNull(app.repository.peekLibrary(ContentKind.ALBUM)).first { it.subtitle.isNotBlank() }
+        composeRule.onNodeWithTag("section-albums").performClick()
+        composeRule.onNodeWithTag("album-filter-input").performTextInput(album.subtitle)
+        composeRule.onNodeWithTag("content-album-${album.id}").assertIsDisplayed()
+        captureScreen(composeRule.onRoot(), "live-album-filter")
+        composeRule.onNodeWithTag("library-sort-button").performClick()
+        composeRule.onNodeWithTag("sort-title").performClick()
+        val savedTrack = checkNotNull(app.repository.peekLibrary(ContentKind.TRACK)).first { !it.albumTitle.isNullOrBlank() }
+        composeRule.onNodeWithTag("section-tracks").performClick()
+        composeRule.onNodeWithTag("track-filter-input").performTextInput(checkNotNull(savedTrack.albumTitle))
+        composeRule.onNodeWithTag("content-track-${savedTrack.id}").assertIsDisplayed()
+        captureScreen(composeRule.onRoot(), "live-track-filter")
+        composeRule.onNodeWithTag("section-albums").performClick()
+        composeRule.onNodeWithTag("album-filter-input").assertTextEquals(album.subtitle)
+        composeRule.onNodeWithTag("clear-library-filter").performClick()
+        composeRule.onNodeWithTag("section-tracks").performClick()
+        composeRule.onNodeWithTag("track-filter-input").assertTextEquals(checkNotNull(savedTrack.albumTitle))
+        composeRule.onNodeWithTag("clear-library-filter").performClick()
         composeRule.onNodeWithTag("settings-button").performClick()
         composeRule.onNodeWithTag("account-login-button").assertDoesNotExist()
         androidx.test.espresso.Espresso.pressBack()

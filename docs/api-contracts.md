@@ -25,7 +25,9 @@ Windows参照版の要求と実応答を基準に認証・カタログ・音声�
 
 rootlistの`meta_items`は元のitemsと同じ位置で関連付ける。公開配信コードのencode/decodeと照合し、`MetaItem.attributes`はfield2、`length`はint32のfield3、`ownerUsername`はstringのfield5、`statusCode`はsint32のfield9と確認した。説明は既存のListAttributes field2を使う。空URIはページ内の位置を保った後でRepositoryが除く。確認資料はGit管理外の`build/qa/playlist-source/`にある公開bundleの控え。
 
-作成者は表示名が存在する応答では表示名を使い、ネイティブrootlistでは提供されたユーザー名を使う。未提供の説明・曲数・日付はnullとし、既知の空説明や0件と区別する。リスト長はサービスの総要素数であり、曲以外を含む場合がある。アルバムと楽曲は既存のカタログ応答からアーティスト、親アルバム、日付、長さなどを読み取る。
+作成者のアカウントIDと表示名は別に保持する。ネイティブrootlistの`ownerUsername`を表示名に流用せず、`GET /user-profile-view/v3/profile/{username}`へ`playlist_limit=0`、`artist_limit=0`、`episode_limit=0`、`Accept: application/x-protobuf`を指定する。公開bundleのmodule 86576にある要求とProfileのencode/decodeを照合し、field1がユーザーURI、field2が表示名と確認した。返却URIと対象ユーザーを照合し、表示名だけを使う。プロフィールはアカウント別に最大256件・同時4取得で共有し、手動更新では再取得する。閲覧できないプロフィールや空の表示名をIDで置き換えず、その他の通信エラーは失敗として扱う。
+
+未提供の説明・曲数・日付はnullとし、既知の空説明や0件と区別する。リスト長はサービスの総要素数であり、曲以外を含む場合がある。アルバムと楽曲は既存のカタログ応答からアーティスト、親アルバム、日付、長さなどを読み取る。
 
 検索のnullスロット、null union、`NotFound`、`RestrictedContent`は既知の取得不能項目として除く。正しいURIと名前を持つ再生不可曲は残す。未知のwrapper、`GenericError`、通信やGraphQLの失敗は検索結果の空配列へ置き換えない。修正後、実機の保存済み認証で英語・日本語・1文字の4検索語が成功した。
 

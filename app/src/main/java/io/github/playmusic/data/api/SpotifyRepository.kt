@@ -25,12 +25,16 @@ class SpotifyRepository(
     private val accountIdentity: (() -> String?)? = null,
 ) {
     private val playlists = PlaylistApiClient(api, sessionManager)
+    private val userProfiles = UserProfileClient(api)
+    private val profileNames = AccountMemoryCache<String, UserProfileClient.Profile>(256, 256, { 1 }, 4)
     private val libraries = AccountMemoryCache<ContentKind, List<SpotifyContent>>(3, 3, { 1 }, 3)
     private val collections = AccountMemoryCache<String, List<String>>(1, 1, { 1 }, 1)
     private val details = AccountMemoryCache<String, ContentDetail>(24, 6000, { it.tracks.size.coerceAtLeast(1) }, 2)
 
     suspend fun createPlaylist(name: String, description: String = ""): SpotifyContent = writePlaylist {
-        playlists.create(name, description).copy(ownerName = sessionManager.username(), description = description, trackCount = 0)
+        val username = sessionManager.username()
+        val ownerName = ownerDisplayName(username)
+        playlists.create(name, description).copy(ownerUsername = username, ownerName = ownerName, description = description, trackCount = 0)
     }
 
     suspend fun completePlaylistCreation(content: SpotifyContent): SpotifyContent = writePlaylist(content.uri) {
@@ -84,18 +88,18 @@ class SpotifyRepository(
         return details.peek(account, content.uri)
     }
 
-    fun clearCache() { libraries.clear(); collections.clear(); details.clear() }
+    fun clearCache() { libraries.clear(); collections.clear(); details.clear(); profileNames.clear() }
 
     private suspend fun loadLibrary(kind: ContentKind, forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
         when (kind) {
-            ContentKind.PLAYLIST -> libraryPlaylists()
+            ContentKind.PLAYLIST -> libraryPlaylists(forceRefresh)
             ContentKind.ALBUM -> libraryAlbums(forceRefresh)
             ContentKind.TRACK -> libraryTracks(forceRefresh)
             else -> emptyList()
         }
     }
 
-    suspend fun search(query: String): List<SpotifyContent> = catalog.search(query)
+    suspend fun search(query: String): List<SpotifyContent> = resolveOwners(catalog.search(query))
 
     suspend fun detail(content: SpotifyContent, forceRefresh: Boolean = false): ContentDetail {
         val account = currentAccount()
@@ -127,17 +131,19 @@ class SpotifyRepository(
             offset += page.items.size
         } while (offset < total)
         val metadata = checkNotNull(first)
+        val ownerName = metadata.ownerUsername?.takeIf(String::isNotBlank)?.let { ownerDisplayName(it) }
         val updated = content.copy(title = metadata.name ?: content.title,
             imageUrl = metadata.images["default"] ?: metadata.images.values.firstOrNull(),
-            ownerName = metadata.ownerUsername,
-            subtitle = metadata.ownerUsername.orEmpty(),
+            ownerName = ownerName,
+            ownerUsername = metadata.ownerUsername,
+            subtitle = ownerName.orEmpty(),
             description = metadata.description,
             trackCount = total)
         return ContentDetail(updated, catalog.tracks(uris), total,
             playlistMetadata = playlists.metadata(metadata, content.uri))
     }
 
-    private suspend fun libraryPlaylists(): List<SpotifyContent> = coroutineScope {
+    private suspend fun libraryPlaylists(forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
         val username = sessionManager.username()
         val encodedUsername = java.net.URLEncoder.encode(username, Charsets.UTF_8.name()).replace("+", "%20")
         val playlists = linkedMapOf<String, SpClientProto.PlaylistItem>()
@@ -159,7 +165,7 @@ class SpotifyRepository(
             offset += parsed.items.size
             if (parsed.totalLength != null && offset >= parsed.totalLength) break
         } while (true)
-        playlists.values.chunked(MAX_PARALLEL_REQUESTS).flatMap { batch ->
+        val contents = playlists.values.chunked(MAX_PARALLEL_REQUESTS).flatMap { batch ->
             batch.map { item -> async {
                 val metadata = item.metadata
                 if (metadata?.status in setOf(403, 404, 410)) return@async null
@@ -171,6 +177,7 @@ class SpotifyRepository(
                 else fetchPlaylistDetail(item.uri)
             } }.awaitAll().filterNotNull()
         }
+        resolveOwners(contents, forceRefresh)
     }
 
     private suspend fun fetchPlaylistDetail(uri: String): SpotifyContent? {
@@ -189,21 +196,44 @@ class SpotifyRepository(
     }
 
     private fun playlistContent(uri: String, attributes: SpClientProto.PlaylistAttributes,
-        ownerName: String? = null, trackCount: Int? = null): SpotifyContent? {
+        ownerUsername: String? = null, trackCount: Int? = null): SpotifyContent? {
         if (attributes.deletedByOwner) return null
         return SpotifyContent(
             id = uri.removePrefix("spotify:playlist:"),
             uri = uri,
             title = attributes.name.orEmpty(),
-            subtitle = ownerName.orEmpty(),
+            subtitle = "",
             imageUrl = attributes.images["default"]
                 ?: attributes.images["xlarge"]
                 ?: attributes.images.values.firstOrNull(),
             kind = ContentKind.PLAYLIST,
-            ownerName = ownerName,
+            ownerUsername = ownerUsername,
             description = attributes.description,
             trackCount = trackCount,
         )
+    }
+
+    private suspend fun ownerDisplayName(username: String, forceRefresh: Boolean = false): String? {
+        val account = currentAccount()
+        val profile = profileNames.get(account, username, forceRefresh) {
+            checkAccount(account)
+            userProfiles.profile(username).also { checkAccount(account) }
+        }
+        checkAccount(account)
+        return profile.displayName
+    }
+
+    private suspend fun resolveOwners(items: List<SpotifyContent>, forceRefresh: Boolean = false): List<SpotifyContent> = coroutineScope {
+        val usernames = items.filter { it.kind == ContentKind.PLAYLIST &&
+            (forceRefresh || it.ownerName.isNullOrBlank() || it.ownerName == it.ownerUsername) }
+            .mapNotNull { it.ownerUsername?.takeIf(String::isNotBlank) }.distinct()
+        val names = usernames.chunked(MAX_PARALLEL_REQUESTS).flatMap { batch ->
+            batch.map { username -> async { username to ownerDisplayName(username, forceRefresh) } }.awaitAll()
+        }.toMap()
+        items.map { item ->
+            if (item.ownerUsername in names) item.copy(ownerName = names[item.ownerUsername], subtitle = names[item.ownerUsername].orEmpty())
+            else item
+        }
     }
 
     private suspend fun currentAccount(): String {
