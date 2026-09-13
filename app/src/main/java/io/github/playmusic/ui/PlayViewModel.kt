@@ -250,7 +250,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         detailPrefetcher.update(emptyList())
         detailHistory.clear()
         val current = mutableState.value
-        val cached = current.libraries[section] ?: section.kind?.let(container.repository::peekLibrary)
+        val cached = current.libraries[section]
         mutableState.value = current.copy(selectedSection = section,
             items = if (section == LibrarySection.SEARCH) current.searchResults else visibleItems(section, cached.orEmpty()),
             isLoading = cached == null && section != LibrarySection.SEARCH,
@@ -338,7 +338,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         contentRequestJob?.cancel()
         val current = mutableState.value.detail
         if (rememberCurrent && current != null && current.content.uri != content.uri) detailHistory.addLast(current)
-        val cached = container.repository.peekDetail(content)
+        // The repository's cache lookup validates the account via Keystore; keep it in the IO request below.
+        val cached = current?.takeIf { it.content.uri == content.uri }
         mutableState.value = mutableState.value.copy(selectedContent = content, detail = cached, error = null,
             isLoading = cached == null)
         if (cached != null && !forceRefresh) return
@@ -610,8 +611,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         refreshOwnerNames: Boolean = forceRefresh) {
         val kind = section.kind ?: return
         if (libraryJobs[section]?.isActive == true && !forceRefresh) return
-        val cached = mutableState.value.libraries[section] ?: container.repository.peekLibrary(kind)
-        if (cached != null) publishLibrary(section, cached)
+        // Already published tabs are ready synchronously. Other cache reads belong to repository.library on IO.
+        val cached = mutableState.value.libraries[section]
         if (cached != null && !forceRefresh) {
             if (warmOthers) LibrarySection.entries.filter { it.kind != null && it != section }.forEach { loadLibrary(it) }
             return

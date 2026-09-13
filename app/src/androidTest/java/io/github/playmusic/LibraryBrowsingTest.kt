@@ -45,6 +45,7 @@ class LibraryBrowsingTest {
     private val oldStarted = CountDownLatch(1)
     private val releaseOld = CountDownLatch(1)
     @Volatile private var watchMainSessionReads = false
+    @Volatile private var watchAfterRootlist = false
     private val mainSessionReads = AtomicInteger()
     private val context = object : ContextWrapper(base) {
         override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences {
@@ -123,6 +124,27 @@ class LibraryBrowsingTest {
         watchMainSessionReads = false
     }
 
+    @Test fun warmingOtherTabsDoesNotReadCredentialsOnMain() {
+        watchAfterRootlist = true
+        val model = createModel()
+        await { model.state.value.libraries.size == 3 }
+        assertEquals(0, mainSessionReads.get())
+    }
+
+    @Test fun openingAPrefetchedDetailDoesNotReadCredentialsOnMainOrRequestItAgain() {
+        val model = createModel()
+        await { model.state.value.libraries.size == 3 }
+        val item = model.state.value.items.first()
+        runBlocking { app.repository.detail(item) }
+        val before = requests.get()
+        watchMainSessionReads = true
+        instrumentation.runOnMainSync { model.openDetail(item) }
+        await { model.state.value.detail != null && !model.state.value.isLoading }
+        assertEquals(0, mainSessionReads.get())
+        assertEquals(before, requests.get())
+        assertEquals(item.uri, model.state.value.detail?.content?.uri)
+    }
+
     @Test fun typingShowsLocalSuggestionsAndDebouncesRemoteResults() {
         val model = createModel()
         await { model.state.value.libraries.size == 3 }
@@ -167,6 +189,7 @@ class LibraryBrowsingTest {
             requests.incrementAndGet()
             when {
                 uri.path.endsWith("/rootlist") -> {
+                    if (watchAfterRootlist) watchMainSessionReads = true
                     val rows = listOf("0000000000000000000002" to "Beta", "0000000000000000000001" to "Alpha")
                     fieldBytes(1, byteArrayOf(1)) + fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
                         rows.fold(ByteArray(0)) { bytes, (id, _) -> bytes + fieldBytes(3, fieldString(1, "spotify:playlist:$id")) } +

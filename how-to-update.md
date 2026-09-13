@@ -60,6 +60,10 @@ adb -s <許可された端末ID> exec-out run-as io.github.playmusic cat files/s
 
 記録はフレーム時間と座標だけで、認証情報やライブラリ内容を含まない。`scrollPhase`は英小文字・数字・ハイフンだけを使う。受入上限を固定する場合は`-e maxScrollP95Ms <ミリ秒>`を追加する。計測対象画面だけを点灯状態に保ち、終了時に解除する。
 
+連続ドラッグだけでなく、`-e scrollGestureMs 220 -e scrollPauseMs 900 -e scrollRepetitions 2`で高速フリックと停止を12回繰り返す。`scrollSection`は`playlists`・`albums`・`tracks`から選ぶ。プレイリストやアルバムの収録曲を測る場合は、最初の画面に見えている非空の作品の位置を`-e scrollOpenIndex <0始まりの位置>`で指定する。画面の位置や表示言語を固定した文字列で推測せず、実際のアクセシビリティ階層から対象と可視領域を取得する。Composeの仮想ノードは`findAccessibilityNodeInfosByViewId`だけでは見つからない場合があるため、`FLAG_REPORT_VIEW_IDS`を有効にした計測器が子ノードを走査する。終了時に元のフラグへ戻す。
+
+先読み本体だけでなく、他タブの先読みを開始する入口と、取得済み詳細を開く入口も`LibraryBrowsingTest`で検査する。同期のキャッシュ確認によって認証情報が画面スレッドで読まれたり、キャッシュの再利用が追加通信に変わったりしないことを確認する。
+
 ディスク保存は分離AVDの`io.github.playmusic.data.cache.PlaylistDiskCacheTest`と`PlaylistStartupCacheTest`で、再起動・差分行だけの保存・空一覧と未取得の区別・SQL失敗のrollback・破損復旧・世代照合・空/不完全な応答の拒否を検証する。実アカウントでは`LivePlaylistDiskCacheTest`へ`livePlaylistCache=true`を渡し、実際の一覧を保存してから再構築したコンテナの同期APIだけを遮断し、保存内容を先に表示できることを確認する。端末のWi-Fiや通常版のデータは変更しない。合成アカウントのテストはSharedPreferencesだけでなく`noBackupFilesDir`も専用ディレクトリへ分ける。
 
 作成者の表示名は`UserProfileClientTest`でアカウントIDとの区別・返却URI照合・取得不能と通信失敗の違いを確認する。実機では`LibraryAccountTest#playlistOwnersUseTheirPublicProfileNames`を`liveAccount=true`で実行する。画面の検索欄は3タブで同じ部品を使い、`HomeScreenTest`と`LibraryBrowsingTest`で見た目・メタデータ検索・並び替え・タブごとの保持を検証する。
