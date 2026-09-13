@@ -29,6 +29,8 @@ WindowsでSDK・コンパイラの共有キャッシュにAccessDeniedException�
 
 2つ目のコマンドは生成済みメタデータから実際のAAPT2バージョンを読み、Windows・Linux・macOS用の検証値をGradleに生成させる。未使用の旧依存を除く必要がある場合は元のメタデータを退避してから全体を再生成し、共通するアーティファクトのハッシュが変わっていないことを比較する。`gradle/verification-metadata.xml`を手編集しない。
 
+親POMやBOMの検証値は、既存の依存キャッシュがあると生成対象から抜けることがある。CIだけで不足する場合は、空の検証専用ディレクトリを`-g`へ指定し、`--no-configuration-cache --write-verification-metadata sha256`で全ビルドと検証を実行する。同じ専用homeで`verifyPlatformTools`も実行し、生成前後で既存のハッシュが変わっていないこと、削除されていないこと、新しい値の取得元が正しいことを確認する。
+
 7. OSV-Scannerで依存関係を監査する。依存情報の外部送信を伴う照会が許可されない環境では、公開DBをダウンロードしてローカルで照合する。DBの更新日時も記録する。既存の例外と緩和策は`gradle/osv-scanner.toml`および`SECURITY.md`を確認する。
 
 ```powershell
