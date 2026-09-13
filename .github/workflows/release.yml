@@ -1,11 +1,11 @@
-name: Release build
+name: Release
 
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release:
@@ -36,12 +36,38 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: ./.github/scripts/extract-changelog.ps1 -Version $env:RELEASE_TAG -Output release-notes.md
-      - name: Upload verified APK for local signing
+      - name: Sign and verify APK
+        shell: pwsh
+        env:
+          PLAY_KEYSTORE_BASE64: ${{ secrets.PLAY_KEYSTORE_BASE64 }}
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          $keystore = Join-Path $env:RUNNER_TEMP 'play-release.p12'
+          try {
+            if ([string]::IsNullOrWhiteSpace($env:PLAY_KEYSTORE_BASE64)) { throw 'Release signing secret is required' }
+            [IO.File]::WriteAllBytes($keystore, [Convert]::FromBase64String($env:PLAY_KEYSTORE_BASE64))
+            $metadata = Get-Content -Raw app/build/outputs/apk/release/output-metadata.json | ConvertFrom-Json
+            $version = $metadata.elements[0].versionName
+            ./tools/sign-release.ps1 -Apk app/build/outputs/apk/release/app-release-unsigned.apk -Version $version -KeyStore $keystore -KeyAlias $env:PLAY_KEY_ALIAS -Output "build/outputs/play-$version.apk" -AndroidSdk $env:ANDROID_HOME
+          } finally {
+            Remove-Item -LiteralPath $keystore -ErrorAction SilentlyContinue
+          }
+      - name: Upload verified release artifacts
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: play-${{ github.ref_name }}-unsigned
+          name: play-${{ github.ref_name }}
           path: |
-            app/build/outputs/apk/release/app-release-unsigned.apk
-            app/build/outputs/apk/release/output-metadata.json
+            build/outputs/*.apk
+            build/outputs/*.apk.sha256
             release-notes.md
           if-no-files-found: error
+      - name: Publish release
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          body_path: release-notes.md
+          files: |
+            build/outputs/*.apk
+            build/outputs/*.apk.sha256
+          fail_on_unmatched_files: true

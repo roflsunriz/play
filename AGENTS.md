@@ -37,7 +37,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 ## 調査・検証で確認した注意点
 
 - 音質設定は`AppContainer.audioEffects`で端末単位に保持する。音声スレッドはimmutableな`state.value.settings`だけを読み、保存・認証・UI更新を行わない。Media3のカスタムprocessorはfloat/圧縮passthrough/offloadで迂回され得るため、30バンドEQはPCM16経路へ接続し、計測用serviceも本番processorの後へmeterを置く。設計と根拠は`docs/audio-effects.md`。
-- 2026-09-13、ユーザーがプッシュとリリースを許可した。署名鍵・パスワードのGitHub Secretsへの外部送信は自動承認レビューで拒否されたため、鍵は`.signing/`のローカル領域だけで管理し、CIの検証済みunsigned APKをローカル署名して公開する。共用debug秘密鍵を外部へ送らない。既存実機の移行はローカルの署名履歴とAndroid 9以降用の一度限りの移行APKで検証する。
+- 2026-09-13、ユーザーがプッシュとリリースを許可し、続いて送信先`roflsunriz/play`のActions SecretsへのPlay専用署名鍵・パスワード登録を明示承認した。4つの署名Secretsを登録済み。秘密値は標準入力へ改行を加えず渡し、引数・ログ・Gitへ出さない。共用debug秘密鍵は外部へ送らない。ローカル控えは`.signing/`、既存実機の移行は署名履歴とAndroid 9以降用の一度限りの移行APKで検証する。
 - ライブラリ通信はWeb APIプロキシではなくネイティブのprotobuf契約を使う。根拠・フィールド番号・記録の所在は `docs/api-contracts.md` に集約する。ヘッダーの推測追加で解決したことにしない。
 - `ProtoWire.Reader` で未知の長さ付きフィールドを飛ばす際、読み取り位置への複合代入の右辺で長さを読まない。位置更新前に長さを取得する。`ProtoWireTest` が境界と未知フィールドを検証する。
 - プレイリストの改訂番号はバイト列、コレクションの追加時刻は整数であり、同じアイテムパーサーを流用しない。拡張メタデータのqueryは型付きの要求で、ランダムバイト列ではない。

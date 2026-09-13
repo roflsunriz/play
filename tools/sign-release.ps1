@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory = $true)][string]$KeyAlias,
     [Parameter(Mandatory = $true)][string]$Output,
     [Parameter(Mandatory = $true)][string]$AndroidSdk,
+    [string]$ExpectedCertificateSha256 = '7ff600f42c3bf628d8742344be48e6b4af57a539e5202aff52fb765615be39ca',
     [string]$Lineage
 )
 
@@ -19,8 +20,8 @@ $keyPath = (Resolve-Path -LiteralPath $KeyStore).Path
 $outputApk = [IO.Path]::GetFullPath($Output)
 if ($inputApk -eq $outputApk) { throw 'Keep the verified input APK separate from the signed output.' }
 $buildTools = Join-Path $AndroidSdk 'build-tools/37.0.0'
-$signer = Join-Path $buildTools 'apksigner.bat'
-$aapt = Join-Path $buildTools 'aapt2.exe'
+$signer = Join-Path $buildTools $(if ($IsWindows) { 'apksigner.bat' } else { 'apksigner' })
+$aapt = Join-Path $buildTools $(if ($IsWindows) { 'aapt2.exe' } else { 'aapt2' })
 $badging = & $aapt dump badging $inputApk
 if ($LASTEXITCODE -ne 0) { throw 'APK metadata inspection failed' }
 if ($badging -match '^application-debuggable') { throw 'A public release must not be debuggable.' }
@@ -41,8 +42,13 @@ if ($Lineage) {
 if ($LASTEXITCODE -ne 0) { throw 'APK signing failed' }
 $verifyArguments = @('verify', '--verbose', '--print-certs')
 if ($Lineage) { $verifyArguments += @('--min-sdk-version', '28') }
-& $signer @verifyArguments $outputApk
+$verification = & $signer @verifyArguments $outputApk
 if ($LASTEXITCODE -ne 0) { throw 'Signed APK verification failed' }
+if ($ExpectedCertificateSha256 -notmatch '^[0-9a-fA-F]{64}$' -or
+    -not ($verification -match [regex]::Escape("certificate SHA-256 digest: $($ExpectedCertificateSha256.ToLowerInvariant())"))) {
+    throw 'The signing certificate differs from the expected release identity.'
+}
+$verification | Write-Output
 $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $outputApk).Hash.ToLowerInvariant()
 "$digest  $([IO.Path]::GetFileName($outputApk))" | Set-Content -Encoding ascii -LiteralPath "$outputApk.sha256"
 Write-Output "Signed and verified: $outputApk"

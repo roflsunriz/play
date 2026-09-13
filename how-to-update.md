@@ -87,8 +87,9 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 
 - Linuxでは`gradlew`の実行属性が必要。`git ls-files --stage gradlew`のmodeが`100755`であることを確認する。
 - `app/build.gradle.kts`のversionName/versionCodeと、CHANGELOGの対応するバージョンをそろえる。mainのCIが成功したコミットに`v<versionName>`タグを作成してプッシュする。
-- `.github/workflows/release.yml`はタグとAPKのバージョンを照合し、JVM・lint・最適化したreleaseビルドを行う。成功したrunの`play-v<versionName>-unsigned`成果物にunsigned APK、output-metadata.json、抽出済み変更履歴が入る。
-- 署名鍵はローカル管理とし、CIへ送信しない。リリースビルドの成功・head SHA・タグが一致することを確認してから成果物を取得し、`tools/sign-release.ps1`で署名する。このスクリプトは対象IDとバージョン、debuggableでないことを確認し、署名検証とSHA-256ファイル生成まで行う。
+- `.github/workflows/release.yml`はタグとAPKのバージョンを照合し、JVM・lint・最適化したreleaseビルドを行う。その後、署名済みAPKとSHA-256ファイルを生成し、抽出した変更履歴とともにGitHub releaseへ公開する。成功したrunにも`play-v<versionName>`成果物を保持する。
+- 署名には、所有者が登録先を明示承認した同リポジトリの`PLAY_KEYSTORE_BASE64`、`PLAY_STORE_PASSWORD`、`PLAY_KEY_ALIAS`、`PLAY_KEY_PASSWORD` Secretsを使う。署名ステップだけに渡し、一時鍵ファイルはfinallyで削除する。登録時は秘密値を標準入力へ改行を付けず渡し、引数・ログへ出さない。
+- CIとローカル検証は共通の`tools/sign-release.ps1`を使用する。対象ID、バージョン、debuggableでないこと、署名証明書が期待する公開版の識別子であることを確認し、署名検証とSHA-256ファイル生成まで行う。署名鍵を更新する場合はスクリプトの期待値と`SECURITY.md`を同じ変更で更新し、既存インストールからの移行も検証する。
 - CIや実機の未実施項目を成功と記録しない。サービス側のエラーはHTTPの結果とメタデータ内の結果を分けて記録する。
 
 ローカル署名にはBuild Tools 37.0.0とJDK 17を使う。`PLAY_STORE_PASSWORD`と`PLAY_KEY_PASSWORD`は実行プロセスの環境変数に設定し、コマンド引数やログへ展開しない。鍵は`.signing/play-release.p12`、aliasは`play-release`。このWindows環境のパスワードは`.signing/release-password.dpapi`に暗号化して保持している。復号するときはファイル末尾の改行を`Trim()`で除き、同じWindowsユーザーの`ConvertTo-SecureString`を使う。`.signing/`はGit管理外とし、鍵と復旧可能なパスワードを安全に保管する。
@@ -99,7 +100,7 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
   -Output build/outputs/play-0.2.0.apk -AndroidSdk $env:ANDROID_HOME
 ```
 
-パスとバージョンは対象リリースに合わせる。署名証明書SHA-256を`SECURITY.md`と照合し、`apksigner verify --verbose --print-certs`の成功も確認する。配布は署名済みAPKと隣の`.sha256`だけとし、`gh release create`の`--verify-tag`と`--notes-file`で抽出済み変更履歴を使用する。公開後はGitHubからAPKを取得してハッシュと署名をもう一度照合し、実機へ入っている最終APKも一致確認する。GitHubへプッシュする前に依存関係の脆弱性監査を再実行する。
+パスとバージョンは対象リリースに合わせる。署名証明書SHA-256を`SECURITY.md`と照合し、`apksigner verify --verbose --print-certs`の成功も確認する。配布は署名済みAPKと隣の`.sha256`だけとする。公開処理だけを手動で復旧する場合も、検証済みrunのhead SHAとタグを確認し、`gh release create`の`--verify-tag`と`--notes-file`で同じ変更履歴を使用する。公開後はGitHubからAPKを取得してハッシュと署名をもう一度照合し、実機へ入っている最終APKも一致確認する。GitHubへプッシュする前に依存関係の脆弱性監査を再実行する。
 
 既存開発版の実機は、初回だけローカルの署名履歴による移行が必要。`tools/sign-release.ps1`へ`-Lineage .signing/legacy-to-release.lineage`を付けるとAndroid 9以降用の移行APKを作る。このAPKはv3署名専用であり、一般配布のAPKとして扱わない。分離AVDの`ReleaseUpgradeFixtureTest`（`prepareReleaseUpgrade=true`、ranchu限定）で暗号化ログイン・保存一覧・5スロットを準備し、移行APK→通常リリースAPKの順に`install -r`して画面から保持を確認する。実機で署名不一致になっても認証やデータを消して対処しない。共用の開発秘密鍵を外部へ送らない。
 
