@@ -16,6 +16,10 @@
 - プッシュ前に依存477件を公開DBとローカル照合し、該当する既知脆弱性0件だった（`eq-release-osv.json`）。署名鍵はGit管理外とし、共用の開発秘密鍵は公開・外部送信していない。
 - 専用署名鍵・パスワードのSecrets登録は、送信先`roflsunriz/play`を含むユーザーの明示承認後に実施した。4つのSecretsの登録を確認し、CIを検証→署名・証明書照合→公開へ接続した。秘密値は標準入力へ改行なしで渡し、表示・Git管理していない。
 - 初回main CIでは、既存ローカルキャッシュが省略していた親POM/BOMの検証値不足を検出した。空のGradle user homeで全依存を解決し直して4分35秒で成功、3OSのAAPT2照合も成功した。既存783アーティファクトのハッシュは変更・削除なしで、不足9ファイルだけを生成した。追加後の依存481件の再監査は該当0件（`eq-cold-verification.log`、`eq-cold-platforms.log`、`eq-cold-osv.json`）。
+- 修正後の[main CI](https://github.com/roflsunriz/play/actions/runs/34760196213)は9分47秒、[リリースCI](https://github.com/roflsunriz/play/actions/runs/34760952374)は7分37秒で成功した。タグ`v0.2.0`は`fda41eedbdc3b4697cfc42a37e80909080ce2462`を指し、署名・証明書照合・APKとチェックサムの公開まで完了した。[公開リリース](https://github.com/roflsunriz/play/releases/tag/v0.2.0)は同日22:57:55（日本時間）。
+- 公開済み`play-0.2.0.apk`（2,884,599バイト）をGitHubから取得し、添付チェックサム、GitHubのasset digest、署名を照合した。SHA256は`17fddf3ae9bec29173396e36825b4b7c0177bb525a9b940977d64555fc641438`、証明書は`SECURITY.md`の専用署名と一致した。versionCode 2、versionName 0.2.0、minSdk 24、targetSdk 37で、debuggableではない。
+- 実機のPlayの署名移行と上書き更新についてユーザーの明示承認を受け、移行APK→公開APKを`install -r`した。認証・データを消さずに両更新が成功し、同日23:01:27の実機APKは公開ファイルと同じSHA256だった。保存ログイン・ライブラリ・元のフラット/オフ設定を維持し、新しい検索語によるオンライン検索、アルバム詳細、再生状態の進行と一時停止も確認した。音声の継続性は上述のPCM検査で判定している。
+- 実機の通常参照版はversionName 9.1.80.2221、更新時刻08:43:48のまま。検証用スロットを削除して元の音質設定へ戻し、検証で開始した再生を停止した。生成したテスト用パッケージだけを取り除き、公開版の音質設定を表示して終了した。最終画像は`build/qa/eq-images/published-*.png`と`delivered-settings.png`、配布物の控えは`build/outputs/play-0.2.0.apk`。
 
 ### 先読みの入口に残った同期処理の追加修正（20:33の配布）
 
