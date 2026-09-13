@@ -81,7 +81,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.playmusic.R
 import io.github.playmusic.data.model.Playback
-import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.model.SpotifyContent
 
@@ -262,8 +261,8 @@ internal fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    if (compactHeader && state.selectedContent == null && state.selectedSection == LibrarySection.PLAYLISTS)
-                        LibraryFilterInput(state.libraryQuery, onLibraryQueryChanged, Modifier.fillMaxWidth())
+                    if (compactHeader && state.selectedContent == null && state.selectedSection.kind != null)
+                        LibraryFilterInput(state.queryFor(state.selectedSection), onLibraryQueryChanged, Modifier.fillMaxWidth(), state.selectedSection)
                     else if (compactHeader && state.selectedContent == null && state.selectedSection == LibrarySection.SEARCH)
                         CatalogSearchInput(state.searchQuery, onSearchChanged, onSearch, Modifier.fillMaxWidth())
                     else Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold)
@@ -276,8 +275,8 @@ internal fun HomeScreen(
                 actions = {
                     if (compactHeader && state.selectedContent == null) {
                         when (state.selectedSection) {
-                            LibrarySection.PLAYLISTS -> LibrarySortMenu(ContentKind.PLAYLIST, state.playlistSort, onLibrarySortChanged, compact = true)
-                            LibrarySection.TRACKS -> LibrarySortMenu(ContentKind.TRACK, state.trackSort, onLibrarySortChanged, compact = true)
+                            LibrarySection.PLAYLISTS, LibrarySection.ALBUMS, LibrarySection.TRACKS ->
+                                LibrarySortMenu(checkNotNull(state.selectedSection.kind), state.sortFor(state.selectedSection), onLibrarySortChanged)
                             LibrarySection.SEARCH -> IconButton(onClick = { keyboard?.hide(); onSearch() }, enabled = state.searchQuery.isNotBlank(),
                                 modifier = Modifier.testTag("search-button")) { Icon(Icons.Default.Search, stringResource(R.string.search_action)) }
                             else -> Unit
@@ -349,8 +348,7 @@ internal fun HomeScreen(
                         onQueryChanged = onSearchChanged, onSearch = onSearch, onPlay = onPlay,
                         onOpen = onOpenContent, onViewportChanged = onViewportChanged, showInput = !compactHeader)
                     else LibraryContent(state.selectedSection, state.items,
-                        if (state.selectedSection == LibrarySection.PLAYLISTS) state.libraryQuery else "",
-                        if (state.selectedSection == LibrarySection.PLAYLISTS) state.playlistSort else state.trackSort,
+                        state.queryFor(state.selectedSection), state.sortFor(state.selectedSection),
                         onLibraryQueryChanged, onLibrarySortChanged, onPlay, onOpenContent, onViewportChanged, showControls = !compactHeader)
                 }
             }

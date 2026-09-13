@@ -7,6 +7,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LibraryPresentationTest {
+    @Test fun albumAndTrackMetadataUseTheSameFilterAndSortRules() {
+        val album = item("album", "Album", ContentKind.ALBUM).copy(subtitle = "Artist", releaseDate = "1991-09-24", trackCount = 12)
+        val track = item("track", "Song", ContentKind.TRACK).copy(subtitle = "Artist", albumTitle = "Parent album", durationMs = 185_000)
+        assertEquals(listOf(album), presentLibrary(listOf(album), "ARTIST 1991 12", LibrarySort.CREATOR))
+        assertEquals(listOf(track), presentLibrary(listOf(track), "parent artist 3:05", LibrarySort.TITLE))
+        assertEquals(LibrarySort.options(ContentKind.PLAYLIST), LibrarySort.options(ContentKind.ALBUM))
+    }
+
     private fun item(id: String, title: String = id, kind: ContentKind = ContentKind.PLAYLIST) =
         SpotifyContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
 

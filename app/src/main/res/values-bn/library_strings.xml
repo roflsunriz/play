@@ -16,8 +16,6 @@
     <string name="suggested_content">আপনার লাইব্রেরি থেকে প্রস্তাবিত</string>
     <string name="matching_suggestions">লাইব্রেরিতে মিলে যাওয়া</string>
     <string name="search_results">অনুসন্ধানের ফলাফল</string>
-    <plurals name="library_result_count">
-        <item quantity="one">%1$dটি আইটেম</item>
-        <item quantity="other">%1$dটি আইটেম</item>
-    </plurals>
+    <string name="album_filter_hint">শিরোনাম, শিল্পী, প্রকাশের তারিখ দিয়ে ফিল্টার…</string>
+    <string name="track_filter_hint">শিরোনাম, শিল্পী, অ্যালবাম দিয়ে ফিল্টার…</string>
 </resources>

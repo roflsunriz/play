@@ -16,8 +16,6 @@
     <string name="suggested_content">Suggested from your library</string>
     <string name="matching_suggestions">Matches in your library</string>
     <string name="search_results">Search results</string>
-    <plurals name="library_result_count">
-        <item quantity="one">%1$d item</item>
-        <item quantity="other">%1$d items</item>
-    </plurals>
+    <string name="album_filter_hint">Filter by title, artist, release date…</string>
+    <string name="track_filter_hint">Filter by title, artist, album…</string>
 </resources>

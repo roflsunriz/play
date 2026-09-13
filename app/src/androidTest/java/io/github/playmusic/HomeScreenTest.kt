@@ -191,6 +191,53 @@ class HomeScreenTest {
     }
 
     @Test
+    fun albumMetadataFilterUsesThePlaylistLayoutAndSorting() = verifyExtraLibraryFilter(LibrarySection.ALBUMS)
+
+    @Test
+    fun trackMetadataFilterUsesThePlaylistLayoutAndSorting() = verifyExtraLibraryFilter(LibrarySection.TRACKS)
+
+    private fun verifyExtraLibraryFilter(section: LibrarySection) {
+        val kind = checkNotNull(section.kind)
+        val a = SpotifyContent("a", "spotify:${kind.name.lowercase()}:a", "Alpha", "Artist one", null, kind,
+            albumTitle = "Parent album", releaseDate = "1991", durationMs = 185_000)
+        val b = a.copy(id = "b", uri = "spotify:${kind.name.lowercase()}:b", title = "Beta", subtitle = "Artist two", releaseDate = "2002")
+        val source = listOf(b, a)
+        var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = section, items = source))
+        var query = ""
+        var sort = LibrarySort.LIBRARY_ORDER
+        composeRule.setContent { TestTheme {
+            HomeScreen(state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+                onLibraryQueryChanged = {
+                    query = it
+                    state = if (section == LibrarySection.ALBUMS) state.copy(albumQuery = query, items = presentLibrary(source, query, sort))
+                        else state.copy(trackQuery = query, items = presentLibrary(source, query, sort))
+                },
+                onLibrarySortChanged = {
+                    sort = it
+                    state = if (section == LibrarySection.ALBUMS) state.copy(albumSort = sort, items = presentLibrary(source, query, sort))
+                        else state.copy(trackSort = sort, items = presentLibrary(source, query, sort))
+                })
+        } }
+        val input = composeRule.onNodeWithTag(if (section == LibrarySection.ALBUMS) "album-filter-input" else "track-filter-input")
+        val sortButton = composeRule.onNodeWithTag("library-sort-button")
+        val inputBounds = input.getBoundsInRoot()
+        val sortBounds = sortButton.getBoundsInRoot()
+        assertTrue(sortBounds.top >= inputBounds.top && sortBounds.bottom <= inputBounds.bottom)
+        input.performTextInput(if (section == LibrarySection.ALBUMS) "one 1991" else "one parent")
+        composeRule.onNodeWithTag("content-${kind.name.lowercase()}-a").assertIsDisplayed()
+        composeRule.onNodeWithTag("content-${kind.name.lowercase()}-b").assertDoesNotExist()
+        composeRule.onNodeWithTag("clear-library-filter").performClick()
+        sortButton.performClick()
+        composeRule.onNodeWithTag("sort-title").performClick()
+        composeRule.runOnIdle { assertEquals(listOf(a, b), state.items) }
+        captureScreen(composeRule.onRoot(), "${kind.name.lowercase()}-metadata-filter")
+        val title = composeRule.onNodeWithTag("title-${kind.name.lowercase()}-a", useUnmergedTree = true)
+        val fullTitle = title.getUnclippedBoundsInRoot()
+        val visibleTitle = title.getBoundsInRoot()
+        assertEquals(fullTitle.bottom - fullTitle.top, visibleTitle.bottom - visibleTitle.top)
+    }
+
+    @Test
     fun miniPlayerOpensArtworkControllerAndReturnsToTheLibrary() {
         val track = SpotifyContent("now", "spotify:track:now", "Now playing", "Artist", null, ContentKind.TRACK,
             durationMs = 180_000, albumTitle = "Album")

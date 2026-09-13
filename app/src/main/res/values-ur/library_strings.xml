@@ -16,8 +16,6 @@
     <string name="suggested_content">آپ کی لائبریری سے تجاویز</string>
     <string name="matching_suggestions">لائبریری میں مماثلتیں</string>
     <string name="search_results">تلاش کے نتائج</string>
-    <plurals name="library_result_count">
-        <item quantity="one">%1$d آئٹم</item>
-        <item quantity="other">%1$d آئٹمز</item>
-    </plurals>
+    <string name="album_filter_hint">عنوان، فنکار، ریلیز کی تاریخ سے فلٹر…</string>
+    <string name="track_filter_hint">عنوان، فنکار، البم سے فلٹر…</string>
 </resources>

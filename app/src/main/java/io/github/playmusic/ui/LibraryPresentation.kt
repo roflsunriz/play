@@ -10,18 +10,34 @@ enum class LibrarySort {
 
     companion object {
         fun options(kind: ContentKind): List<LibrarySort> = when (kind) {
-            ContentKind.PLAYLIST -> listOf(LIBRARY_ORDER, TITLE, TITLE_DESCENDING, CREATOR, TRACK_COUNT)
+            ContentKind.PLAYLIST, ContentKind.ALBUM -> listOf(LIBRARY_ORDER, TITLE, TITLE_DESCENDING, CREATOR, TRACK_COUNT)
             ContentKind.TRACK -> listOf(LIBRARY_ORDER, TITLE, TITLE_DESCENDING, CREATOR, DURATION, DURATION_DESCENDING)
             else -> listOf(LIBRARY_ORDER)
         }
     }
 }
 
+internal fun PlayUiState.queryFor(section: LibrarySection): String = when (section) {
+    LibrarySection.PLAYLISTS -> libraryQuery
+    LibrarySection.ALBUMS -> albumQuery
+    LibrarySection.TRACKS -> trackQuery
+    LibrarySection.SEARCH -> ""
+}
+
+internal fun PlayUiState.sortFor(section: LibrarySection): LibrarySort = when (section) {
+    LibrarySection.PLAYLISTS -> playlistSort
+    LibrarySection.ALBUMS -> albumSort
+    LibrarySection.TRACKS -> trackSort
+    LibrarySection.SEARCH -> LibrarySort.LIBRARY_ORDER
+}
+
 internal fun presentLibrary(items: List<SpotifyContent>, query: String, sort: LibrarySort): List<SpotifyContent> {
     val words = normalizeLibraryText(query).split(Regex("\\s+")).filter(String::isNotBlank)
     val filtered = if (words.isEmpty()) items else items.filter { item ->
         val text = normalizeLibraryText(listOfNotNull(item.title, item.ownerName, item.description,
-            item.subtitle, item.albumTitle, item.trackCount?.toString()).joinToString(" "))
+            item.subtitle, item.albumTitle, item.trackCount?.toString(), item.releaseDate,
+            item.durationMs.takeIf { it > 0 }?.let { "%d:%02d".format(Locale.ROOT, it / 60_000, it / 1_000 % 60) })
+            .joinToString(" "))
         words.all(text::contains)
     }
     val byTitle = compareBy<SpotifyContent> { normalizeLibraryText(it.title) }

@@ -16,10 +16,6 @@
     <string name="suggested_content">Предложения из медиатеки</string>
     <string name="matching_suggestions">Совпадения в медиатеке</string>
     <string name="search_results">Результаты поиска</string>
-    <plurals name="library_result_count">
-        <item quantity="one">%1$d элемент</item>
-        <item quantity="few">%1$d элемента</item>
-        <item quantity="many">%1$d элементов</item>
-        <item quantity="other">%1$d элементов</item>
-    </plurals>
+    <string name="album_filter_hint">Фильтр по названию, исполнителю, дате…</string>
+    <string name="track_filter_hint">Фильтр по названию, исполнителю, альбому…</string>
 </resources>

@@ -16,7 +16,6 @@
     <string name="suggested_content">音乐库推荐</string>
     <string name="matching_suggestions">音乐库中的匹配项</string>
     <string name="search_results">搜索结果</string>
-    <plurals name="library_result_count">
-        <item quantity="other">%1$d项</item>
-    </plurals>
+    <string name="album_filter_hint">按标题、艺人、发行日期等筛选</string>
+    <string name="track_filter_hint">按标题、艺人、专辑等筛选</string>
 </resources>

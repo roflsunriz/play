@@ -53,7 +53,10 @@ data class PlayUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val libraryQuery: String = "",
+    val albumQuery: String = "",
+    val trackQuery: String = "",
     val playlistSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
+    val albumSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
     val trackSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
     val libraries: Map<LibrarySection, List<SpotifyContent>> = emptyMap(),
     val suggestedItems: List<SpotifyContent> = emptyList(),
@@ -254,7 +257,13 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun updateLibraryQuery(query: String) {
-        mutableState.value = mutableState.value.copy(libraryQuery = query)
+        val current = mutableState.value
+        mutableState.value = when (current.selectedSection) {
+            LibrarySection.PLAYLISTS -> current.copy(libraryQuery = query)
+            LibrarySection.ALBUMS -> current.copy(albumQuery = query)
+            LibrarySection.TRACKS -> current.copy(trackQuery = query)
+            LibrarySection.SEARCH -> current
+        }
         updateVisibleItems()
     }
 
@@ -264,6 +273,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         if (sort !in LibrarySort.options(kind)) return
         mutableState.value = when (current.selectedSection) {
             LibrarySection.PLAYLISTS -> current.copy(playlistSort = sort)
+            LibrarySection.ALBUMS -> current.copy(albumSort = sort)
             LibrarySection.TRACKS -> current.copy(trackSort = sort)
             else -> current
         }
@@ -566,11 +576,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun visibleItems(section: LibrarySection, source: List<SpotifyContent>): List<SpotifyContent> {
         val current = mutableState.value
-        return when (section) {
-            LibrarySection.PLAYLISTS -> presentLibrary(source, current.libraryQuery, current.playlistSort)
-            LibrarySection.TRACKS -> presentLibrary(source, "", current.trackSort)
-            else -> source
-        }
+        return presentLibrary(source, current.queryFor(section), current.sortFor(section))
     }
 
     private fun updateVisibleItems() {

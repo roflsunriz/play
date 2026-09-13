@@ -16,12 +16,6 @@
     <string name="suggested_content">مقترحات من مكتبتك</string>
     <string name="matching_suggestions">مطابقات في مكتبتك</string>
     <string name="search_results">نتائج البحث</string>
-    <plurals name="library_result_count">
-        <item quantity="zero">%1$d عنصر</item>
-        <item quantity="one">%1$d عنصر</item>
-        <item quantity="two">%1$d عنصر</item>
-        <item quantity="few">%1$d عناصر</item>
-        <item quantity="many">%1$d عنصرًا</item>
-        <item quantity="other">%1$d عنصر</item>
-    </plurals>
+    <string name="album_filter_hint">تصفية بالعنوان أو الفنان أو تاريخ الإصدار…</string>
+    <string name="track_filter_hint">تصفية بالعنوان أو الفنان أو الألبوم…</string>
 </resources>

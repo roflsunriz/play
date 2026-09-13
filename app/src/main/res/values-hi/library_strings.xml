@@ -16,8 +16,6 @@
     <string name="suggested_content">आपकी लाइब्रेरी से सुझाव</string>
     <string name="matching_suggestions">लाइब्रेरी में मेल</string>
     <string name="search_results">खोज के नतीजे</string>
-    <plurals name="library_result_count">
-        <item quantity="one">%1$d आइटम</item>
-        <item quantity="other">%1$d आइटम</item>
-    </plurals>
+    <string name="album_filter_hint">शीर्षक, कलाकार, रिलीज़ की तारीख से फ़िल्टर…</string>
+    <string name="track_filter_hint">शीर्षक, कलाकार, एल्बम से फ़िल्टर…</string>
 </resources>

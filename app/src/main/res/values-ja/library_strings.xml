@@ -16,7 +16,6 @@
     <string name="suggested_content">ライブラリからのおすすめ</string>
     <string name="matching_suggestions">ライブラリ内の候補</string>
     <string name="search_results">検索結果</string>
-    <plurals name="library_result_count">
-        <item quantity="other">%1$d件</item>
-    </plurals>
+    <string name="album_filter_hint">タイトル・アーティスト・発売日など</string>
+    <string name="track_filter_hint">タイトル・アーティスト・アルバムなど</string>
 </resources>

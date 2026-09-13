@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -41,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,29 +77,28 @@ internal fun LibraryContent(
     showControls: Boolean = true,
 ) {
     Column(Modifier.fillMaxSize()) {
-        if (showControls && section == LibrarySection.PLAYLISTS) {
+        if (showControls) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                LibraryFilterInput(query, onQueryChanged, Modifier.weight(1f))
-                LibrarySortMenu(ContentKind.PLAYLIST, sort, onSortChanged, compact = true)
-            }
-        }
-        if (showControls && section == LibrarySection.TRACKS) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(pluralStringResource(R.plurals.library_result_count, items.size, items.size),
-                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                LibraryFilterInput(query, onQueryChanged, Modifier.weight(1f), section)
                 LibrarySortMenu(checkNotNull(section.kind), sort, onSortChanged)
             }
         }
         ContentList(items, onPlay, onOpen, onViewportChanged, emptyText = if (query.isNotBlank())
-            stringResource(R.string.no_filter_results) else stringResource(R.string.empty_library))
+            stringResource(R.string.no_filter_results) else stringResource(R.string.empty_library),
+            presentationKey = "$query\u0000${sort.name}")
     }
 }
 
 @Composable
-internal fun LibraryFilterInput(query: String, onQueryChanged: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun LibraryFilterInput(query: String, onQueryChanged: (String) -> Unit, modifier: Modifier = Modifier,
+    section: LibrarySection = LibrarySection.PLAYLISTS) {
     val keyboard = LocalSoftwareKeyboardController.current
     OutlinedTextField(value = query, onValueChange = onQueryChanged, singleLine = true,
-        placeholder = { Text(stringResource(R.string.library_filter_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        placeholder = { Text(stringResource(when (section) {
+            LibrarySection.ALBUMS -> R.string.album_filter_hint
+            LibrarySection.TRACKS -> R.string.track_filter_hint
+            else -> R.string.library_filter_hint
+        }), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Icon(Icons.Default.Search, null) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { keyboard?.hide() }),
@@ -108,7 +107,11 @@ internal fun LibraryFilterInput(query: String, onQueryChanged: (String) -> Unit,
                 Icon(Icons.Default.Close, stringResource(R.string.clear_filter))
             }
         }) else null,
-        modifier = modifier.testTag("playlist-filter-input"))
+        modifier = modifier.testTag(when (section) {
+            LibrarySection.ALBUMS -> "album-filter-input"
+            LibrarySection.TRACKS -> "track-filter-input"
+            else -> "playlist-filter-input"
+        }))
 }
 
 @Composable
@@ -122,15 +125,11 @@ internal fun CatalogSearchInput(query: String, onQueryChanged: (String) -> Unit,
 }
 
 @Composable
-internal fun LibrarySortMenu(kind: ContentKind, sort: LibrarySort, onSelected: (LibrarySort) -> Unit, compact: Boolean = false) {
+internal fun LibrarySortMenu(kind: ContentKind, sort: LibrarySort, onSelected: (LibrarySort) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        if (compact) IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("library-sort-button")) {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("library-sort-button")) {
             Icon(Icons.Default.Sort, stringResource(R.string.sort_by))
-        } else TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("library-sort-button")) {
-            Icon(Icons.Default.Sort, stringResource(R.string.sort_by), modifier = Modifier.size(18.dp))
-            Text(stringResource(sort.label(kind)), modifier = Modifier.padding(start = 6.dp))
-            Icon(Icons.Default.ArrowDropDown, null)
         }
         DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
             LibrarySort.options(kind).forEach { option ->
@@ -188,7 +187,7 @@ internal fun SearchContent(
         ContentList(if (suggesting) suggestions else items, onPlay, onOpen, onViewportChanged,
             suggestions = if (suggesting) emptyList() else matchingSuggestions,
             resultHeading = if (suggesting) null else stringResource(R.string.search_results),
-            suggestionHeading = stringResource(R.string.matching_suggestions))
+            suggestionHeading = stringResource(R.string.matching_suggestions), presentationKey = query)
     }
 }
 
@@ -202,8 +201,16 @@ internal fun ContentList(
     suggestions: List<SpotifyContent> = emptyList(),
     resultHeading: String? = null,
     suggestionHeading: String? = null,
+    presentationKey: String = "",
 ) {
     val listState = rememberLazyListState()
+    var previousPresentation by rememberSaveable { mutableStateOf(presentationKey) }
+    LaunchedEffect(presentationKey) {
+        if (previousPresentation != presentationKey) {
+            previousPresentation = presentationKey
+            listState.scrollToItem(0)
+        }
+    }
     val reportViewport by rememberUpdatedState(onViewportChanged)
     val allItems = remember(items, suggestions) { (suggestions + items).distinctBy { it.uri } }
     val suggestionUris = remember(suggestions) { suggestions.map { it.uri }.toSet() }
