@@ -2,6 +2,19 @@
 
 ## 2026-09-13の結果
 
+### 実機の無音化を再現・従来の判定を訂正
+
+- ユーザー報告時の実機APKは07:28:50に更新され、手元の最新版とSHA256が一致した。更新漏れではない。
+- ミュートなしで既知の実曲を再生し、冒頭には音声があり、暗号化部分が始まる約10秒以降には復号後PCMのRMSがほぼ0になることを確認した。AndroidのAACデコーダーが読み取れないフレームを無音へ置き換えていた。
+- `AudioOutputTest` は16〜30秒の15区間に音声が含まれるかを検査し、この不具合で失敗する。`LivePlaybackTest`の位置・終端・操作の検証とは分ける。音声、認証値、鍵は保存しない。
+- 標準MediaExtractorとMedia3で、最初の暗号化フレームの時刻・暗号方式・IV・キーID・ペイロードが一致した。標準MediaDrmとMediaCodecの直接接続、および同一端末のブラウザー経路でも対象音源が無音になった。
+- 同じ実機の標準DRM・デコーダーで、[公開検証音源](https://github.com/shaka-project/shaka-player/blob/main/demo/common/assets.js)は正常なPCMを出力した（442,368サンプル、RMS約0.0496）。ユーザーによると、Google Playからインストールした通常版では同じ曲が10秒以降も正常に鳴る。
+- 対象音源のライセンスは再生可能と判定されるが、正しく復号された音声を取得できていない。サービス側全体の障害とは断定しない。同期デコーダー、L3、別の配信形式、SDKのDRM初期化情報・証明書、接続先・要求ヘッダーを比較したが、修正方法は未特定。比較用の製品設定変更は元へ戻した。
+- 調査ログは`build/qa/audio-output-before.log`、`platform-codec-check.log`、`sidecar-codec-check.log`、`certificate-codec-check.log`、`legacy-audio-check.log`、`license-profile-check.log`、`license-global-check.log`、`public-drm-check.log`、`browser-audio-permission-check.log`。後者の位置進行も音声正常を意味しない。
+- 整理後の最終APKでも、音声検査は15区間中0区間で失敗した（`build/qa/audio-output-final-regression.log`、`audio-output-final-amplitudes.log`）。保存認証・ライブラリの実機9件は成功し、JVM61件、通常とコミット対象だけのビルド・lintも成功。lintの残る指摘は既存の依存更新案内、書き込み結果の確認に必要なSharedPreferences直接操作、および作業ツリーに残す診断受信機の宣言。
+
+以下の従来記録にある実音源の「完走」は、音量0で再生位置が終端へ到達したという意味に限定する。フル再生の動作確認は未完了であり、無音化の解決と実音声の再検証が必要。
+
 ### 通常ログインへの変更後
 
 - ペアリング用の認証コード・ポーリング・コード表示を廃止し、通常ログインと同一端末への自動復帰へ変更した。
@@ -13,7 +26,7 @@
 - 実アカウントの検証6件成功。保存アルバム39件、曲1,384件、プレイリスト67件、検索90件、認証の自動更新を確認した。`build/qa/normal-login-live-library.log`。
 - 実機でログイン中のプロセス凍結を観測したため、ログイン待機だけを前景サービスで維持するよう修正した。実機の既定ブラウザーでも、12秒間背景に置いた後の合成応答から自動復帰するテストに成功した。`build/qa/normal-login-phone-browser-return.log`。
 - 旧保存認証の無操作移行は未解決。AP認証・保存資格情報での再接続後のKeymasterが403、音声配信情報はHTTP 200・media空だった。記録は`build/qa/no-pairing-device-probe.log`、`no-pairing-native-device.log`、`no-pairing-shape-device.log`。この方法を有効な代替として採用していない。
-- 実曲のライセンス取得とフル再生も成功。長さ301,920msの音源を先頭から終端まで再生し、90秒へのシーク、一時停止・再開を確認した。`build/qa/normal-login-live-playback.log`。
+- 実曲のライセンス要求の受理と再生位置の終端到達を確認。長さ301,920msの音源で90秒へのシーク、一時停止・再開も確認した。音量0で行ったこの検証は、音声が正常に続くことを確認していなかった。`build/qa/normal-login-live-playback.log`。
 - 続けて、2曲の実音源で次・前・1曲リピート・全曲リピート・シャッフルの操作を確認した。`build/qa/normal-login-live-queue.log`。検証中はプレイヤーのゲインだけを0にし、終了時に復元した。端末全体の音量設定は変更していない。
 - 実画面でも検索からアルバム詳細へ移動し、画像、タイトル、アーティスト、発売日、13曲の収録一覧を確認した。画像は非公開の`captures/play-actual-album-detail.png`。
 - 再生検証後にPlayのプロセスを停止・再起動し、ログインやペアリングの画面へ戻らず保存一覧を表示できることを確認した。

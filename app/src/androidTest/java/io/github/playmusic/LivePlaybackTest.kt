@@ -27,9 +27,9 @@ import org.junit.Test
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/** Explicit real-account test. Audio is decoded with the player's gain at zero. */
+/** Playback-state/control test with muted output. AudioOutputTest separately checks decoded sound. */
 class LivePlaybackTest {
-    @Test fun protectedTrackPlaysSeeksAndReachesItsRealEnd(): Unit = runBlocking {
+    @Test fun protectedTrackControlsAndTimelineReachTheEnd(): Unit = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("livePlayback") == "true")
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val app = (context.applicationContext as PlayApplication).container

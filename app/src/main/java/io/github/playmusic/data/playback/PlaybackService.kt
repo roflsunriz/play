@@ -14,6 +14,8 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -34,7 +36,7 @@ open class PlaybackService : MediaSessionService() {
         val database = StandaloneDatabaseProvider(this).also { this.database = it }
         val mediaCache = SimpleCache(cacheDir.resolve(cacheDirectoryName),
             LeastRecentlyUsedCacheEvictor(MUSIC_CACHE_BYTES), database).also { cache = it }
-        val player = ExoPlayer.Builder(this).setMediaSourceFactory(createMediaSources(mediaCache)).build().apply {
+        val player = ExoPlayer.Builder(this, createRenderers()).setMediaSourceFactory(createMediaSources(mediaCache)).build().apply {
             setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
             setHandleAudioBecomingNoisy(true)
             setWakeMode(C.WAKE_MODE_LOCAL)
@@ -45,6 +47,8 @@ open class PlaybackService : MediaSessionService() {
     }
 
     protected open val cacheDirectoryName = "music_stream_cache"
+
+    protected open fun createRenderers(): RenderersFactory = DefaultRenderersFactory(this)
 
     protected open fun createMediaSources(mediaCache: SimpleCache): MediaSource.Factory {
         val api = (application as PlayApplication).container.streamingApi

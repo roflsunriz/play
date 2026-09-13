@@ -36,7 +36,11 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 ```
 8. [検証手順](verification.md)に従い、画面操作、ログイン、ライブラリ、再起動後の認証保持を確認する。実アカウントの検証は対象端末を明示して実行する。
 
-実音源の確認は、ログイン済みの許可された端末で `LivePlaybackTest` に `livePlayback=true` を指定する。先頭から完走させる場合は `fullTrack=true` も指定し、終了まで再インストールや別のinstrumentationを実行しない。プレイヤーの音量だけを一時的に0にし、終了時に復元する。ログインの自動復帰を変更した場合は `BrowserReturnTest` を `externalBrowserProbe=true` で確認する。
+実音源の再生状態と操作の確認は、ログイン済みの許可された端末で `LivePlaybackTest` に `livePlayback=true` を指定する。先頭から終端まで位置を確認する場合は `fullTrack=true` も指定し、終了まで再インストールや別のinstrumentationを実行しない。このテストは音量を一時的に0にするため、音声が正常に続くことの証明にはならない。
+
+音声の無音化は `AudioOutputTest` に `liveAudio=true` を指定して確認する。実機から音を出し、既知の検証曲の16〜30秒区間に音声が含まれるかを測定する。2026-09-13時点ではこの検査に失敗しており、完了扱いにしない。音声・鍵・認証情報を記録せず、端末全体の音量を変更しない。フル再生完了の判定には、これに加えて冒頭・中盤・終盤の実音声と背景再生を確認する。
+
+ログインの自動復帰を変更した場合は `BrowserReturnTest` を `externalBrowserProbe=true` で確認する。
 
 9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
 
