@@ -9,8 +9,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterator
 
-from mitmproxy import io
-
 
 def fields(data: bytes) -> Iterator[tuple[int, int, bytes | int]]:
     position = 0
@@ -57,6 +55,8 @@ def scalar(data: bytes, number: int) -> int | None:
 
 
 def summarize(path: Path) -> dict[str, object]:
+    from mitmproxy import io
+
     http_counts: Counter[str] = Counter()
     metadata: list[dict[str, object]] = []
     groups: Counter[str] = Counter()

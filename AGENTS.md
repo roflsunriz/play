@@ -54,7 +54,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 画面の `assertIsDisplayed` は一部だけ見える項目でも通る。低い横画面でタイトルが切れたため、タイトルの元の高さと表示範囲の高さを比較し、画像も確認する。画面幅・高さは `LocalWindowInfo` を使用する。
 - 依存の検証メタデータを新規生成した際は `tools/verify-platform-tools.init.gradle.kts` も実行し、WindowsだけでなくLinux/macOS用AAPT2を解決する。手順は `how-to-update.md`。
 - 既存Gradleキャッシュから検証値を生成すると、解決済みdescriptorが親POMやBOMのmodule取得を省き、空キャッシュのCIだけで失敗する場合がある。2026-09-13に9ファイルの不足を確認した。空の検証用Gradle user homeと`--no-configuration-cache`で生成し、既存ハッシュが変更・削除されていないことを比較してから反映する。
-- 診断パッチは `diagnostics/`、受信機は `app/src/debug/` に置く。RVPのルートにはAndroid用DEX、`extensions/capture.rve` にはZIPではなく生DEXを入れる。CLI 6はパッチが失敗してもAPKを書き出して終了コード0を返す場合があるため、`tools/apply-diagnostic-patches.ps1` で各パッチの成功を確認する。
+- 2026-09-13の整理で、調査を終えた参照版の診断パッチ・受信機・認証比較の未追跡26ファイルと当時の設定差分を、ハッシュ検証済みの`session/archives/09-13-23-32.zip`へ保管し、現行ビルドから外した。認証・カタログの回帰検証には製品経路を通る`LibraryAccountTest`を使う。整理・復元方針は`how-to-update.md`を参照する。過去のRVPではルートのAndroid用DEXと拡張の生DEXが必要で、CLI 6の終了コード0だけでは全パッチ成功を保証しなかった。
 - HTTP観測はJava/native境界の送信とコールバック呼び出し元へ入れる。ネイティブ宣言の改名・置換はJNI連携を壊すので避ける。要求ヘッダーはNUL区切りのキーと値。認証通信を除外し、DUMP権限付き制御と一時nonceで受信を制限する。
 - 自己署名の照会は対象自身に限定する。公開証明書は入力APKの署名ブロックから抽出し、他パッケージの署名照会、OSの署名検証、リモートの認証結果と混同しない。署名変更したAPKはGoogle Play版へデータを保持したまま上書きできるとは扱わない。
 - 2026-09-12夜に参照Android版の調査を中断してWindows版を優先した。2026-09-13の無音化修正では、ユーザーがGoogle Play通常版の読み取り専用解析の再開を許可した。通常版の改変・再インストールは許可されていない。Windows版の検索・アルバム詳細・楽曲一括装飾は実応答を取得済みだが、参照版の成功だけでPlayの機能完成としない。

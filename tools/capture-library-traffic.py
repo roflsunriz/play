@@ -1,4 +1,4 @@
-"""Record library responses only. Raw output belongs in the ignored captures folder."""
+"""Record selected library/playback traffic, omitting license bodies and credential headers."""
 
 from __future__ import annotations
 
@@ -22,12 +22,22 @@ class LibraryCapture:
     def response(self, flow: http.HTTPFlow) -> None:
         path = flow.request.path.split("?", 1)[0]
         category = next(
-            (prefix for prefix in ("/extended-metadata/", "/collection/", "/playlist/", "/searchview/") if path.startswith(prefix)),
+            (prefix for prefix in (
+                "/extended-metadata/", "/collection/", "/playlist/", "/searchview/",
+                "/storage-resolve/", "/manifests/", "/widevine-license/", "/track-playback/",
+                "/melody/", "/connect-state/", "/sequence-proxy/", "/padme/",
+            ) if path.startswith(prefix)),
             None,
         )
         if category is None or flow.response is None:
             return
         recorded = flow.copy()
+        if category == "/widevine-license/":
+            recorded.metadata["payload_lengths"] = [
+                len(flow.request.content or b""), len(flow.response.content or b""),
+            ]
+            recorded.request.content = b""
+            recorded.response.content = b""
         groups: dict[str, int] = {}
         for name in ("authorization", "client-token"):
             value = flow.request.headers.get(name)
@@ -56,6 +66,7 @@ class LibraryCapture:
         status = str(flow.response.status_code)
         statuses[status] = statuses.get(status, 0) + 1
         (self.directory / "summary.json").write_text(json.dumps(self.counts, indent=2), encoding="utf-8")
+
     def done(self) -> None:
         self.output.close()
 
