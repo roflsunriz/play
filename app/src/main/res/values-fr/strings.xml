@@ -48,4 +48,21 @@
     <string name="browser_login_complete">Retour vers Play…</string>
     <string name="login_required">Connectez-vous pour consulter les détails et écouter de la musique.</string>
     <string name="browser_unavailable">Aucun navigateur disponible. Activez un navigateur et réessayez.</string>
+    <string name="create_playlist">Créer une playlist</string>
+    <string name="edit_playlist">Modifier la playlist</string>
+    <string name="delete_playlist">Supprimer la playlist</string>
+    <string name="save">Enregistrer</string>
+    <string name="playlist_private_description">La nouvelle playlist sera privée.</string>
+    <string name="playlist_image">Image de la playlist</string>
+    <string name="playlist_choose_image">Choisir une image</string>
+    <string name="playlist_undo_image">Annuler le changement d’image</string>
+    <string name="playlist_remove_image">Supprimer l’image</string>
+    <string name="playlist_name">Nom</string>
+    <string name="playlist_description">Description</string>
+    <string name="playlist_save_failed">Enregistrement impossible. Vérifiez la connexion et réessayez. Vos modifications sont conservées.</string>
+    <string name="playlist_image_failed">Impossible de lire cette image. Choisissez une image compatible de moins de 20 MiB.</string>
+    <string name="playlist_partially_saved">La playlist a été créée, mais certaines modifications restent en attente. Enregistrez à nouveau pour terminer.</string>
+    <string name="delete_playlist_confirmation">%1$s sera supprimée de votre bibliothèque. Les personnes ayant le lien pourront peut-être encore y accéder.</string>
+    <string name="playlist_delete_failed">Suppression impossible. Vérifiez la connexion et réessayez.</string>
+    <string name="playlist_text_limit">Utilisez au maximum %1$d caractères.</string>
 </resources>

@@ -51,4 +51,21 @@
     <string name="browser_login_complete">جارٍ العودة إلى Play…</string>
     <string name="login_required">سجّل الدخول للوصول إلى تفاصيل الموسيقى وتشغيلها.</string>
     <string name="browser_unavailable">لا يتوفر متصفح. فعّل متصفحًا ثم حاول مرة أخرى.</string>
+    <string name="create_playlist">إنشاء قائمة تشغيل</string>
+    <string name="edit_playlist">تعديل قائمة التشغيل</string>
+    <string name="delete_playlist">حذف قائمة التشغيل</string>
+    <string name="save">حفظ</string>
+    <string name="playlist_private_description">ستكون قائمة التشغيل الجديدة خاصة.</string>
+    <string name="playlist_image">صورة قائمة التشغيل</string>
+    <string name="playlist_choose_image">اختيار صورة</string>
+    <string name="playlist_undo_image">التراجع عن تغيير الصورة</string>
+    <string name="playlist_remove_image">إزالة الصورة</string>
+    <string name="playlist_name">الاسم</string>
+    <string name="playlist_description">الوصف</string>
+    <string name="playlist_save_failed">تعذر الحفظ. تحقق من اتصالك وحاول مجددًا. ما زالت تعديلاتك محفوظة هنا.</string>
+    <string name="playlist_image_failed">تعذرت قراءة هذه الصورة. اختر صورة بتنسيق مدعوم وحجم أقل من 20 MiB.</string>
+    <string name="playlist_partially_saved">تم إنشاء قائمة التشغيل، لكن بعض التعديلات لم تكتمل. احفظ مجددًا لإكمالها.</string>
+    <string name="delete_playlist_confirmation">ستتم إزالة %1$s من مكتبتك. قد يتمكن من يملك الرابط من الوصول إليها بعد ذلك.</string>
+    <string name="playlist_delete_failed">تعذر الحذف. تحقق من اتصالك وحاول مجددًا.</string>
+    <string name="playlist_text_limit">استخدم %1$d حرفًا كحد أقصى.</string>
 </resources>

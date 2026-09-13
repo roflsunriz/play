@@ -46,4 +46,21 @@
     <string name="browser_login_complete">正在返回 Play…</string>
     <string name="login_required">请登录以查看音乐详情和播放音乐。</string>
     <string name="browser_unavailable">没有可用的浏览器。请启用浏览器后重试。</string>
+    <string name="create_playlist">创建歌单</string>
+    <string name="edit_playlist">编辑歌单</string>
+    <string name="delete_playlist">删除歌单</string>
+    <string name="save">保存</string>
+    <string name="playlist_private_description">新歌单将设为私密。</string>
+    <string name="playlist_image">歌单图片</string>
+    <string name="playlist_choose_image">选择图片</string>
+    <string name="playlist_undo_image">撤销图片更改</string>
+    <string name="playlist_remove_image">移除图片</string>
+    <string name="playlist_name">名称</string>
+    <string name="playlist_description">描述</string>
+    <string name="playlist_save_failed">无法保存。请检查网络连接后重试。你的修改已保留。</string>
+    <string name="playlist_image_failed">无法读取此图片。请选择支持的格式，且小于20 MiB的图片。</string>
+    <string name="playlist_partially_saved">歌单已创建，但部分修改尚未完成。请再次保存以完成操作。</string>
+    <string name="delete_playlist_confirmation">%1$s将从你的音乐库中移除。拥有链接的人可能仍然可以访问。</string>
+    <string name="playlist_delete_failed">无法删除。请检查网络连接后重试。</string>
+    <string name="playlist_text_limit">请输入不超过%1$d个字符。</string>
 </resources>

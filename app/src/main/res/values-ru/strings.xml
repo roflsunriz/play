@@ -49,4 +49,21 @@
     <string name="browser_login_complete">Возврат в Play…</string>
     <string name="login_required">Войдите, чтобы открыть сведения о музыке и начать воспроизведение.</string>
     <string name="browser_unavailable">Браузер недоступен. Включите браузер и повторите попытку.</string>
+    <string name="create_playlist">Создать плейлист</string>
+    <string name="edit_playlist">Изменить плейлист</string>
+    <string name="delete_playlist">Удалить плейлист</string>
+    <string name="save">Сохранить</string>
+    <string name="playlist_private_description">Новый плейлист будет приватным.</string>
+    <string name="playlist_image">Обложка плейлиста</string>
+    <string name="playlist_choose_image">Выбрать изображение</string>
+    <string name="playlist_undo_image">Отменить смену обложки</string>
+    <string name="playlist_remove_image">Удалить обложку</string>
+    <string name="playlist_name">Название</string>
+    <string name="playlist_description">Описание</string>
+    <string name="playlist_save_failed">Не удалось сохранить. Проверьте подключение и повторите попытку. Изменения сохранены в форме.</string>
+    <string name="playlist_image_failed">Не удалось прочитать изображение. Выберите поддерживаемое изображение размером менее 20 MiB.</string>
+    <string name="playlist_partially_saved">Плейлист создан, но некоторые изменения не завершены. Сохраните ещё раз, чтобы закончить.</string>
+    <string name="delete_playlist_confirmation">%1$s будет удалён из вашей библиотеки. У пользователей со ссылкой может сохраниться доступ.</string>
+    <string name="playlist_delete_failed">Не удалось удалить. Проверьте подключение и повторите попытку.</string>
+    <string name="playlist_text_limit">Введите не более %1$d символов.</string>
 </resources>

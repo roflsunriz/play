@@ -46,4 +46,21 @@
     <string name="browser_login_complete">Playに戻ります…</string>
     <string name="login_required">楽曲の詳細と再生を利用するにはログインが必要です。</string>
     <string name="browser_unavailable">ブラウザーを利用できません。端末のブラウザーを有効にして再試行してください。</string>
+    <string name="create_playlist">プレイリストを作成</string>
+    <string name="edit_playlist">プレイリストを編集</string>
+    <string name="delete_playlist">プレイリストを削除</string>
+    <string name="save">保存</string>
+    <string name="playlist_private_description">新しいプレイリストは非公開で作成されます。</string>
+    <string name="playlist_image">プレイリストの画像</string>
+    <string name="playlist_choose_image">画像を選ぶ</string>
+    <string name="playlist_undo_image">画像の変更を戻す</string>
+    <string name="playlist_remove_image">画像を削除</string>
+    <string name="playlist_name">名前</string>
+    <string name="playlist_description">説明</string>
+    <string name="playlist_save_failed">保存できませんでした。通信状態を確認して再試行してください。入力内容は保持されています。</string>
+    <string name="playlist_image_failed">画像を読み込めませんでした。対応形式の20 MiB未満の画像を選んでください。</string>
+    <string name="playlist_partially_saved">プレイリストは作成済みですが、一部の変更が未完了です。もう一度保存して完了してください。</string>
+    <string name="delete_playlist_confirmation">%1$s をライブラリから削除します。リンクを持つ人は引き続きアクセスできる場合があります。</string>
+    <string name="playlist_delete_failed">削除できませんでした。通信状態を確認して再試行してください。</string>
+    <string name="playlist_text_limit">%1$d文字以内で入力してください。</string>
 </resources>

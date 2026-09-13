@@ -48,4 +48,21 @@
     <string name="browser_login_complete">Volviendo a Play…</string>
     <string name="login_required">Inicia sesión para acceder a los detalles y reproducir música.</string>
     <string name="browser_unavailable">No hay ningún navegador disponible. Activa un navegador y vuelve a intentarlo.</string>
+    <string name="create_playlist">Crear lista</string>
+    <string name="edit_playlist">Editar lista</string>
+    <string name="delete_playlist">Eliminar lista</string>
+    <string name="save">Guardar</string>
+    <string name="playlist_private_description">La nueva lista será privada.</string>
+    <string name="playlist_image">Imagen de la lista</string>
+    <string name="playlist_choose_image">Elegir imagen</string>
+    <string name="playlist_undo_image">Deshacer cambio de imagen</string>
+    <string name="playlist_remove_image">Quitar imagen</string>
+    <string name="playlist_name">Nombre</string>
+    <string name="playlist_description">Descripción</string>
+    <string name="playlist_save_failed">No se pudo guardar. Comprueba la conexión e inténtalo de nuevo. Se conservan tus cambios.</string>
+    <string name="playlist_image_failed">No se pudo leer esta imagen. Elige una imagen compatible de menos de 20 MiB.</string>
+    <string name="playlist_partially_saved">La lista se ha creado, pero quedan cambios pendientes. Vuelve a guardar para terminar.</string>
+    <string name="delete_playlist_confirmation">%1$s se eliminará de tu biblioteca. Las personas con el enlace podrían seguir accediendo.</string>
+    <string name="playlist_delete_failed">No se pudo eliminar. Comprueba la conexión e inténtalo de nuevo.</string>
+    <string name="playlist_text_limit">Usa un máximo de %1$d caracteres.</string>
 </resources>

@@ -3,6 +3,7 @@ package io.github.playmusic.data.api
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.PlaylistMetadata
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -21,6 +22,28 @@ class SpotifyRepository(
     private val sessionManager: SessionTokens,
     private val catalog: CatalogApiClient = CatalogApiClient(sessionManager),
 ) {
+    private val playlists = PlaylistApiClient(api, sessionManager)
+
+    suspend fun createPlaylist(name: String, description: String = ""): SpotifyContent = playlists.create(name, description)
+
+    suspend fun completePlaylistCreation(content: SpotifyContent): SpotifyContent = playlists.completeCreation(content)
+
+    suspend fun playlistMetadata(content: SpotifyContent): PlaylistMetadata = playlists.metadata(content)
+
+    suspend fun updatePlaylistMetadata(
+        content: SpotifyContent,
+        name: String,
+        description: String,
+        imageJpeg: ByteArray? = null,
+        removeImage: Boolean = false,
+    ): SpotifyContent = playlists.update(content, name, description, imageJpeg, removeImage)
+
+    suspend fun deletePlaylist(content: SpotifyContent) = playlists.delete(content)
+
+    suspend fun addPlaylistTracks(content: SpotifyContent, trackUris: List<String>) = playlists.addTracks(content, trackUris)
+
+    suspend fun removePlaylistTracks(content: SpotifyContent, trackUris: List<String>) = playlists.removeTracks(content, trackUris)
+
     suspend fun library(kind: ContentKind): List<SpotifyContent> = coroutineScope {
         when (kind) {
             ContentKind.PLAYLIST -> libraryPlaylists()
@@ -40,7 +63,8 @@ class SpotifyRepository(
         var total: Int
         do {
             val response = api.get("/playlist/v2/playlist/${content.id}", query = mapOf("from" to offset.toString(),
-                "length" to PLAYLIST_PAGE_SIZE.toString()), acceptProto = true)
+                "length" to PLAYLIST_PAGE_SIZE.toString(),
+                "decorate" to "revision,length,attributes,timestamp,owner,capabilities"), acceptProto = true)
             val page = SpClientProto.parsePlaylist(response.bodyBytes)
             if (first == null) first = page
             require(page.offset == offset) { "Playlist pagination returned a different position" }
@@ -53,7 +77,8 @@ class SpotifyRepository(
         val metadata = checkNotNull(first)
         val updated = content.copy(title = metadata.name ?: content.title,
             imageUrl = metadata.images["default"] ?: metadata.images.values.firstOrNull() ?: content.imageUrl)
-        return ContentDetail(updated, catalog.tracks(uris), total)
+        return ContentDetail(updated, catalog.tracks(uris), total,
+            playlistMetadata = playlists.metadata(metadata, content.uri))
     }
 
     private suspend fun libraryPlaylists(): List<SpotifyContent> = coroutineScope {

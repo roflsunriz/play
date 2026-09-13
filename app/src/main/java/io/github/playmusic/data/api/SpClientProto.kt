@@ -36,6 +36,16 @@ object SpClientProto {
         val name: String?,
         val images: Map<String, String>,
         val deletedByOwner: Boolean = false,
+        val description: String = "",
+    )
+
+    data class PlaylistCapabilities(
+        val canEditMetadata: Boolean? = null,
+        val canEditItems: Boolean? = null,
+        val canEditName: Boolean? = null,
+        val canEditDescription: Boolean? = null,
+        val canEditPicture: Boolean? = null,
+        val canDelete: Boolean? = null,
     )
 
     data class PlaylistMetadata(val attributes: PlaylistAttributes?, val status: Int?)
@@ -50,6 +60,9 @@ object SpClientProto {
         val truncated: Boolean = false,
         val hasAttributes: Boolean = false,
         val deletedByOwner: Boolean = false,
+        val description: String = "",
+        val ownerUsername: String? = null,
+        val capabilities: PlaylistCapabilities = PlaylistCapabilities(),
     )
 
     data class Rootlist(
@@ -88,6 +101,8 @@ object SpClientProto {
         var contents = ItemPage()
         var revision: ByteArray? = null
         var totalLength: Int? = null
+        var ownerUsername: String? = null
+        var capabilities = PlaylistCapabilities()
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
@@ -95,6 +110,8 @@ object SpClientProto {
                 2 -> totalLength = reader.readVarint().toInt()
                 3 -> header = reader.readBytes()
                 5 -> contents = parseItems(reader.readBytes())
+                16 -> ownerUsername = reader.readString()
+                18 -> capabilities = parseCapabilities(reader.readBytes())
                 else -> reader.skip(reader.wireType(tag))
             }
         }
@@ -109,6 +126,9 @@ object SpClientProto {
             truncated = contents.truncated,
             hasAttributes = parsedHeader != null,
             deletedByOwner = parsedHeader?.deletedByOwner ?: false,
+            description = parsedHeader?.description.orEmpty(),
+            ownerUsername = ownerUsername,
+            capabilities = capabilities,
         )
     }
 
@@ -255,18 +275,67 @@ object SpClientProto {
     private fun parseHeader(bytes: ByteArray): PlaylistAttributes {
         val reader = ProtoWire.Reader(bytes)
         var name: String? = null
+        var description = ""
         val images = mutableMapOf<String, String>()
+        var picture: ByteArray? = null
         var deletedByOwner = false
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 1 -> name = reader.readString()
+                2 -> description = reader.readString()
+                3 -> picture = reader.readBytes()
                 6 -> deletedByOwner = reader.readVarint() != 0L
                 13 -> parseImage(reader.readBytes())?.let { images[it.first] = it.second }
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return PlaylistAttributes(name, images, deletedByOwner)
+        // Newly uploaded covers may contain only the image ID, without decorated picture sizes.
+        if (images.isEmpty()) picture?.takeIf { it.isNotEmpty() }?.let {
+            images["default"] = "https://i.scdn.co/image/${it.toHex()}"
+        }
+        return PlaylistAttributes(name, images, deletedByOwner, description)
+    }
+
+    private fun parseCapabilities(bytes: ByteArray): PlaylistCapabilities {
+        val reader = ProtoWire.Reader(bytes)
+        var result = PlaylistCapabilities()
+        var directCanDelete: Boolean? = null
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            result = when (reader.fieldNumber(tag)) {
+                4 -> result.copy(canEditMetadata = reader.readVarint() != 0L)
+                5 -> result.copy(canEditItems = reader.readVarint() != 0L)
+                8 -> {
+                    val attributes = ProtoWire.Reader(reader.readBytes())
+                    var next = result
+                    while (attributes.hasNext()) {
+                        val attributeTag = attributes.readTag()
+                        val field = attributes.fieldNumber(attributeTag)
+                        if (field in 1..3 || field == 6) {
+                            val capability = ProtoWire.Reader(attributes.readBytes())
+                            var canEdit: Boolean? = null
+                            while (capability.hasNext()) {
+                                val capabilityTag = capability.readTag()
+                                if (capability.fieldNumber(capabilityTag) == 1) canEdit = capability.readVarint() != 0L
+                                else capability.skip(capability.wireType(capabilityTag))
+                            }
+                            next = when (field) {
+                                1 -> next.copy(canEditName = canEdit)
+                                2 -> next.copy(canEditDescription = canEdit)
+                                3 -> next.copy(canEditPicture = canEdit)
+                                else -> next.copy(canDelete = canEdit)
+                            }
+                        } else attributes.skip(attributes.wireType(attributeTag))
+                    }
+                    next
+                }
+                // Current provider web client also exposes a direct can_delete capability.
+                13 -> { directCanDelete = reader.readVarint() != 0L; result }
+                else -> { reader.skip(reader.wireType(tag)); result }
+            }
+        }
+        return result.copy(canDelete = directCanDelete ?: result.canDelete)
     }
 
     private fun parseImage(bytes: ByteArray): Pair<String, String>? {

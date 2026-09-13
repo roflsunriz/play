@@ -49,6 +49,8 @@ internal fun ContentDetailScreen(
     onOpen: (SpotifyContent) -> Unit,
     onRetry: () -> Unit,
     onPlayTrack: (Int) -> Unit,
+    onEditPlaylist: () -> Unit = {},
+    onDeletePlaylist: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val content = detail?.content ?: selected
@@ -68,6 +70,9 @@ internal fun ContentDetailScreen(
                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
                     modifier = Modifier.testTag("detail-title"))
                 if (content.subtitle.isNotBlank()) Text(content.subtitle, modifier = Modifier.testTag("detail-artists"))
+                detail?.playlistMetadata?.description?.takeIf(String::isNotBlank)?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("detail-description"))
+                }
                 detail?.releaseDate?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                 if (detail != null && content.kind != ContentKind.TRACK) {
                     Text(pluralStringResource(R.plurals.track_count, detail.totalTracks, detail.totalTracks),
@@ -76,12 +81,25 @@ internal fun ContentDetailScreen(
                 if (content.durationMs > 0) Text(durationLabel(content.durationMs), modifier = Modifier.testTag("detail-duration"))
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onPlay(content) },
-                    enabled = detail != null && content.isPlayable != false,
+                    enabled = detail != null && content.isPlayable != false &&
+                        (content.kind == ContentKind.TRACK || detail.tracks.any { it.isPlayable != false }),
                     modifier = Modifier.testTag("detail-play-button")) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Text(stringResource(R.string.play))
                 }
                 if (content.isPlayable == false) Text(stringResource(R.string.track_unavailable))
+                if (detail?.playlistMetadata?.canEdit == true) {
+                    TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onEditPlaylist() },
+                        modifier = Modifier.testTag("edit-playlist-button")) {
+                        Text(stringResource(R.string.edit_playlist))
+                    }
+                }
+                if (detail?.playlistMetadata?.canDelete == true) {
+                    TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onDeletePlaylist() },
+                        modifier = Modifier.testTag("delete-playlist-button")) {
+                        Text(stringResource(R.string.delete_playlist), color = MaterialTheme.colorScheme.error)
+                    }
+                }
                 if (content.albumUri != null && content.albumTitle != null) {
                     TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onOpen(SpotifyContent(content.albumUri.substringAfterLast(':'), content.albumUri,

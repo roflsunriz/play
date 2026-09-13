@@ -57,6 +57,10 @@ data class PlayUiState(
     val isBrowserAuthorized: Boolean = false,
     val selectedContent: SpotifyContent? = null,
     val detail: ContentDetail? = null,
+    val playlistEditor: PlaylistEditorState? = null,
+    val playlistToDelete: SpotifyContent? = null,
+    val isDeletingPlaylist: Boolean = false,
+    val playlistDeletionFailed: Boolean = false,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -78,6 +82,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     private var playbackRequestJob: Job? = null
     private var playbackSnapshotJob: Job? = null
     private val detailHistory = ArrayDeque<ContentDetail>()
+    private var playlistWriteJob: Job? = null
+    private var playlistImageJob: Job? = null
+    private var playlistEditorGeneration = 0L
 
     init {
         viewModelScope.launch { container.localPlayback.state.collect { mutableState.value = mutableState.value.copy(playback = it) } }
@@ -257,6 +264,127 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             isLoading = false, error = null)
     }
 
+    fun createPlaylist() {
+        if (!mutableState.value.isLoggedIn || playlistWriteJob?.isActive == true) return
+        playlistEditorGeneration++
+        mutableState.value = mutableState.value.copy(playlistEditor = PlaylistEditorState(), error = null)
+    }
+
+    fun editPlaylist() {
+        if (playlistWriteJob?.isActive == true) return
+        val detail = mutableState.value.detail ?: return
+        val metadata = detail.playlistMetadata?.takeIf { it.canEdit } ?: return
+        playlistEditorGeneration++
+        mutableState.value = mutableState.value.copy(playlistEditor = PlaylistEditorState(
+            content = detail.content, name = metadata.name, description = metadata.description, imageUrl = metadata.imageUrl,
+        ), error = null)
+    }
+
+    fun updatePlaylistName(name: String) = updatePlaylistEditor { it.copy(name = name) }
+
+    fun updatePlaylistDescription(description: String) = updatePlaylistEditor { it.copy(description = description) }
+
+    private fun updatePlaylistEditor(update: (PlaylistEditorState) -> PlaylistEditorState) {
+        val editor = mutableState.value.playlistEditor?.takeUnless { it.isSaving } ?: return
+        mutableState.value = mutableState.value.copy(playlistEditor = update(editor))
+    }
+
+    fun loadPlaylistImage(resolver: android.content.ContentResolver, uri: android.net.Uri) {
+        val editor = mutableState.value.playlistEditor?.takeUnless { it.isSaving } ?: return
+        val generation = playlistEditorGeneration
+        playlistImageJob?.cancel()
+        mutableState.value = mutableState.value.copy(playlistEditor = editor.copy(isLoadingImage = true, failure = null))
+        playlistImageJob = viewModelScope.launch {
+            try {
+                val bytes = PlaylistArtwork.read(resolver, uri)
+                if (playlistEditorGeneration == generation) updatePlaylistEditor {
+                    it.copy(imageJpeg = bytes, removeImage = false, isLoadingImage = false, failure = null)
+                }
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                if (playlistEditorGeneration == generation) updatePlaylistEditor {
+                    it.copy(isLoadingImage = false, failure = PlaylistEditorFailure.IMAGE)
+                }
+            }
+        }
+    }
+
+    fun undoPlaylistImage() = updatePlaylistEditor { it.copy(imageJpeg = null, removeImage = false, failure = null) }
+
+    fun removePlaylistImage() = updatePlaylistEditor { it.copy(imageJpeg = null, removeImage = true, failure = null) }
+
+    fun closePlaylistEditor() {
+        if (mutableState.value.playlistEditor?.isSaving == true) return
+        playlistImageJob?.cancel()
+        playlistEditorGeneration++
+        mutableState.value = mutableState.value.copy(playlistEditor = null)
+    }
+
+    fun savePlaylist() {
+        val editor = mutableState.value.playlistEditor?.takeIf { it.canSave } ?: return
+        mutableState.value = mutableState.value.copy(playlistEditor = editor.copy(isSaving = true, failure = null))
+        playlistWriteJob = viewModelScope.launch {
+            var written: SpotifyContent? = null
+            try {
+                val target = editor.content ?: container.repository.createPlaylist(editor.name.trim(), editor.description).also {
+                    written = it
+                    val current = mutableState.value.playlistEditor ?: return@launch
+                    // Retain the new URI before artwork upload so retries cannot create a duplicate.
+                    mutableState.value = mutableState.value.copy(playlistEditor = current.copy(content = it))
+                }
+                if (editor.creationNeedsCompletion) container.repository.completePlaylistCreation(target)
+                val updated = if (editor.content != null || editor.imageJpeg != null) {
+                    container.repository.updatePlaylistMetadata(target, editor.name.trim(), editor.description, editor.imageJpeg, editor.removeImage)
+                } else target
+                written = updated
+                val current = mutableState.value
+                val items = if (current.items.any { it.uri == updated.uri }) {
+                    current.items.map { if (it.uri == updated.uri) updated else it }
+                } else if (current.selectedSection == LibrarySection.PLAYLISTS) listOf(updated) + current.items else current.items
+                mutableState.value = current.copy(playlistEditor = null, items = items)
+                loadDetail(updated, rememberCurrent = false)
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                val current = mutableState.value.playlistEditor ?: return@launch
+                val partialCreation = exception as? io.github.playmusic.data.api.PlaylistCreationException
+                mutableState.value = mutableState.value.copy(playlistEditor = current.copy(
+                    content = partialCreation?.createdContent ?: written ?: current.content, isSaving = false,
+                    creationNeedsCompletion = partialCreation != null || current.creationNeedsCompletion,
+                    failure = if (written != null || partialCreation != null) PlaylistEditorFailure.PARTIAL_SAVE else PlaylistEditorFailure.SAVE,
+                ))
+            }
+        }
+    }
+
+    fun requestPlaylistDeletion() {
+        val detail = mutableState.value.detail ?: return
+        if (detail.playlistMetadata?.canDelete != true || playlistWriteJob?.isActive == true) return
+        mutableState.value = mutableState.value.copy(playlistToDelete = detail.content, playlistDeletionFailed = false)
+    }
+
+    fun cancelPlaylistDeletion() {
+        if (mutableState.value.isDeletingPlaylist) return
+        mutableState.value = mutableState.value.copy(playlistToDelete = null, playlistDeletionFailed = false)
+    }
+
+    fun deletePlaylist() {
+        val content = mutableState.value.playlistToDelete ?: return
+        if (mutableState.value.isDeletingPlaylist) return
+        mutableState.value = mutableState.value.copy(isDeletingPlaylist = true, playlistDeletionFailed = false)
+        playlistWriteJob = viewModelScope.launch {
+            try {
+                container.repository.deletePlaylist(content)
+                detailHistory.clear()
+                mutableState.value = mutableState.value.copy(playlistToDelete = null, isDeletingPlaylist = false,
+                    selectedContent = null, detail = null, items = mutableState.value.items.filterNot { it.uri == content.uri })
+                refreshAll()
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                mutableState.value = mutableState.value.copy(isDeletingPlaylist = false, playlistDeletionFailed = true)
+            }
+        }
+    }
+
     fun refreshPlayback(): Job {
         playbackSnapshotJob?.cancel()
         return executeRequest(showLoading = false) {
@@ -323,6 +451,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         playbackRequestJob?.cancel()
         playbackSnapshotJob?.cancel()
         val clearFailure = runCatching { container.sessionManager.clearSession() }.exceptionOrNull()
+        playlistWriteJob?.cancel()
+        playlistImageJob?.cancel()
+        playlistEditorGeneration++
         detailHistory.clear()
         mutableState.value = if (clearFailure == null) PlayUiState()
             else mutableState.value.copy(isAuthorizing = false, browserAuthorization = null, loginPending = null,

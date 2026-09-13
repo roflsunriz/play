@@ -27,6 +27,7 @@ data class ContentDetail(
     val tracks: List<SpotifyContent> = emptyList(),
     val totalTracks: Int = tracks.size,
     val releaseDate: String? = null,
+    val playlistMetadata: PlaylistMetadata? = null,
 )
 
 enum class RepeatMode(val apiValue: String) {

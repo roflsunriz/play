@@ -2,6 +2,9 @@ package io.github.playmusic.ui
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MoreVert
@@ -92,6 +96,10 @@ import io.github.playmusic.data.model.SpotifyContent
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val pickPlaylistImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) viewModel.loadPlaylistImage(context.contentResolver, uri)
+    }
     val completedMessage = stringResource(R.string.browser_login_complete)
     val onLogin: () -> Unit = { viewModel.beginBrowserLogin(completedMessage) }
     val pending = state.loginPending
@@ -110,6 +118,17 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onCancel = viewModel::cancelBrowserLogin,
             onFailure = viewModel::reportLoginFailure,
             onBrowserOpened = viewModel::markBrowserOpened,
+        )
+    } else if (state.playlistEditor != null) {
+        PlaylistEditorScreen(
+            state = checkNotNull(state.playlistEditor),
+            onNameChanged = viewModel::updatePlaylistName,
+            onDescriptionChanged = viewModel::updatePlaylistDescription,
+            onChooseImage = { pickPlaylistImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onUndoImage = viewModel::undoPlaylistImage,
+            onRemoveImage = viewModel::removePlaylistImage,
+            onSave = viewModel::savePlaylist,
+            onCancel = viewModel::closePlaylistEditor,
         )
     } else {
         HomeScreen(
@@ -130,7 +149,14 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onOpenContent = viewModel::openDetail,
             onBack = viewModel::closeDetail,
             onPlayDetailTrack = viewModel::playDetailTrack,
+            onCreatePlaylist = viewModel::createPlaylist,
+            onEditPlaylist = viewModel::editPlaylist,
+            onDeletePlaylist = viewModel::requestPlaylistDeletion,
         )
+    }
+    state.playlistToDelete?.let {
+        DeletePlaylistDialog(it, state.isDeletingPlaylist, state.playlistDeletionFailed,
+            viewModel::deletePlaylist, viewModel::cancelPlaylistDeletion)
     }
     state.error?.let { ErrorDialog(it, viewModel::clearError, onLogin) }
 }
@@ -214,8 +240,12 @@ internal fun HomeScreen(
     onOpenContent: (SpotifyContent) -> Unit = onPlay,
     onBack: () -> Unit = {},
     onPlayDetailTrack: (Int) -> Unit = { index -> state.detail?.tracks?.getOrNull(index)?.let(onPlay) },
+    onCreatePlaylist: () -> Unit = {},
+    onEditPlaylist: () -> Unit = {},
+    onDeletePlaylist: () -> Unit = {},
 ) {
     BackHandler(enabled = state.selectedContent != null, onBack = onBack)
+    val haptics = LocalHapticFeedback.current
     var menuExpanded by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -227,6 +257,14 @@ internal fun HomeScreen(
                     }
                 },
                 actions = {
+                    if (state.selectedSection == LibrarySection.PLAYLISTS && state.selectedContent == null) {
+                        IconButton(onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onCreatePlaylist()
+                        }, modifier = Modifier.testTag("create-playlist-button")) {
+                            Icon(Icons.Default.Add, stringResource(R.string.create_playlist))
+                        }
+                    }
                     IconButton(onClick = onRefresh, modifier = Modifier.testTag("refresh-button")) {
                         Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                     }
@@ -271,7 +309,8 @@ internal fun HomeScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (state.selectedContent != null) {
-                ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent, onRefresh, onPlayDetailTrack)
+                ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
+                    onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist)
             } else if (state.selectedSection == LibrarySection.SEARCH) {
                 SearchContent(
                     query = state.searchQuery,

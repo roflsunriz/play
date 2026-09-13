@@ -47,4 +47,21 @@
     <string name="browser_login_complete">Play پر واپس جا رہے ہیں…</string>
     <string name="login_required">موسیقی کی تفصیلات دیکھنے اور اسے چلانے کے لیے سائن ان کریں۔</string>
     <string name="browser_unavailable">کوئی براؤزر دستیاب نہیں ہے۔ براؤزر فعال کر کے دوبارہ کوشش کریں۔</string>
+    <string name="create_playlist">پلے لسٹ بنائیں</string>
+    <string name="edit_playlist">پلے لسٹ میں ترمیم کریں</string>
+    <string name="delete_playlist">پلے لسٹ حذف کریں</string>
+    <string name="save">محفوظ کریں</string>
+    <string name="playlist_private_description">نئی پلے لسٹ نجی ہوگی۔</string>
+    <string name="playlist_image">پلے لسٹ کی تصویر</string>
+    <string name="playlist_choose_image">تصویر منتخب کریں</string>
+    <string name="playlist_undo_image">تصویر کی تبدیلی واپس لیں</string>
+    <string name="playlist_remove_image">تصویر ہٹائیں</string>
+    <string name="playlist_name">نام</string>
+    <string name="playlist_description">تفصیل</string>
+    <string name="playlist_save_failed">محفوظ نہیں ہو سکا۔ کنکشن چیک کر کے دوبارہ کوشش کریں۔ آپ کی تبدیلیاں یہیں موجود ہیں۔</string>
+    <string name="playlist_image_failed">یہ تصویر پڑھی نہیں جا سکی۔ معاون فارمیٹ میں 20 MiB سے چھوٹی تصویر منتخب کریں۔</string>
+    <string name="playlist_partially_saved">پلے لسٹ بن گئی ہے، لیکن کچھ تبدیلیاں باقی ہیں۔ مکمل کرنے کے لیے دوبارہ محفوظ کریں۔</string>
+    <string name="delete_playlist_confirmation">%1$s آپ کی لائبریری سے ہٹا دی جائے گی۔ لنک رکھنے والے لوگ اس تک اب بھی رسائی حاصل کر سکتے ہیں۔</string>
+    <string name="playlist_delete_failed">حذف نہیں ہو سکا۔ کنکشن چیک کر کے دوبارہ کوشش کریں۔</string>
+    <string name="playlist_text_limit">زیادہ سے زیادہ %1$d حروف استعمال کریں۔</string>
 </resources>

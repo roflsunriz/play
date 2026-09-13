@@ -41,6 +41,13 @@ class SpotifyApiClient(
         base: String = API_BASE,
     ): Response = request("POST", base, path, query, body, null, "application/json", acceptProto = false)
 
+    suspend fun postBytes(
+        path: String,
+        body: ByteArray,
+        contentType: String,
+        base: String = API_BASE,
+    ): Response = request("POST", base, path, emptyMap(), null, body, contentType, acceptProto = false)
+
     suspend fun postProto(
         path: String,
         body: ByteArray,

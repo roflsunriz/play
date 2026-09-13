@@ -47,4 +47,21 @@
     <string name="browser_login_complete">Returning to Play…</string>
     <string name="login_required">Sign in to access music details and playback.</string>
     <string name="browser_unavailable">No browser is available. Enable a browser and try again.</string>
+    <string name="create_playlist">Create playlist</string>
+    <string name="edit_playlist">Edit playlist</string>
+    <string name="delete_playlist">Delete playlist</string>
+    <string name="save">Save</string>
+    <string name="playlist_private_description">The new playlist will be private.</string>
+    <string name="playlist_image">Playlist image</string>
+    <string name="playlist_choose_image">Choose image</string>
+    <string name="playlist_undo_image">Undo image change</string>
+    <string name="playlist_remove_image">Remove image</string>
+    <string name="playlist_name">Name</string>
+    <string name="playlist_description">Description</string>
+    <string name="playlist_save_failed">Could not save. Check your connection and try again. Your changes are still here.</string>
+    <string name="playlist_image_failed">Could not read this image. Choose a supported image smaller than 20 MiB.</string>
+    <string name="playlist_partially_saved">The playlist was created, but some changes are still pending. Try saving again to finish.</string>
+    <string name="delete_playlist_confirmation">%1$s will be removed from your library. People with its link may still be able to access it.</string>
+    <string name="playlist_delete_failed">Could not delete. Check your connection and try again.</string>
+    <string name="playlist_text_limit">Character limit: %1$d</string>
 </resources>

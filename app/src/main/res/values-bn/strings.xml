@@ -47,4 +47,21 @@
     <string name="browser_login_complete">Play-তে ফিরে যাওয়া হচ্ছে…</string>
     <string name="login_required">গানের বিবরণ দেখতে ও গান চালাতে সাইন ইন করুন।</string>
     <string name="browser_unavailable">কোনো ব্রাউজার উপলভ্য নেই। একটি ব্রাউজার চালু করে আবার চেষ্টা করুন।</string>
+    <string name="create_playlist">প্লেলিস্ট তৈরি করুন</string>
+    <string name="edit_playlist">প্লেলিস্ট সম্পাদনা করুন</string>
+    <string name="delete_playlist">প্লেলিস্ট মুছুন</string>
+    <string name="save">সংরক্ষণ করুন</string>
+    <string name="playlist_private_description">নতুন প্লেলিস্টটি ব্যক্তিগত থাকবে।</string>
+    <string name="playlist_image">প্লেলিস্টের ছবি</string>
+    <string name="playlist_choose_image">ছবি বেছে নিন</string>
+    <string name="playlist_undo_image">ছবির পরিবর্তন ফিরিয়ে নিন</string>
+    <string name="playlist_remove_image">ছবি সরান</string>
+    <string name="playlist_name">নাম</string>
+    <string name="playlist_description">বিবরণ</string>
+    <string name="playlist_save_failed">সংরক্ষণ করা যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন। আপনার পরিবর্তনগুলো রাখা হয়েছে।</string>
+    <string name="playlist_image_failed">এই ছবিটি পড়া যায়নি। সমর্থিত বিন্যাসের 20 MiB-এর চেয়ে ছোট ছবি বেছে নিন।</string>
+    <string name="playlist_partially_saved">প্লেলিস্ট তৈরি হয়েছে, তবে কিছু পরিবর্তন বাকি আছে। শেষ করতে আবার সংরক্ষণ করুন।</string>
+    <string name="delete_playlist_confirmation">%1$s আপনার লাইব্রেরি থেকে সরানো হবে। লিঙ্ক থাকা ব্যক্তিরা এটি তখনও দেখতে পারেন।</string>
+    <string name="playlist_delete_failed">মোছা যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।</string>
+    <string name="playlist_text_limit">সর্বাধিক %1$dটি অক্ষর ব্যবহার করুন।</string>
 </resources>
