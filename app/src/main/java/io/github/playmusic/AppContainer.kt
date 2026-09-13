@@ -22,6 +22,7 @@ class AppContainer(
     apiConnection: (java.net.URI) -> java.net.HttpURLConnection = { it.toURL().openConnection() as java.net.HttpURLConnection },
 ) {
     val sessionStore = SecureSessionStore(context)
+    val playlistDiskCache = io.github.playmusic.data.cache.PlaylistDiskCache(context)
     val accessPointIdentity = AccessPointIdentity()
     val sessionManager = SessionManager(sessionStore, login5Client, clientTokenClient, browserAuthorizationClient)
     val localPlayback = LocalPlayback(context)
@@ -35,6 +36,7 @@ class AppContainer(
         sessionManager = sessionManager,
         catalog = CatalogApiClient(sessionManager, apiConnection),
         accountIdentity = { sessionStore.loadSession()?.username },
+        playlistDiskCache = playlistDiskCache,
     )
 
     private val applicationContext = context.applicationContext

@@ -18,4 +18,5 @@
     <string name="search_results">نتائج البحث</string>
     <string name="album_filter_hint">تصفية بالعنوان أو الفنان أو تاريخ الإصدار…</string>
     <string name="track_filter_hint">تصفية بالعنوان أو الفنان أو الألبوم…</string>
+    <string name="playlist_sync_failed">تعذرت مزامنة قوائم التشغيل. حدّث للمحاولة مرة أخرى.</string>
 </resources>

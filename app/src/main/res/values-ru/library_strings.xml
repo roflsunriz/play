@@ -18,4 +18,5 @@
     <string name="search_results">Результаты поиска</string>
     <string name="album_filter_hint">Фильтр по названию, исполнителю, дате…</string>
     <string name="track_filter_hint">Фильтр по названию, исполнителю, альбому…</string>
+    <string name="playlist_sync_failed">Не удалось синхронизировать плейлисты. Обновите, чтобы повторить.</string>
 </resources>

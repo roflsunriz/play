@@ -53,11 +53,15 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -148,6 +152,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onLibraryQueryChanged = viewModel::updateLibraryQuery,
                 onLibrarySortChanged = viewModel::updateLibrarySort,
                 onViewportChanged = viewModel::prefetchDetails,
+                onPlaylistSyncRetry = viewModel::retryPlaylistSync,
             )
         }
     }
@@ -243,6 +248,7 @@ internal fun HomeScreen(
     onLibraryQueryChanged: (String) -> Unit = {},
     onLibrarySortChanged: (LibrarySort) -> Unit = {},
     onViewportChanged: (List<SpotifyContent>) -> Unit = {},
+    onPlaylistSyncRetry: () -> Unit = onRefresh,
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
@@ -257,7 +263,15 @@ internal fun HomeScreen(
     val window = LocalWindowInfo.current.containerSize
     val compactHeader = with(LocalDensity.current) { window.height.toDp() < 480.dp && window.width.toDp() >= 600.dp }
     var menuExpanded by remember { mutableStateOf(false) }
+    val snackbarHost = remember { SnackbarHostState() }
+    val syncFailureMessage = stringResource(R.string.playlist_sync_failed)
+    val retryLabel = stringResource(R.string.refresh)
+    LaunchedEffect(state.playlistSyncFailed) {
+        if (state.playlistSyncFailed && snackbarHost.showSnackbar(syncFailureMessage, retryLabel, withDismissAction = true) == SnackbarResult.ActionPerformed)
+            onPlaylistSyncRetry()
+    }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
                 title = {

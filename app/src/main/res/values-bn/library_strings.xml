@@ -18,4 +18,5 @@
     <string name="search_results">অনুসন্ধানের ফলাফল</string>
     <string name="album_filter_hint">শিরোনাম, শিল্পী, প্রকাশের তারিখ দিয়ে ফিল্টার…</string>
     <string name="track_filter_hint">শিরোনাম, শিল্পী, অ্যালবাম দিয়ে ফিল্টার…</string>
+    <string name="playlist_sync_failed">প্লেলিস্ট সিঙ্ক করা যায়নি। আবার চেষ্টা করতে রিফ্রেশ করুন।</string>
 </resources>

@@ -42,6 +42,7 @@ class PlaylistAccountTest {
             check(pending.edit().remove("created_uri").commit()) { "Could not clear the completed test journal" }
             Log.i(TAG, "previous test playlist is absent; stale journal cleared")
         }
+        val cachedBefore = app.repository.library(ContentKind.PLAYLIST).map { it.uri }.toSet()
         val initialName = "Play verification ${System.currentTimeMillis()}"
         var created: SpotifyContent? = null
         var primaryFailure: Throwable? = null
@@ -59,6 +60,7 @@ class PlaylistAccountTest {
                 }
             }
             val target = checkNotNull(created)
+            assertTrue("Creation must be persisted before another sync", checkNotNull(app.repository.cachedPlaylists()).any { it.uri == target.uri })
             assertTrue(app.repository.library(ContentKind.PLAYLIST).any { it.uri == target.uri })
             val permission = api.get("/playlist-permission/v1/playlist/${target.id}/permission/base")
             assertEquals("BLOCKED", JSONObject(permission.body).getString("permissionLevel"))
@@ -69,7 +71,8 @@ class PlaylistAccountTest {
             Log.i(TAG, "stage=save name description artwork")
             val newName = "$initialName edited"
             val newDescription = "日本語の説明・English description"
-            app.repository.updatePlaylistMetadata(target, newName, newDescription, imageJpeg())
+            val saved = app.repository.updatePlaylistMetadata(target, newName, newDescription, imageJpeg())
+            assertEquals("Metadata changes must survive a restart", saved, checkNotNull(app.repository.cachedPlaylists()).first { it.uri == target.uri })
             val imageMetadata = awaitMetadata({ app.repository.playlistMetadata(target) }) {
                 it.name == newName && it.description == newDescription && !it.imageUrl.isNullOrBlank()
             }
@@ -85,7 +88,8 @@ class PlaylistAccountTest {
             assertTrue(app.repository.detail(target).tracks.isEmpty())
 
             Log.i(TAG, "stage=clear description and custom artwork")
-            app.repository.updatePlaylistMetadata(target, newName, "", removeImage = true)
+            val cleared = app.repository.updatePlaylistMetadata(target, newName, "", removeImage = true)
+            assertEquals(cleared, checkNotNull(app.repository.cachedPlaylists()).first { it.uri == target.uri })
             awaitMetadata({ app.repository.playlistMetadata(target) }) { it.description.isEmpty() && it.imageUrl.isNullOrBlank() }
         } catch (error: Throwable) {
             primaryFailure = error
@@ -96,6 +100,8 @@ class PlaylistAccountTest {
                     try {
                         Log.i(TAG, "stage=delete own temporary playlist")
                         app.repository.deletePlaylist(target)
+                        assertEquals("Deleting a test playlist must preserve the other disk entries", cachedBefore,
+                            checkNotNull(app.repository.cachedPlaylists()).map { it.uri }.toSet())
                         val finalUris = libraryUris(api, username)
                         assertFalse(finalUris.contains(target.uri))
                         assertEquals("Existing library playlists must be preserved", originalUris, finalUris)

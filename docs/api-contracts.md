@@ -31,7 +31,13 @@ rootlistの`meta_items`は元のitemsと同じ位置で関連付ける。公開�
 
 検索のnullスロット、null union、`NotFound`、`RestrictedContent`は既知の取得不能項目として除く。正しいURIと名前を持つ再生不可曲は残す。未知のwrapper、`GenericError`、通信やGraphQLの失敗は検索結果の空配列へ置き換えない。修正後、実機の保存済み認証で英語・日本語・1文字の4検索語が成功した。
 
-一覧3種類と作品詳細はアカウント別のメモリに保持し、アルバムと楽曲が使う同じcollection pagingも共有する。詳細は同時2件、保持は24件か計6000項目まで。手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`SpotifyRepositoryCacheTest`、`LibraryBrowsingTest`にある。
+一覧3種類と作品詳細はアカウント別のメモリに保持し、アルバムと楽曲が使う同じcollection pagingも共有する。さらにプレイリスト一覧は`noBackupFilesDir/playlist-library/`の専用SQLiteへ保存する。ファイル名はアカウントのSHA256で分け、認証情報を含めない。起動時は保存済みの完全な一覧を先に公開し、原本の全ページを取得してからURI単位の追加・削除・変更と順序をtransactionで反映する。未変更のmetadata行は書き直さない。
+
+rootlistの`revision` queryは、参照コードの`fetchContents(newRevision)`から目標改訂を指定している。前回以降の差分要求と推測して使わない。通信では軽量な原本一覧を照合し、個別詳細・プロフィール照会とDB更新を必要な項目に絞る。応答に改訂が無い、ページが進まない、途中で改訂が変わる、件数とtruncatedが矛盾する場合は完全な一覧とせず、保存済み内容を維持する。
+
+SQLiteはschema1、最大10,000項目・1行64KiB・metadata計16MiB。破損や未対応schemaはその専用キャッシュだけ再生成する。保存の世代番号を比較し、同期中の作成・変更・削除・ログアウトや並行同期が完了した後に古い結果を上書きしない。作成者の名前と実照会時刻を保存し、起動時と自動同期では24時間以内の値を再利用する。手動更新ではプロフィールも再照会する。
+
+詳細は同時2件、メモリ保持は24件か計6000項目まで。手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`SpotifyRepositoryCacheTest`、`PlaylistDiskCacheTest`、`PlaylistStartupCacheTest`にある。
 
 ### 再生用認証の自己取得
 

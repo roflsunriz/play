@@ -18,4 +18,5 @@
     <string name="search_results">खोज के नतीजे</string>
     <string name="album_filter_hint">शीर्षक, कलाकार, रिलीज़ की तारीख से फ़िल्टर…</string>
     <string name="track_filter_hint">शीर्षक, कलाकार, एल्बम से फ़िल्टर…</string>
+    <string name="playlist_sync_failed">प्लेलिस्ट सिंक नहीं हो सकीं। फिर से कोशिश करने के लिए रीफ़्रेश करें।</string>
 </resources>

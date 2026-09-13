@@ -46,12 +46,14 @@ class LibraryBrowsingTest {
     private val context = object : ContextWrapper(base) {
         override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences = base.getSharedPreferences(name, mode)
         override fun getCacheDir(): File = cache.apply { mkdirs() }
+        override fun getNoBackupFilesDir(): File = File(cache, "no-backup").apply { mkdirs() }
     }
 
     @After fun cleanup() {
         releaseOld.countDown()
         instrumentation.runOnMainSync { models.clear() }
         if (::app.isInitialized) runBlocking { app.localPlayback.release() }
+        if (::app.isInitialized) app.playlistDiskCache.close()
         base.deleteSharedPreferences(name)
         check(cache.canonicalPath.startsWith(base.cacheDir.canonicalPath + File.separator))
         cache.deleteRecursively()
@@ -141,8 +143,8 @@ class LibraryBrowsingTest {
             requests.incrementAndGet()
             when {
                 uri.path.endsWith("/rootlist") -> {
-                    val rows = listOf("beta" to "Beta", "alpha" to "Alpha")
-                    fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
+                    val rows = listOf("0000000000000000000002" to "Beta", "0000000000000000000001" to "Alpha")
+                    fieldBytes(1, byteArrayOf(1)) + fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
                         rows.fold(ByteArray(0)) { bytes, (id, _) -> bytes + fieldBytes(3, fieldString(1, "spotify:playlist:$id")) } +
                         rows.fold(ByteArray(0)) { bytes, (_, title) -> bytes + fieldBytes(4, fieldBytes(2, fieldString(1, title))) })
                 }

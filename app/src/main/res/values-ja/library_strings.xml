@@ -18,4 +18,5 @@
     <string name="search_results">検索結果</string>
     <string name="album_filter_hint">タイトル・アーティスト・発売日など</string>
     <string name="track_filter_hint">タイトル・アーティスト・アルバムなど</string>
+    <string name="playlist_sync_failed">プレイリストを同期できませんでした。更新して再試行してください。</string>
 </resources>

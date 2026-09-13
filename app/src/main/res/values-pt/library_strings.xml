@@ -18,4 +18,5 @@
     <string name="search_results">Resultados da pesquisa</string>
     <string name="album_filter_hint">Filtrar por título, artista, data…</string>
     <string name="track_filter_hint">Filtrar por título, artista, álbum…</string>
+    <string name="playlist_sync_failed">Não foi possível sincronizar as playlists. Atualize para tentar novamente.</string>
 </resources>

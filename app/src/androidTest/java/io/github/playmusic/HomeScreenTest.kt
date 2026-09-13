@@ -39,6 +39,34 @@ class HomeScreenTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
 
+    @Test fun failedBackgroundPlaylistSyncKeepsTheCachedListUsable() {
+        val item = SpotifyContent("cached", "spotify:playlist:cached", "Cached playlist", "", null, ContentKind.PLAYLIST)
+        var retried = false
+        composeRule.setContent { TestTheme {
+            HomeScreen(PlayUiState(isLoggedIn = true, items = listOf(item), playlistSyncFailed = true),
+                {}, {}, {}, { retried = true }, {}, {}, {}, {}, {}, {}, {}, {})
+        } }
+        composeRule.onNodeWithTag("content-playlist-cached").assertIsDisplayed()
+        composeRule.onNodeWithTag("loading-indicator").assertDoesNotExist()
+        composeRule.onNodeWithTag("error-dismiss-button").assertDoesNotExist()
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.playlist_sync_failed)).assertIsDisplayed()
+        captureScreen(composeRule.onRoot(), "cached-playlist-sync-failure")
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.refresh)).performClick()
+        composeRule.runOnIdle { assertTrue(retried) }
+    }
+
+    @Test fun syncFailureRetryTargetsPlaylistsEvenFromAnotherTab() {
+        var retriedPlaylist = false
+        var refreshedAlbum = false
+        composeRule.setContent { TestTheme {
+            HomeScreen(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.ALBUMS, playlistSyncFailed = true),
+                {}, {}, {}, { refreshedAlbum = true }, {}, {}, {}, {}, {}, {}, {}, {},
+                onPlaylistSyncRetry = { retriedPlaylist = true })
+        } }
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.refresh)).performClick()
+        composeRule.runOnIdle { assertTrue(retriedPlaylist); assertTrue(!refreshedAlbum) }
+    }
+
     @Test
     fun untitledPlaylistHasALocalizedTitleAndRemainsClickable() {
         val item = SpotifyContent("untitled", "spotify:playlist:untitled", "", "", null, ContentKind.PLAYLIST)

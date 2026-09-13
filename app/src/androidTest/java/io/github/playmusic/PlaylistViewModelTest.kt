@@ -54,11 +54,13 @@ class PlaylistViewModelTest {
         override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences =
             base.getSharedPreferences(name, Context.MODE_PRIVATE)
         override fun getCacheDir(): File = cache.apply { mkdirs() }
+        override fun getNoBackupFilesDir(): File = File(cache, "no-backup").apply { mkdirs() }
     }
 
     @After fun cleanup() {
         composeRule.runOnIdle { store.clear() }
         runBlocking { container?.localPlayback?.release() }
+        container?.playlistDiskCache?.close()
         base.deleteSharedPreferences(name)
         check(cache.canonicalPath.startsWith(base.cacheDir.canonicalPath + File.separator))
         cache.deleteRecursively()
@@ -185,7 +187,7 @@ class PlaylistViewModelTest {
                     }
                     Reply()
                 }
-                path.endsWith("/rootlist") -> Reply(bytes = fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
+                path.endsWith("/rootlist") -> Reply(bytes = fieldBytes(1, byteArrayOf(1)) + fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
                     if (inLibrary) fieldBytes(3, fieldString(1, PLAYLIST.uri)) +
                         fieldBytes(4, fieldBytes(2, fieldString(1, title)) + fieldVarint(9, 200)) else byteArrayOf()))
                 path.endsWith("/changes") -> {

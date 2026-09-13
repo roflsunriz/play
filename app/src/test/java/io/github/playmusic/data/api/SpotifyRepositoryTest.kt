@@ -19,7 +19,7 @@ class SpotifyRepositoryTest {
             field.fieldBytes(3, field.fieldString(1, "spotify:playlist:valid")) +
             field.fieldBytes(4, field.fieldBytes(2, field.fieldString(1, "Unused entry"))) +
             field.fieldBytes(4, field.fieldBytes(2, field.fieldString(1, "Correct title")))
-        val backend = Backend { Reply(bytes = field.fieldBytes(5, contents)) }
+        val backend = Backend { Reply(bytes = field.fieldBytes(1, byteArrayOf(1)) + field.fieldBytes(5, contents)) }
         val item = backend.repository.library(ContentKind.PLAYLIST).single()
         assertEquals("valid", item.id)
         assertEquals("Correct title", item.title)

@@ -48,7 +48,9 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 実アカウントでの画面連携は`LiveBrowsingScreenTest`へ`liveBrowsing=true`を指定する。ライブラリと検索を読み取り、既存曲を1曲再生・一時停止して拡大プレイヤーまで検査する。既存プレイリストの変更は行わない。`LibraryAccountTest#searchReturnsContent`では英語、日本語、短い検索語を確認する。
 
-一覧と検索結果の保持はアカウント別のメモリ内で行う。詳細の先読みは可視範囲と近傍を対象に同時2件、保持は24件・合計6000曲まで。手動更新、プレイリスト変更、ログアウトの無効化を変更する場合は、`AccountMemoryCacheTest`と`LibraryBrowsingTest`で通信の重複、古い応答、失敗時の再試行、アカウント分離も確認する。
+一覧と検索結果はアカウント別のメモリに保持し、プレイリスト一覧は専用SQLiteにも保存する。詳細の先読みは可視範囲と近傍を対象に同時2件、保持は24件・合計6000曲まで。手動更新、プレイリスト変更、ログアウトの無効化を変更する場合は、`AccountMemoryCacheTest`と`LibraryBrowsingTest`で通信の重複、古い応答、失敗時の再試行、アカウント分離も確認する。
+
+ディスク保存は分離AVDの`io.github.playmusic.data.cache.PlaylistDiskCacheTest`と`PlaylistStartupCacheTest`で、再起動・差分行だけの保存・空一覧と未取得の区別・SQL失敗のrollback・破損復旧・世代照合・空/不完全な応答の拒否を検証する。実アカウントでは`LivePlaylistDiskCacheTest`へ`livePlaylistCache=true`を渡し、実際の一覧を保存してから再構築したコンテナの同期APIだけを遮断し、保存内容を先に表示できることを確認する。端末のWi-Fiや通常版のデータは変更しない。合成アカウントのテストはSharedPreferencesだけでなく`noBackupFilesDir`も専用ディレクトリへ分ける。
 
 作成者の表示名は`UserProfileClientTest`でアカウントIDとの区別・返却URI照合・取得不能と通信失敗の違いを確認する。実機では`LibraryAccountTest#playlistOwnersUseTheirPublicProfileNames`を`liveAccount=true`で実行する。画面の検索欄は3タブで同じ部品を使い、`HomeScreenTest`と`LibraryBrowsingTest`で見た目・メタデータ検索・並び替え・タブごとの保持を検証する。
 

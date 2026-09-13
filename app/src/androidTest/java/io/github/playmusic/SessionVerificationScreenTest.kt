@@ -54,12 +54,14 @@ class SessionVerificationScreenTest {
         override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences =
             base.getSharedPreferences(name, Context.MODE_PRIVATE)
         override fun getCacheDir(): File = cache.apply { mkdirs() }
+        override fun getNoBackupFilesDir(): File = File(cache, "no-backup").apply { mkdirs() }
     }
 
     @After
     fun cleanup() {
         modelStore.clear()
         runBlocking { container?.localPlayback?.release() }
+        container?.playlistDiskCache?.close()
         base.deleteSharedPreferences(name)
         check(cache.canonicalPath.startsWith(base.cacheDir.canonicalPath + File.separator))
         cache.deleteRecursively()
@@ -82,7 +84,7 @@ class SessionVerificationScreenTest {
         }
         submit.assertIsDisplayed().performClick()
         composeRule.waitUntil(5_000) { viewModel.state.value.items.isNotEmpty() }
-        composeRule.onNodeWithTag("content-playlist-saved").assertIsDisplayed()
+        composeRule.onNodeWithTag("content-playlist-0000000000000000000001").assertIsDisplayed()
         assertNull(viewModel.state.value.loginPending)
         assertTrue(viewModel.state.value.isLoggedIn)
         assertEquals(2, requests.get())
@@ -162,8 +164,8 @@ class SessionVerificationScreenTest {
         } }
         val app = AppContainer(context, clientTokens, login) { uri -> Connection(uri, libraryStatus) {
             check(uri.path.endsWith("/rootlist"))
-            fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
-                fieldBytes(3, fieldString(1, "spotify:playlist:saved")) +
+            fieldBytes(1, byteArrayOf(1)) + fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
+                fieldBytes(3, fieldString(1, "spotify:playlist:0000000000000000000001")) +
                 fieldBytes(4, fieldBytes(2, fieldString(1, "Recovered playlist")) + fieldVarint(9, 400)))
         } }
         container = app
