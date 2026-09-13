@@ -37,7 +37,11 @@ rootlistの`revision` queryは、参照コードの`fetchContents(newRevision)`�
 
 SQLiteはschema1、最大10,000項目・1行64KiB・metadata計16MiB。破損や未対応schemaはその専用キャッシュだけ再生成する。保存の世代番号を比較し、同期中の作成・変更・削除・ログアウトや並行同期が完了した後に古い結果を上書きしない。作成者の名前と実照会時刻を保存し、起動時と自動同期では24時間以内の値を再利用する。手動更新ではプロフィールも再照会する。
 
-詳細は同時2件、メモリ保持は24件か計6000項目まで。手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`SpotifyRepositoryCacheTest`、`PlaylistDiskCacheTest`、`PlaylistStartupCacheTest`にある。
+詳細の取得全体は同時2件、メモリ保持は24件か計6000項目まで。先読みはスクロール停止から350ms後に、表示中の先頭2項目と直後2項目のうちプレイリスト・アルバムだけを対象にする。専用の待ち行列は最大4件・同時1件とし、スクロール再開時は待機分を取り消す。進行中の1件は完了して共有キャッシュへ保存し、画面から開く要求もその結果を共有する。アカウント切り替え時には進行中の処理も取り消す。
+
+先読みでは一覧の再構築や表示状態の更新を行わない。キャッシュ照会時のアカウント確認、Keystore読み取り、応答解析も含めて画面スレッドの外で実行する。`suspend`宣言や内側のHTTP処理だけでは、呼び出し側の同期処理は別スレッドへ移らない。低速ドラッグで可視行が変わらない間も`isScrollInProgress`で先読みの開始を止める。`DetailPrefetcherTest`、`ViewportPrefetchTest`、`LibraryBrowsingTest`と実機の`LiveScrollPerformanceTest`で検証する。
+
+手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`SpotifyRepositoryCacheTest`、`PlaylistDiskCacheTest`、`PlaylistStartupCacheTest`にある。
 
 ### 再生用認証の自己取得
 

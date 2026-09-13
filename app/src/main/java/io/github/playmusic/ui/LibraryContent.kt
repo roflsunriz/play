@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,7 +22,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -129,7 +131,7 @@ internal fun LibrarySortMenu(kind: ContentKind, sort: LibrarySort, onSelected: (
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("library-sort-button")) {
-            Icon(Icons.Default.Sort, stringResource(R.string.sort_by))
+            Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort_by))
         }
         DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
             LibrarySort.options(kind).forEach { option ->
@@ -202,8 +204,8 @@ internal fun ContentList(
     resultHeading: String? = null,
     suggestionHeading: String? = null,
     presentationKey: String = "",
+    listState: LazyListState = rememberLazyListState(),
 ) {
-    val listState = rememberLazyListState()
     var previousPresentation by rememberSaveable { mutableStateOf(presentationKey) }
     LaunchedEffect(presentationKey) {
         if (previousPresentation != presentationKey) {
@@ -217,13 +219,19 @@ internal fun ContentList(
     val resultItems = remember(items, suggestionUris) { items.filterNot { it.uri in suggestionUris } }
     LaunchedEffect(listState, allItems) {
         val indicesByUri = allItems.mapIndexed { index, item -> item.uri to index }.toMap()
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.mapNotNull { indicesByUri[it.key] } }
+        snapshotFlow {
+            if (listState.isScrollInProgress) null
+            else listState.layoutInfo.visibleItemsInfo.mapNotNull { indicesByUri[it.key] }
+        }
             .distinctUntilChanged().collectLatest { indices ->
-                // A fast fling should not start a request for every row it passes.
-                delay(160)
-                reportViewport(viewportPrefetchItems(allItems, indices))
+                reportViewport(emptyList())
+                if (indices != null && indices.isNotEmpty()) {
+                    delay(350)
+                    reportViewport(viewportPrefetchItems(allItems, indices))
+                }
             }
     }
+    DisposableEffect(Unit) { onDispose { reportViewport(emptyList()) } }
     if (allItems.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(emptyText) }
     } else LazyColumn(state = listState, modifier = Modifier.testTag("content-list"),

@@ -48,7 +48,17 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 実アカウントでの画面連携は`LiveBrowsingScreenTest`へ`liveBrowsing=true`を指定する。ライブラリと検索を読み取り、既存曲を1曲再生・一時停止して拡大プレイヤーまで検査する。既存プレイリストの変更は行わない。`LibraryAccountTest#searchReturnsContent`では英語、日本語、短い検索語を確認する。
 
-一覧と検索結果はアカウント別のメモリに保持し、プレイリスト一覧は専用SQLiteにも保存する。詳細の先読みは可視範囲と近傍を対象に同時2件、保持は24件・合計6000曲まで。手動更新、プレイリスト変更、ログアウトの無効化を変更する場合は、`AccountMemoryCacheTest`と`LibraryBrowsingTest`で通信の重複、古い応答、失敗時の再試行、アカウント分離も確認する。
+一覧と検索結果はアカウント別のメモリに保持し、プレイリスト一覧は専用SQLiteにも保存する。詳細の取得全体は同時2件、保持は24件・合計6000項目まで。先読みはスクロール停止から350ms後、可視範囲と直後の最大4件を同時1件で取得する。スクロール再開時は待機分だけ取り消し、先読み完了で一覧を再構築しない。手動更新、プレイリスト変更、ログアウトの無効化を変更する場合は、`AccountMemoryCacheTest`と`LibraryBrowsingTest`で通信の重複、古い応答、失敗時の再試行、アカウント分離も確認する。
+
+スクロールは`DetailPrefetcherTest`、`ViewportPrefetchTest`、`LibraryBrowsingTest`で、低速ドラッグ中の取得抑制、待機範囲の切り替え、画面スレッドで認証情報を読まないことを検査する。実機計測は対象端末を明示して次を実行する。`LiveScrollPerformanceTest`は実時間の`ActivityScenario`と`Window.FrameMetrics`を使い、一覧内で1.8秒のドラッグを往復6回行う。外部ジェスチャー中に描画時計が止まる`ComposeTestRule`は性能測定に使用しない。修正前後それぞれプロセスを再起動し、端末・一覧・表示設定・画像キャッシュ条件をそろえて比較する。
+
+```powershell
+adb -s <許可された端末ID> shell am force-stop io.github.playmusic
+adb -s <許可された端末ID> shell am instrument -w -r -e liveScroll true -e scrollPhase after -e class io.github.playmusic.LiveScrollPerformanceTest io.github.playmusic.test/androidx.test.runner.AndroidJUnitRunner
+adb -s <許可された端末ID> exec-out run-as io.github.playmusic cat files/scroll-metrics/after.json
+```
+
+記録はフレーム時間と座標だけで、認証情報やライブラリ内容を含まない。`scrollPhase`は英小文字・数字・ハイフンだけを使う。受入上限を固定する場合は`-e maxScrollP95Ms <ミリ秒>`を追加する。計測対象画面だけを点灯状態に保ち、終了時に解除する。
 
 ディスク保存は分離AVDの`io.github.playmusic.data.cache.PlaylistDiskCacheTest`と`PlaylistStartupCacheTest`で、再起動・差分行だけの保存・空一覧と未取得の区別・SQL失敗のrollback・破損復旧・世代照合・空/不完全な応答の拒否を検証する。実アカウントでは`LivePlaylistDiskCacheTest`へ`livePlaylistCache=true`を渡し、実際の一覧を保存してから再構築したコンテナの同期APIだけを遮断し、保存内容を先に表示できることを確認する。端末のWi-Fiや通常版のデータは変更しない。合成アカウントのテストはSharedPreferencesだけでなく`noBackupFilesDir`も専用ディレクトリへ分ける。
 

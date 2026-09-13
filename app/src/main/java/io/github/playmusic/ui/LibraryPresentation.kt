@@ -59,15 +59,14 @@ internal fun presentLibrary(items: List<SpotifyContent>, query: String, sort: Li
 private fun normalizeLibraryText(text: String): String =
     Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
 
-/** Keep the visible rows first, then a small window ahead of and behind them. */
+/** Two visible items and at most two upcoming items keep background work small. */
 internal fun viewportPrefetchItems(items: List<SpotifyContent>, visibleIndices: List<Int>): List<SpotifyContent> {
     val visible = visibleIndices.filter { it in items.indices }
     if (visible.isEmpty()) return emptyList()
-    val start = visible.min()
     val end = visible.max()
-    return (visible + (end + 1..end + 4) + (start - 2 until start))
+    return (visible.take(2) + (end + 1..end + 2))
         .distinct().mapNotNull { items.getOrNull(it) }
-        .filter { it.kind == ContentKind.PLAYLIST || it.kind == ContentKind.ALBUM }.take(12)
+        .filter { it.kind == ContentKind.PLAYLIST || it.kind == ContentKind.ALBUM }.take(DetailPrefetcher.MAX_ITEMS)
 }
 
 internal fun librarySuggestions(libraries: Map<LibrarySection, List<SpotifyContent>>): List<SpotifyContent> {

@@ -47,9 +47,9 @@ class LibraryPresentationTest {
 
     @Test fun viewportPrefetchIsBoundedAndPrioritizesVisibleContent() {
         val items = (0..100).map { item(it.toString(), kind = ContentKind.ALBUM) }
-        assertEquals(listOf(40, 41, 42, 43, 44, 45, 46, 38, 39).map { items[it] },
+        assertEquals(listOf(40, 41, 43, 44).map { items[it] },
             viewportPrefetchItems(items, listOf(40, 41, 42)))
-        assertTrue(viewportPrefetchItems(items, (0..99).toList()).size <= 12)
+        assertTrue(viewportPrefetchItems(items, (0..99).toList()).size <= 4)
         assertTrue(viewportPrefetchItems(items, listOf(-1, 999)).isEmpty())
         assertTrue(viewportPrefetchItems(listOf(item("track", kind = ContentKind.TRACK)), listOf(0)).isEmpty())
     }

@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.coroutineScope
 
 enum class LibrarySection(val kind: ContentKind?) {
     PLAYLISTS(ContentKind.PLAYLIST),
@@ -90,8 +89,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
     private var contentRequestJob: Job? = null
     private val libraryJobs = mutableMapOf<LibrarySection, Job>()
-    private var prefetchJob: Job? = null
-    private var prefetchUris: List<String> = emptyList()
+    private val detailPrefetcher = DetailPrefetcher(viewModelScope,
+        isCached = { container.repository.peekDetail(it) != null },
+        load = { container.repository.detail(it) })
     private var accountGeneration = 0L
     private val searchCache = object : LinkedHashMap<String, List<SpotifyContent>>(24, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<SpotifyContent>>?): Boolean = size > 24
@@ -247,8 +247,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     fun selectSection(section: LibrarySection) {
         if (section == mutableState.value.selectedSection && mutableState.value.selectedContent == null) return
         contentRequestJob?.cancel()
-        prefetchJob?.cancel()
-        prefetchUris = emptyList()
+        detailPrefetcher.update(emptyList())
         detailHistory.clear()
         val current = mutableState.value
         val cached = current.libraries[section] ?: section.kind?.let(container.repository::peekLibrary)
@@ -663,28 +662,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun prefetchDetails(contents: List<SpotifyContent>) {
-        val candidates = contents.filter { it.kind == ContentKind.PLAYLIST || it.kind == ContentKind.ALBUM }
-            .distinctBy { it.uri }.take(12)
-        val uris = candidates.map { it.uri }
-        if (uris == prefetchUris || !mutableState.value.isLoggedIn) return
-        prefetchUris = uris
-        prefetchJob?.cancel()
-        val generation = accountGeneration
-        prefetchJob = viewModelScope.launch {
-            coroutineScope {
-                candidates.forEach { content -> launch {
-                    try {
-                        val detail = container.repository.detail(content)
-                        if (generation == accountGeneration && content.kind == ContentKind.PLAYLIST &&
-                            mutableState.value.libraries[LibrarySection.PLAYLISTS]?.any { it.uri == content.uri } == true)
-                            updatePlaylistInLibrary(detail.content)
-                    } catch (exception: Exception) {
-                        if (exception is CancellationException) throw exception
-                        // Opening or explicitly refreshing the item remains the retry path.
-                    }
-                } }
-            }
-        }
+        val current = mutableState.value
+        detailPrefetcher.update(if (current.isLoggedIn && !current.isAuthorizing) contents else emptyList())
     }
 
     private fun cancelBrowsing() {
@@ -692,8 +671,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         contentRequestJob?.cancel()
         libraryJobs.values.forEach { it.cancel() }
         libraryJobs.clear()
-        prefetchJob?.cancel()
-        prefetchUris = emptyList()
+        detailPrefetcher.cancel()
         searchCache.clear()
     }
 

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.os.SystemClock
+import android.os.Looper
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
@@ -43,8 +44,18 @@ class LibraryBrowsingTest {
     private val searchRequests = ConcurrentHashMap<String, AtomicInteger>()
     private val oldStarted = CountDownLatch(1)
     private val releaseOld = CountDownLatch(1)
+    @Volatile private var watchMainSessionReads = false
+    private val mainSessionReads = AtomicInteger()
     private val context = object : ContextWrapper(base) {
-        override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences = base.getSharedPreferences(name, mode)
+        override fun getSharedPreferences(ignored: String, mode: Int): SharedPreferences {
+            val preferences = base.getSharedPreferences(name, mode)
+            return object : SharedPreferences by preferences {
+                override fun getString(key: String?, default: String?): String? {
+                    if (watchMainSessionReads && Looper.myLooper() == Looper.getMainLooper()) mainSessionReads.incrementAndGet()
+                    return preferences.getString(key, default)
+                }
+            }
+        }
         override fun getCacheDir(): File = cache.apply { mkdirs() }
         override fun getNoBackupFilesDir(): File = File(cache, "no-backup").apply { mkdirs() }
     }
@@ -99,6 +110,19 @@ class LibraryBrowsingTest {
         assertEquals(null, app.repository.peekLibrary(io.github.playmusic.data.model.ContentKind.PLAYLIST))
     }
 
+    @Test fun prefetchDoesNotReadCredentialsOnMainOrRewriteTheVisibleLibrary() {
+        val model = createModel()
+        await { model.state.value.libraries.size == 3 }
+        val items = model.state.value.items
+        watchMainSessionReads = true
+        instrumentation.runOnMainSync { model.prefetchDetails(items) }
+        await { app.repository.peekDetail(items.first()) != null }
+        instrumentation.runOnMainSync { model.prefetchDetails(items) }
+        assertEquals(0, mainSessionReads.get())
+        assertEquals(items, model.state.value.items)
+        watchMainSessionReads = false
+    }
+
     @Test fun typingShowsLocalSuggestionsAndDebouncesRemoteResults() {
         val model = createModel()
         await { model.state.value.libraries.size == 3 }
@@ -149,6 +173,7 @@ class LibraryBrowsingTest {
                         rows.fold(ByteArray(0)) { bytes, (_, title) -> bytes + fieldBytes(4, fieldBytes(2, fieldString(1, title))) })
                 }
                 uri.path == "/collection/v2/paging" -> ByteArray(0)
+                uri.path.startsWith("/playlist/v2/playlist/") -> fieldBytes(3, fieldString(1, "Prefetched detail title")) + fieldVarint(2, 0)
                 uri.path == "/pathfinder/v2/query" -> {
                     val json = JSONObject(body.toString(Charsets.UTF_8))
                     val query = json.getJSONObject("variables").getString("searchTerm")

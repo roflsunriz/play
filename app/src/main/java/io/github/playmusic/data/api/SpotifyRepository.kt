@@ -8,6 +8,8 @@ import io.github.playmusic.data.cache.PlaylistDiskCache
 import io.github.playmusic.data.cache.PlaylistCacheEntry
 import io.github.playmusic.data.cache.PlaylistCacheSnapshot
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -79,8 +81,8 @@ class SpotifyRepository(
     }
 
     suspend fun library(kind: ContentKind, forceRefresh: Boolean = false,
-        refreshOwnerNames: Boolean = forceRefresh): List<SpotifyContent> {
-        if (kind !in LIBRARY_KINDS) return emptyList()
+        refreshOwnerNames: Boolean = forceRefresh): List<SpotifyContent> = withContext(Dispatchers.IO) {
+        if (kind !in LIBRARY_KINDS) return@withContext emptyList()
         val account = currentAccount()
         val invalidateDetails = if (forceRefresh) details.invalidationFor(account) {
             it.startsWith("spotify:${kind.name.lowercase()}:")
@@ -91,7 +93,7 @@ class SpotifyRepository(
         }
         checkAccount(account)
         invalidateDetails?.invoke()
-        return result
+        result
     }
 
     fun peekLibrary(kind: ContentKind): List<SpotifyContent>? {
@@ -106,7 +108,7 @@ class SpotifyRepository(
 
     fun clearCache() { libraries.clear(); collections.clear(); details.clear(); profileNames.clear() }
 
-    suspend fun cachedPlaylists(): List<SpotifyContent>? {
+    suspend fun cachedPlaylists(): List<SpotifyContent>? = withContext(Dispatchers.IO) {
         val account = currentAccount()
         val snapshot = playlistDiskCache?.read(account)?.snapshot
         checkAccount(account)
@@ -119,7 +121,7 @@ class SpotifyRepository(
                 }
             }
         checkAccount(account)
-        return snapshot?.entries?.map { it.content }
+        snapshot?.entries?.map { it.content }
     }
 
     suspend fun clearPlaylistDiskCache(account: String) {
@@ -135,16 +137,16 @@ class SpotifyRepository(
         }
     }
 
-    suspend fun search(query: String): List<SpotifyContent> = resolveOwners(catalog.search(query))
+    suspend fun search(query: String): List<SpotifyContent> = withContext(Dispatchers.IO) { resolveOwners(catalog.search(query)) }
 
-    suspend fun detail(content: SpotifyContent, forceRefresh: Boolean = false): ContentDetail {
+    suspend fun detail(content: SpotifyContent, forceRefresh: Boolean = false): ContentDetail = withContext(Dispatchers.IO) {
         val account = currentAccount()
         val result = details.get(account, content.uri, forceRefresh) {
             checkAccount(account)
             loadDetail(content).also { checkAccount(account) }
         }
         checkAccount(account)
-        return result
+        result
     }
 
     private suspend fun loadDetail(content: SpotifyContent): ContentDetail {

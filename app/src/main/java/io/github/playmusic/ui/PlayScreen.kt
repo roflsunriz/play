@@ -293,7 +293,6 @@ internal fun HomeScreen(
                                 LibrarySortMenu(checkNotNull(state.selectedSection.kind), state.sortFor(state.selectedSection), onLibrarySortChanged)
                             LibrarySection.SEARCH -> IconButton(onClick = { keyboard?.hide(); onSearch() }, enabled = state.searchQuery.isNotBlank(),
                                 modifier = Modifier.testTag("search-button")) { Icon(Icons.Default.Search, stringResource(R.string.search_action)) }
-                            else -> Unit
                         }
                     }
                     if (state.selectedSection == LibrarySection.PLAYLISTS && state.selectedContent == null) {
