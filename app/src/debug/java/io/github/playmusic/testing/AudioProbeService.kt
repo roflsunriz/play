@@ -72,7 +72,10 @@ class AudioProbeService : PlaybackService() {
                     val rms = sqrt(sum / count)
                     seconds++
                     Log.i(TAG, "decoded second=$seconds rms=$rms channels=$channels")
-                    if (seconds in 16..30 && rms > 0.001) audibleLateSeconds++
+                    if (rms > 0.001) {
+                        audibleSeconds.add(seconds)
+                        if (seconds in 16..30) audibleLateSeconds++
+                    }
                     sum = 0.0
                     count = 0
                 }
@@ -83,5 +86,8 @@ class AudioProbeService : PlaybackService() {
     companion object {
         const val TAG = "PlayAudioProbe"
         @Volatile var audibleLateSeconds = 0
+        private val audibleSeconds = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+        fun resetMeasurements() { audibleLateSeconds = 0; audibleSeconds.clear() }
+        fun audibleSecondsIn(first: Int, last: Int): Int = (first..last).count(audibleSeconds::contains)
     }
 }

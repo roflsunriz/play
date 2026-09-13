@@ -10,7 +10,7 @@
 
 1. 依存関係を更新する場合は、公式リリースの変更点・修正版・互換条件を確認する。
 2. APIを変更する場合は、実応答または対象APKのprotobuf定義と照合する。未知のフィールド番号や国・契約種別を固定値として推測で埋め込まない。
-3. 参照クライアントのバージョン・インストール条件・認証方式を記録してから通信を照合する。2026-09-12夜以降の調査はWindows版を優先しており、Android参照版の改変調査は中断している。解析用APKはGit管理外の`service-apks/`へ置く。
+3. 参照クライアントのバージョン・インストール条件・認証方式を記録してから通信を照合する。通常版と分離した診断コピーを混同せず、許可された範囲だけを扱う。解析用APKはGit管理外の`service-apks/`へ置く。
 4. 通信原本はGit管理外の`captures/`に置く。検索の検証データは`tools/import-search-capture.py`で抽出し、個人情報を確認してからテストへ追加する。
 5. 修正箇所のテストを実行し、その後で次を実行する。
 
@@ -38,9 +38,11 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 実音源の再生状態と操作の確認は、ログイン済みの許可された端末で `LivePlaybackTest` に `livePlayback=true` を指定する。先頭から終端まで位置を確認する場合は `fullTrack=true` も指定し、終了まで再インストールや別のinstrumentationを実行しない。このテストは音量を一時的に0にするため、音声が正常に続くことの証明にはならない。
 
-音声の無音化は `AudioOutputTest` に `liveAudio=true` を指定して確認する。実機から音を出し、既知の検証曲の16〜30秒区間に音声が含まれるかを測定する。2026-09-13時点ではこの検査に失敗しており、完了扱いにしない。音声・鍵・認証情報を記録せず、端末全体の音量を変更しない。フル再生完了の判定には、これに加えて冒頭・中盤・終盤の実音声と背景再生を確認する。
+音声の無音化は `AudioOutputTest` に `liveAudio=true` を指定して確認する。実機から音を出し、既知の検証曲の16〜30秒区間に音声が含まれるかを測定する。`fullTrack=true`も指定すると途中でホーム画面へ移し、曲の終端・中盤・終盤の音声も確認する。音声・鍵・認証情報を記録せず、端末全体の音量を変更しない。再生位置だけの成功判定へ戻さない。
 
 ログインの自動復帰を変更した場合は `BrowserReturnTest` を `externalBrowserProbe=true` で確認する。
+
+プレイリスト編集は、許可された実アカウントで`PlaylistAccountTest`に`livePlaylists=true`を指定して検証する。テストが作る非公開リストだけを変更し、名前・説明・画像の実取得、収録曲、削除、既存一覧の維持まで確認する。前回の検証用URIがrootlistに残る場合は新規作成を停止するため、対象を確認して削除してから再実行する。画面は分離AVDで`PlaylistEditorScreenTest`、`PlaylistArtworkTest`、`PlaylistViewModelTest`を実行し、キーボードが表示された低い横画面とRTLも確認する。
 
 9. README、通信・解析記録、検証結果、CHANGELOGを更新し、日本語Conventional Commits形式でコミットする。
 

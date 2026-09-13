@@ -51,13 +51,15 @@ open class PlaybackService : MediaSessionService() {
     protected open fun createRenderers(): RenderersFactory = DefaultRenderersFactory(this)
 
     protected open fun createMediaSources(mediaCache: SimpleCache): MediaSource.Factory {
-        val api = (application as PlayApplication).container.streamingApi
+        val container = (application as PlayApplication).container
+        val api = container.streamingApi
         val http = DefaultHttpDataSource.Factory().setUserAgent("Play/0.1.0")
             .setConnectTimeoutMs(15_000).setReadTimeoutMs(20_000)
         val cacheFactory = CacheDataSource.Factory().setCache(mediaCache).setUpstreamDataSourceFactory(http)
         val dataSources = DataSource.Factory { CachedAudioDataSource(api, cacheFactory) }
         val drm = DefaultDrmSessionManager.Builder().setUuidAndExoMediaDrmProvider(C.WIDEVINE_UUID,
-            FrameworkMediaDrm.DEFAULT_PROVIDER).setMultiSession(true).setSessionKeepaliveMs(C.TIME_UNSET).build(AuthenticatedDrmCallback(api))
+            FrameworkMediaDrm.DEFAULT_PROVIDER).setMultiSession(true).setSessionKeepaliveMs(C.TIME_UNSET)
+            .build(AuthenticatedDrmCallback(container.playbackAuthorization))
         return ProgressiveMediaSource.Factory(dataSources).setDrmSessionManagerProvider { drm }
     }
 

@@ -13,6 +13,7 @@ class SpotifyClientTokenClient(
     private val clientVersion: String = CLIENT_VERSION,
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
     private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
+    private val platformData: ClientTokenPlatformData = NativeAndroidData.current(),
 ) {
     private data class CachedToken(val clientId: String, val deviceId: String, val value: GrantedClientToken, val refreshAt: Long)
     private val mutex = Mutex()
@@ -33,6 +34,7 @@ class SpotifyClientTokenClient(
             clientId = clientId,
             clientVersion = clientVersion,
             deviceId = deviceId,
+            platformData = platformData,
         )
         val response = post(initialRequest.encode(), "initial")
         if (response.grantedToken != null) {
@@ -41,6 +43,7 @@ class SpotifyClientTokenClient(
         }
         val challenges = response.challenges
             ?: throw SpotifyAuthException("Service client token request did not return a result")
+        if (challenges.state.isBlank()) throw SpotifyAuthException("Service client token challenge state is missing")
         val hashCash = challenges.challenges.firstNotNullOfOrNull { it.hashCash }
             ?: throw SpotifyAuthException("Service client token challenge is not supported")
         val suffix = runInterruptible(Dispatchers.Default) { HashCash.solveClientToken(hashCash.prefix, hashCash.length) }
@@ -56,6 +59,7 @@ class SpotifyClientTokenClient(
             connection.requestMethod = "POST"
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
+            connection.instanceFollowRedirects = false
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/x-protobuf")
             connection.setRequestProperty("Content-Type", "application/x-protobuf")
@@ -63,11 +67,21 @@ class SpotifyClientTokenClient(
             connection.setRequestProperty("Content-Length", body.size.toString())
             connection.outputStream.use { it.write(body) }
             val status = connection.responseCode
-            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.use { it.readBytes() }
-                ?: ByteArray(0)
             if (status !in 200..299) {
                 throw SpotifyAuthException("Client token $phase request failed ($status)")
+            }
+            val responseBody = connection.inputStream.use { input ->
+                val result = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    if (result.size() + count > MAX_RESPONSE_BYTES) {
+                        throw SpotifyAuthException("Client token response is too large")
+                    }
+                    result.write(buffer, 0, count)
+                }
+                result.toByteArray()
             }
             return ClientTokenResponse.parse(responseBody)
         } finally {
@@ -81,5 +95,6 @@ class SpotifyClientTokenClient(
         const val DEFAULT_USER_AGENT = AppConstants.SPOTIFY_USER_AGENT
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 20_000
+        const val MAX_RESPONSE_BYTES = 1_048_576
     }
 }

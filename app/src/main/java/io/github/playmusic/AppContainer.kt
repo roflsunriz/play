@@ -26,6 +26,10 @@ class AppContainer(
     val sessionManager = SessionManager(sessionStore, login5Client, clientTokenClient, browserAuthorizationClient)
     val localPlayback = LocalPlayback(context)
     val streamingApi = StreamingApiClient(sessionManager, apiConnection)
+    val playbackAuthorization by lazy {
+        io.github.playmusic.data.auth.PlaybackAuthorizationProvider.create(sessionManager,
+            io.github.playmusic.data.auth.WebClientDevice.fromAndroid(applicationContext, sessionStore.loadDeviceId()))
+    }
     val repository = SpotifyRepository(
         api = SpotifyApiClient(sessionManager, apiConnection),
         sessionManager = sessionManager,

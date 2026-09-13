@@ -14,6 +14,19 @@ import org.junit.Test
 /** Opt in with liveAccount=true on a test account with saved playlists, albums and tracks. */
 class LibraryAccountTest {
     @Test
+    fun playbackAuthorizationCanRenewWithoutAnotherLogin(): Unit = runBlocking {
+        val endpoint = java.net.URI(io.github.playmusic.data.playback.StreamingApiClient.LICENSE_URL)
+        val first = app.playbackAuthorization.headers(endpoint)
+        val cached = app.playbackAuthorization.headers(endpoint)
+        assertTrue("Current playback authorization should be reused", first == cached)
+        val renewed = app.playbackAuthorization.headers(endpoint, forceRefresh = true)
+        assertTrue(renewed["Authorization"]?.startsWith("Bearer ") == true)
+        assertTrue(renewed["client-token"]?.isNotBlank() == true)
+        assertTrue(!app.sessionStore.loadSession()?.refreshToken.isNullOrBlank())
+        Log.i(TAG, "playback authorization renewed from saved sign-in")
+    }
+
+    @Test
     fun browserAuthorizationIsSaved() {
         val session = checkNotNull(app.sessionStore.loadSession())
         val ready = !session.refreshToken.isNullOrBlank()

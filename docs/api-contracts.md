@@ -2,7 +2,7 @@
 
 ## 現在の製品経路（2026-09-13）
 
-Windows参照版1.2.93.667の要求と実応答を基準に、認証・カタログ・音声配信の処理を接続した。Android参照版の調査はユーザー指定で中断している。以下の旧Android記録は調査履歴であり、現在の製品経路とは区別する。
+Windows参照版の要求と実応答を基準に認証・カタログ・音声配信を接続し、通常版APKと公開Web配信コードとの照合、Play自身の実機検証で再生用認証とプレイリスト編集を補った。以下の旧Android記録は調査履歴であり、現在の製品経路とは区別する。
 
 | 対象 | 確認した契約・処理 | 検証範囲 |
 | --- | --- | --- |
@@ -13,13 +13,29 @@ Windows参照版1.2.93.667の要求と実応答を基準に、認証・カタロ
 | カタログ | Windows版のGraphQL永続化クエリでアルバム詳細・曲詳細・50曲単位のメタデータ・3種類の検索を取得する | 実応答を取得。公開作品だけを匿名化したfixtureで画像・タイトル・アーティスト・長さ・利用可否を検証 |
 | 作品詳細 | アルバムはページ送り、プレイリストはネイティブの収録URIをページ取得して曲メタデータを対応させる | 画面へ接続し、重複曲の位置、再試行、アルバムへの移動を検証 |
 | 音声配信情報 | `/track-playback/v1/media/{track-uri}?manifestFileFormat=file_ids_mp4`から形式10を選択し、`/storage-resolve/v2/files/audio/interactive/10/{file-id}`で配信先を解決する | Windowsの認証で配信情報とCDNのHTTP 206を確認。取得したMP4にDRM初期化情報があることを確認 |
-| 端末内再生 | Media3、Android標準DRM、`/widevine-license/v1/audio/license`を使う。保存する音声は暗号化された配信データのみ | ライセンス要求の受理と再生位置の進行は確認。ただし約10秒以降に復号後の音声が無音になるため、フル再生は未完成 |
+| 端末内再生 | 保存済みログインから派生させた再生用認証と対応する端末認証を、Media3・Android標準DRM・`/widevine-license/v1/audio/license`へ渡す。保存する音声は暗号化された配信データのみ | 2曲の10秒以降の音声、約5分の背景再生の終端・中盤・終盤、再生操作を実機で確認 |
 
-認証の公開ID、要求ヘッダー、カタログのクエリhashは対応するデータ層のソースコードを正本とし、文書へ重複転記しない。Windows上の認証サービス名と実HTTP方式は一致するとは限らない。初期Sessionオブジェクトの値も更新後に古くなるため、調査では有効期限を確認したtoken providerを使った。端末間の認証値転送は承認済みの一度の比較で終了・削除し、製品へ流用していない。
+認証の公開ID、要求ヘッダー、カタログのクエリhashは対応するデータ層のソースコードを正本とし、文書へ重複転記しない。Windows上の認証サービス名と実HTTP方式は一致するとは限らない。初期Sessionオブジェクトの値も更新後に古くなるため、調査では有効期限を確認したtoken providerを使った。端末間の認証値転送は許可された比較のみに使用して終了後に削除し、製品へ流用していない。
 
 音声の旧APキー要求は実アカウントで拒否された。Windowsの専用キーAPIをPlayで再実装せず、端末の標準DRMへ接続している。配信先の署名付きURLはメモリー内で短時間保持し、ログへ出力しない。ディスクのキャッシュキーにはファイルIDを使い、署名付きURLが変わっても同一音源の暗号化データを再利用する。
 
-2026-09-13の無音化調査では、[公開再生SDK](https://sdk.scdn.co/embedded/index.js)の配信形式・DRM初期化手順も照合した。形式10は128 kbps、11は256 kbps、12と13は複数DRM向け、14と15はCBCS向け。検証音源では、ファイル別のseektableから取得した初期化情報とMP4内の情報が一致した。配信形式の切り替えや別のデコーダー経路でも無音化が残り、ライセンス要求の受理だけでは音声正常を判定できない。実測の範囲と未解決事項は[検証記録](../verification.md)を参照する。
+2026-09-13の無音化調査では、[公開再生SDK](https://sdk.scdn.co/embedded/index.js)の配信形式・DRM初期化手順も照合した。形式10は128 kbps、11は256 kbps、12と13は複数DRM向け、14と15はCBCS向け。旧seektableとMP4内の初期化情報は一致したが、新しいsidecarとは一部が異なった。最終的には既存MP4の初期化情報を変更せず、認証要求の修正で音声が正常になった。ライセンスHTTP 200や再生位置だけを成功判定にしない。実測の条件は[検証記録](../verification.md)を参照する。
+
+### 再生用認証の自己取得
+
+`PlaybackAuthorizationProvider`はPlayが保存した通常ログインを元に処理し、参照アプリから取得した値を製品へ組み込まない。処理はHTTPで完結し、ブラウザーや外部プレイヤーを開かない。
+
+1. 元のBearerで`POST /sessiontransfer/v1/token`へ遷移先URLを送り、短時間有効なトークンを得る。この経路は通常Windowsの`TokenExchangerImpl`から確認し、Play自身の実機要求でも200・有効期間約299秒を確認した。
+2. 通常のOTTログインページのCSRF設定と局所Cookie状態を保ち、`/api/login/ott/verify`、必要な場合は`/api/login/ott/approve`を実行する。認証ページへのBearer転送はしない。遷移先を許可されたHTTPSホストへ限定する。
+3. 同じページの`appServerConfig`と、そのページが指定した公開main bundleを取得する。公開設定の構造・変換・TOTPの条件を確認して、`/api/token`へ`reason/productType/totp/totpServer/totpVer`を送る。これは公開クライアント用の計算で、本人のMFA設定を取り出す処理ではない。
+4. 非匿名で有効期限内の認証と返却Client IDを確認し、ページの版・Playの端末情報で対応するclient-tokenを取得する。元のカタログ用認証や別のClient IDの端末認証と混在させない。
+5. 両認証の短い期限から余裕を引いてメモリー内で再利用する。取得前後のアカウントと元認証を照合し、変更時は結果を破棄する。Cookieと派生認証はディスクへ保存しない。
+
+要求の初期化にはサーバー時刻を使い、更新は`/api/server-time`から時刻を得る。強制更新時だけ`X-Spotify-Tr:true`を付ける。公開設定が変わって検証できない場合は失敗として扱い、設定値や版を推測して埋めない。実装・入力検証は`PlaybackAuthorizationClient`、`PublicWebTokenConfiguration`、`WebClientTokenClient`に分離している。
+
+ライセンスPOSTは自動リダイレクトを拒否し、資格情報の許可ホストを確認する。ライセンスの401と認証転送の401は区別し、それぞれ1回だけ再取得する。プロビジョニングと復号は標準DRMへ任せ、音声鍵や復号音声を保存しない。
+
+比較では再生用Bearerだけ、端末認証だけの変更、元のデスクトップ用プロファイルでの自己取得だけでは無音が残った。上記の組をPlayが自力で取得してからは、標準DRMの復号後PCMと本番の再生サービスの両方で音声を確認した。根拠となる公開コードの控えは`build/qa/playlist-source/`、自己取得診断は`build/qa/own-web-audio-check.log`、本番経路の検証は`verification.md`に集約する。
 
 セッション形式3は形式2を暗号化したまま移行する。認証更新とログアウト・アカウント切り替えが競合した場合、古い更新応答が現在のセッションを上書きしない。新規接続が完了するまでは従来の保存認証を維持する。
 
@@ -75,6 +91,29 @@ Windows参照版1.2.93.667の要求と実応答を基準に、認証・カタロ
 - インストール済み参照アプリのHTTPキャッシュから、検索候補応答30件と検索応答1件を復元した。検索応答1件は旧hexの5,815バイトと同一。新しいPlayの「Nirvana」検索はHTTP 200、約231バイトでentityフィールド自体が0件。「Beatles」ではプレイリストが返る。検索条件の差を試しても曲・アルバムの取得は成立していない。
 
 ネイティブライブラリにv3のメタデータ経路もあるが、HTTPの要求形式と成功応答を確認できていないため採用していない。旧要求やローカルRPCのメッセージを流用して成功とみなさない。現在の未達項目と再開条件は[検証記録](../verification.md)へまとめる。
+
+## プレイリストの書き込み（2026-09-13）
+
+通常Webの配信コードと通常版APKの型定義を照合し、Play自身のログインで検証用の非公開リストを作って確認した。新しいSDKアプリの登録や既存リストの変更は行っていない。実装は`PlaylistApiClient`と`PlaylistMutationProto`に分離している。
+
+| 操作 | 確認した契約 |
+| --- | --- |
+| 新規作成 | `POST /playlist/v2/playlist`へ`OpList`を送り、opsはfield 1。返却`CreateListReply.uri`を検証する |
+| 非公開設定 | `/playlist-permission/v1/playlist/{id}/permission/base`で`permissionLevel=BLOCKED`を確認し、その後rootlistへ`public=false`で追加する |
+| 属性変更 | `POST /playlist/v2/playlist/{id}/changes`へ`ListChanges`。そのfield 2内の`Delta`もopsはfield 2で、作成の`OpList`とは異なる |
+| 名前・説明・画像 | `UPDATE_LIST_ATTRIBUTES`の部分属性を使う。空の説明や画像削除はno-valueの対象フィールドとして明示する |
+| 画像登録 | 画像アップロード先の`POST /v4/playlist`へJPEGを送り、返却`uploadToken`を`POST /playlist/v2/playlist/{id}/register-image`のfield 1へ渡す。返却picture bytesを属性へ保存する |
+| 画像表示 | サイズ別画像URLが無い場合も、属性field 3のpicture IDから通常クライアントと同じ画像URLを解決する |
+| 曲の追加・削除 | リスト変更のADD・REM操作を使い、URI・所有者・編集能力を確認する |
+| プレイリスト削除 | 所有リストだけを対象にrootlistのREMを送り、原本一覧から除かれたことを確認する |
+
+詳細の所有者と能力は、確認済みの`decorate=revision,length,attributes,timestamp,owner,capabilities`を要求して取得する。権限の失敗をUI上だけで隠さず、書き込み前にも検査する。
+
+最初の作成要求は`Delta`と誤認したため、HTTP成功でも名前が空になった。公式コードのメソッド名だけではなく、実際に渡されるシリアライザーを追跡して`OpList`へ修正した。画像も登録成功だけでは完成にせず、実取得・デコード・画素照合まで確認した。通信層のJVM13件と実機の一巡検査が成功し、既存rootlistのURI集合が変わらないことを確認した。記録は`build/qa/playlist-account-fourth.log`。
+
+失敗後に同じ画面から再保存する場合は、新規URIを保持して続きから処理する。書き込み検証用のURIジャーナルは同期保存し、削除済みであることを原本rootlistで確認した場合だけ古い記録を除く。名前・説明・JPEGサイズの入力上限はPlay側の制限であり、提供元全体の上限とは断定しない。
+
+一次資料のローカル控えはGit管理外の`build/qa/playlist-source/web-player.585c4669.js`、`vendor~web-player.f748be6a.js`、`service-apks/reference-store/`。認証値・私的なリストの内容を検証fixtureへコピーせず、確認した契約から架空データを組み立てている。
 
 ## 一次資料
 

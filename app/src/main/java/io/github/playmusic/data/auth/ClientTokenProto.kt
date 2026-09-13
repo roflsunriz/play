@@ -1,6 +1,8 @@
 ﻿package io.github.playmusic.data.auth
 
 import io.github.playmusic.data.auth.ProtoWire.Reader
+import java.net.URI
+import java.util.Locale
 
 internal fun ByteArray.toUppercaseHex(): String = joinToString("") { "%02X".format(it) }
 
@@ -15,14 +17,18 @@ data class ClientTokenRequest(
     val clientId: String,
     val clientVersion: String,
     val deviceId: String,
-    val androidData: NativeAndroidData = NativeAndroidData(),
+    val platformData: ClientTokenPlatformData = NativeAndroidData.current(),
 ) {
-    fun encode(): ByteArray = encodeClientData(androidData)
+    init {
+        require(clientId.isNotBlank() && clientId.length <= 512)
+        require(clientVersion.isNotBlank() && clientVersion.length <= 256)
+        require(deviceId.isNotBlank() && deviceId.length <= 1024)
+    }
 
-    private fun encodeClientData(androidData: NativeAndroidData): ByteArray {
+    fun encode(): ByteArray {
         val connectivity = java.io.ByteArrayOutputStream().apply {
             val platform = java.io.ByteArrayOutputStream().apply {
-                write(ProtoWire.fieldMessage(1, androidData.encode()))
+                write(ProtoWire.fieldMessage(platformData.fieldNumber, platformData.encode()))
             }.toByteArray()
             write(ProtoWire.fieldMessage(1, platform))
             write(ProtoWire.fieldString(2, deviceId))
@@ -63,52 +69,6 @@ data class HashCashAnswer(
     }.toByteArray()
 }
 
-/**
- * NativeAndroidData as captured from the official Spotify Android app.
- * Field layout matches the real device traffic byte-for-byte.
- */
-data class NativeAndroidData(
-    val sdkVersion: AndroidSdkVersion = AndroidSdkVersion(),
-    val field2: Int = 22,
-    val field3: Int = 36,
-    val deviceModel: String = "SH-R80P",
-    val deviceName: String = "SH-R80P",
-    val manufacturer: String = "SHARP",
-    val brand: String = "SHARP",
-    val field8: Int = 32,
-    val appSignature: String = "",
-    val installer: String = "",
-) {
-    fun encode(): ByteArray = java.io.ByteArrayOutputStream().apply {
-        write(ProtoWire.fieldMessage(1, sdkVersion.encode()))
-        if (field2 != 0) write(ProtoWire.fieldVarint(2, field2))
-        if (field3 != 0) write(ProtoWire.fieldVarint(3, field3))
-        if (deviceModel.isNotEmpty()) write(ProtoWire.fieldString(4, deviceModel))
-        if (deviceName.isNotEmpty()) write(ProtoWire.fieldString(5, deviceName))
-        if (manufacturer.isNotEmpty()) write(ProtoWire.fieldString(6, manufacturer))
-        if (brand.isNotEmpty()) write(ProtoWire.fieldString(7, brand))
-        if (field8 != 0) write(ProtoWire.fieldVarint(8, field8))
-        if (appSignature.isNotEmpty()) write(ProtoWire.fieldString(9, appSignature))
-        if (installer.isNotEmpty()) write(ProtoWire.fieldString(10, installer))
-    }.toByteArray()
-}
-
-data class AndroidSdkVersion(
-    val major: Int = 16,
-    val minor: Int = 0,
-    val patch: Int = 0,
-    val apiLevel: Int = 36,
-    val extra1: Int = 36,
-) {
-    fun encode(): ByteArray = java.io.ByteArrayOutputStream().apply {
-        write(ProtoWire.fieldVarint(1, major))
-        write(ProtoWire.fieldVarint(2, minor))
-        write(ProtoWire.fieldVarint(3, patch))
-        write(ProtoWire.fieldVarint(4, apiLevel))
-        write(ProtoWire.fieldVarint(5, extra1))
-    }.toByteArray()
-}
-
 data class ClientTokenChallengesResponse(
     val state: String,
     val challenges: List<ClientTokenChallenge>,
@@ -121,8 +81,8 @@ data class ClientTokenChallengesResponse(
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
-                    1 -> state = reader.readString()
-                    2 -> challenges.add(parseChallenge(reader.readBytes()))
+                    1 -> state = reader.stringField(tag)
+                    2 -> challenges.add(parseChallenge(reader.bytesField(tag)))
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
@@ -136,10 +96,13 @@ data class ClientTokenChallengesResponse(
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
-                    1 -> typeCode = reader.readVarint().toInt()
-                    4 -> hashCash = parseHashCash(reader.readBytes())
+                    1 -> typeCode = reader.nonNegativeIntField(tag)
+                    4 -> hashCash = parseHashCash(reader.bytesField(tag))
                     else -> reader.skip(reader.wireType(tag))
                 }
+            }
+            if (hashCash != null && typeCode != ChallengeType.HASH_CASH.code) {
+                throw ProtoParseException("Client token challenge type does not match its payload")
             }
             return ClientTokenChallenge(
                 type = ChallengeType.entries.firstOrNull { it.code == typeCode } ?: ChallengeType.CHALLENGE_UNKNOWN,
@@ -154,8 +117,8 @@ data class ClientTokenChallengesResponse(
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
-                    1 -> length = reader.readVarint().toInt()
-                    2 -> prefixHex = reader.readString()
+                    1 -> length = reader.nonNegativeIntField(tag)
+                    2 -> prefixHex = reader.stringField(tag)
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
@@ -178,24 +141,59 @@ data class GrantedClientToken(
     val token: String,
     val expiresAfterSeconds: Int,
     val refreshAfterSeconds: Int,
+    val domains: List<String> = emptyList(),
 ) {
+    /** A client token may only be sent to an HTTPS host covered by its granted domains. */
+    fun allows(uri: URI): Boolean {
+        if (uri.scheme != "https" || uri.userInfo != null || uri.port !in listOf(-1, 443)) return false
+        val host = uri.host?.lowercase(Locale.ROOT)?.removeSuffix(".") ?: return false
+        return domains.any { domain -> host == domain || host.endsWith(".$domain") }
+    }
+
+    override fun toString(): String =
+        "GrantedClientToken(expiresAfterSeconds=$expiresAfterSeconds, refreshAfterSeconds=$refreshAfterSeconds, domains=$domains)"
+
     companion object {
         fun parse(data: ByteArray): GrantedClientToken {
             val reader = Reader(data)
             var token = ""
             var expires = 0
             var refresh = 0
+            val domains = linkedSetOf<String>()
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
-                    1 -> token = reader.readString()
-                    2 -> expires = reader.readVarint().toInt()
-                    3 -> refresh = reader.readVarint().toInt()
+                    1 -> token = reader.stringField(tag)
+                    2 -> expires = reader.nonNegativeIntField(tag)
+                    3 -> refresh = reader.nonNegativeIntField(tag)
+                    4 -> domains.add(parseDomain(reader.bytesField(tag)))
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
-            return GrantedClientToken(token, expires, refresh)
+            if (token.isBlank() || expires <= 0) throw ProtoParseException("Client token is empty or has no valid lifetime")
+            return GrantedClientToken(token, expires, refresh, domains.toList())
         }
+
+        private fun parseDomain(data: ByteArray): String {
+            val reader = Reader(data)
+            var domain = ""
+            while (reader.hasNext()) {
+                val tag = reader.readTag()
+                if (reader.fieldNumber(tag) == 1) domain = reader.stringField(tag)
+                else reader.skip(reader.wireType(tag))
+            }
+            return normalizeDomain(domain)
+        }
+
+        internal fun normalizeDomain(domain: String): String {
+            val normalized = domain.lowercase(Locale.ROOT).removePrefix(".").removeSuffix(".")
+            if (normalized.length !in 1..253 || normalized.split('.').any { !it.matches(DOMAIN_LABEL) }) {
+                throw ProtoParseException("Client token contains an invalid domain")
+            }
+            return normalized
+        }
+
+        private val DOMAIN_LABEL = Regex("[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
     }
 }
 
@@ -232,13 +230,34 @@ data class ClientTokenResponse(
             while (reader.hasNext()) {
                 val tag = reader.readTag()
                 when (reader.fieldNumber(tag)) {
-                    1 -> responseType = reader.readVarint().toInt()
-                    2 -> grantedToken = GrantedClientToken.parse(reader.readBytes())
-                    3 -> challenges = ClientTokenChallengesResponse.parse(reader.readBytes())
+                    1 -> responseType = reader.nonNegativeIntField(tag)
+                    2 -> grantedToken = GrantedClientToken.parse(reader.bytesField(tag))
+                    3 -> challenges = ClientTokenChallengesResponse.parse(reader.bytesField(tag))
                     else -> reader.skip(reader.wireType(tag))
                 }
+            }
+            when (responseType) {
+                ClientTokenResponseType.GRANTED_TOKEN_RESPONSE.code ->
+                    if (grantedToken == null || challenges != null) throw ProtoParseException("Invalid client token grant response")
+                ClientTokenResponseType.CHALLENGES_RESPONSE.code ->
+                    if (challenges == null || grantedToken != null) throw ProtoParseException("Invalid client token challenge response")
+                else -> throw ProtoParseException("Unsupported client token response type")
             }
             return ClientTokenResponse(responseType, grantedToken, challenges)
         }
     }
+}
+
+private fun Reader.bytesField(tag: Int): ByteArray {
+    if (wireType(tag) != 2) throw ProtoParseException("Unexpected wire type in client token response")
+    return readBytes()
+}
+
+private fun Reader.stringField(tag: Int): String = bytesField(tag).toString(Charsets.UTF_8)
+
+private fun Reader.nonNegativeIntField(tag: Int): Int {
+    if (wireType(tag) != 0) throw ProtoParseException("Unexpected wire type in client token response")
+    val value = readVarint()
+    if (value !in 0..Int.MAX_VALUE.toLong()) throw ProtoParseException("Client token integer is out of range")
+    return value.toInt()
 }

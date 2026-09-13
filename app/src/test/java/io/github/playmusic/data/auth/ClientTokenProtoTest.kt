@@ -4,7 +4,9 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
+import java.net.URI
 
 class ClientTokenProtoTest {
 
@@ -117,5 +119,44 @@ class ClientTokenProtoTest {
         val text = String(bytes, Charsets.UTF_8)
         assertTrue(text.contains("STATE-TOKEN"))
         assertTrue(text.contains(suffix.toUppercaseHex()))
+    }
+
+    @Test
+    fun grantedDomainsRestrictCredentialsToTheirHttpsHosts() {
+        val grant = ProtoWire.fieldString(1, "synthetic-secret-token") + ProtoWire.fieldVarint(2, 120) +
+            ProtoWire.fieldVarint(3, 60) + ProtoWire.fieldMessage(9, byteArrayOf(1, 2, 3)) +
+            ProtoWire.fieldMessage(4, ProtoWire.fieldString(1, ".EXAMPLE.test.")) +
+            ProtoWire.fieldMessage(4, ProtoWire.fieldString(1, "example.test"))
+        val token = GrantedClientToken.parse(grant)
+        assertEquals(listOf("example.test"), token.domains)
+        assertTrue(token.allows(URI("https://example.test/path")))
+        assertTrue(token.allows(URI("https://license.example.test:443/path")))
+        for (url in listOf("https://evilexample.test", "https://example.test.invalid", "http://example.test",
+            "https://example.test:8080", "https://user@example.test")) {
+            assertFalse(url, token.allows(URI(url)))
+        }
+        assertFalse(token.toString().contains("synthetic-secret-token"))
+    }
+
+    @Test
+    fun malformedGrantLifetimeAndDomainAreRejected() {
+        val identity = ProtoWire.fieldString(1, "synthetic-token")
+        for (grant in listOf(
+            identity,
+            identity + ProtoWire.fieldVarint(2, -1),
+            identity + ProtoWire.fieldVarint(2, Int.MAX_VALUE.toLong() + 1),
+            identity + ProtoWire.fieldString(2, "120"),
+            identity + ProtoWire.fieldVarint(2, 120) + ProtoWire.fieldMessage(4, ProtoWire.fieldString(1, "example.test/path")),
+        )) {
+            assertTrue(runCatching { GrantedClientToken.parse(grant) }.exceptionOrNull() is ProtoParseException)
+        }
+    }
+
+    @Test
+    fun responseTypeMustMatchItsGrantOrChallengePayload() {
+        val grant = ProtoWire.fieldMessage(2, ProtoWire.fieldString(1, "synthetic-token") + ProtoWire.fieldVarint(2, 120))
+        assertTrue(runCatching { ClientTokenResponse.parse(ProtoWire.fieldVarint(1, 2) + grant) }
+            .exceptionOrNull() is ProtoParseException)
+        assertTrue(runCatching { ClientTokenResponse.parse(grant) }.exceptionOrNull() is ProtoParseException)
     }
 }
