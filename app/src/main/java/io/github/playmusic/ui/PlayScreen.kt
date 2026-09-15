@@ -296,7 +296,8 @@ internal fun HomeScreen(
         .flatMap { state.libraries[it].orEmpty() }.map { it.uri }.toSet() }
     if (playerExpanded && state.playback.item != null) {
         ExpandedPlayerScreen(state.playback, onPlayPause, onNext, onPrevious, onSeek, onShuffle, onRepeat,
-            onBack = { playerExpanded = false }, onContentActions = onContentActions, savedUris = savedUris, onStop = onStop)
+            onBack = { playerExpanded = false }, onContentActions = onContentActions, savedUris = savedUris, onStop = onStop,
+            lyricsContent = lyricsContent)
         return
     }
     BackHandler(enabled = state.selectedContent != null, onBack = onBack)
@@ -407,7 +408,7 @@ internal fun HomeScreen(
                             state.artistRadioBusy, onPlay, onPlayDetailTrack, onOpenContent, onArtistFollow, onArtistRadio,
                             onContentActions, savedUris, onRefresh)
                     else ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
-                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris, lyricsContent)
+                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris)
                 }
             } else {
                 listStates.SaveableStateProvider(state.selectedSection.name) {

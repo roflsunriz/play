@@ -86,6 +86,7 @@ internal fun ExpandedPlayerScreen(
     onContentActions: (SpotifyContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
     onStop: () -> Unit = {},
+    lyricsContent: @Composable (SpotifyContent) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val haptics = LocalHapticFeedback.current
@@ -128,6 +129,7 @@ internal fun ExpandedPlayerScreen(
                                 PlayerMetadata(playback, compact = true)
                                 key(itemUri) { PlayerTimeline(playback, seekCurrentItem) }
                                 PlayerControls(playback, 64.dp, onPlayPause, onNext, onPrevious, onShuffle, onRepeat)
+                                playback.item?.let { lyricsContent(it) }
                             }
                         }
                     }
@@ -142,6 +144,7 @@ internal fun ExpandedPlayerScreen(
                         PlayerMetadata(playback, compact = false)
                         key(itemUri) { PlayerTimeline(playback, seekCurrentItem) }
                         PlayerControls(playback, 72.dp, onPlayPause, onNext, onPrevious, onShuffle, onRepeat)
+                        playback.item?.let { lyricsContent(it) }
                     }
                 }
             }

@@ -56,7 +56,7 @@ internal sealed interface LyricsState {
     data class Loaded(val lyrics: TrackLyrics) : LyricsState
 }
 
-/** No persistent cache: leaving the detail/account also releases the response text. */
+/** No persistent cache: leaving the player/account also releases the response text. */
 @Composable
 internal fun LyricsRoute(
     content: SpotifyContent,

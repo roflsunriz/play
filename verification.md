@@ -2,6 +2,12 @@
 
 ## 2026-09-15の結果
 
+### 歌詞の表示場所を拡大プレイヤーへ移動
+
+- 再生していない曲の歌詞を見せないよう、`ContentDetailScreen` の歌詞slotを除去し、`ExpandedPlayerScreen`（縦・横両配置）の操作部の下へ移動した。`LyricsRoute` は再生中の曲URIで取得し直し、プレイヤーを離れれば本文も破棄される。
+- `PlaybackSettingsScreenTest` の歌詞slot検査を拡大プレイヤー接続へ書き換えた。`LyricsPanelTest`・`LyricsApiClientTest` は対象外のため不変。
+- JVM228件が失敗0、`lintDebug` エラー0、`assembleDebug` と `assembleDebugAndroidTest` のビルドが成功。書き換えた画面テスト自体は実機・AVDで未実行であり、拡大プレイヤーでの歌詞表示・追従・行シークは実機検証時に確認すること。
+
 ### 初回ログイン直後のDRMライセンス取得失敗の修正
 
 - 症状はフレッシュインストール直後と初回ログイン直後に`ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED`となり、10秒以降が復号できない一方、時間経過で再生できる場合があること。再生派生認証の初回取得が複数往復（sessiontransfer→OTT→公開bundle最大8MB→TOTP→token→client-token）のため、DRMスレッド上の`runBlocking`取得が最初の暗号境界に間に合わないことが原因と特定した。キャッシュ後は成功するため時間経過で解消したように見える。

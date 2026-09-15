@@ -90,18 +90,14 @@ class PlaybackSettingsScreenTest {
         compose.runOnIdle { assertEquals(1, stops); assertEquals(0, toggles) }
     }
 
-    @Test fun onlyTrackDetailsConnectTheirOwnLyricsSlot() {
+    @Test fun expandedPlayerConnectsThePlayingItemsLyricsSlot() {
         val track = SpotifyContent("track", "spotify:track:track", "Synthetic song", "", null, ContentKind.TRACK)
-        var selected by mutableStateOf(track)
         var supplied: SpotifyContent? = null
         compose.setContent { PlayTheme { Surface(Modifier.fillMaxSize()) {
-            ContentDetailScreen(selected, ContentDetail(selected), false, {}, {}, {}, {}, lyricsContent = {
-                supplied = it; Text("Synthetic lyrics slot", Modifier.testTag("synthetic-lyrics"))
-            })
+            ExpandedPlayerScreen(Playback(item = track, isPlaying = true, durationMs = 100_000), {}, {}, {}, {}, {}, {}, {},
+                lyricsContent = { supplied = it; Text("Synthetic lyrics slot", Modifier.testTag("synthetic-lyrics")) })
         } } }
-        compose.onNodeWithTag("content-detail").performScrollToKey("lyrics")
-        compose.onNodeWithTag("synthetic-lyrics").assertIsDisplayed()
-        compose.runOnIdle { assertEquals(track.uri, supplied?.uri); selected = track.copy(kind = ContentKind.ALBUM) }
-        compose.onNodeWithTag("synthetic-lyrics").assertDoesNotExist()
+        compose.onNodeWithTag("synthetic-lyrics").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { assertEquals(track.uri, supplied?.uri) }
     }
 }

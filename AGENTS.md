@@ -42,7 +42,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 新しい音声トランスポートは2つの標準DRM ExoPlayerを持つ`TransitionPlayer`。MediaSession.playerをExoPlayerへ直接castしない。計測はエンジン別に分け、待機中のゲイン1を再生中のゲイン比較へ混ぜない。停止直後の位置は数ms補正され得るため、rawの停止フラグと有界の位置確定を確認してから不変性を検査する。
 - 自動曲間調整は拡張メタデータ27（対象playlist）と28（cuepoint）を使う。DEFAULT=1のmodeと、原本への両曲の所属、型・URI・cuepointの妥当性を検査する。同一曲内シークで次曲の準備を不用意に破棄しない。契約・閾値・検証は`docs/playback-transitions.md`と`docs/api-contracts.md`。
 - 2026-09-15の実音源ではoutcue後の実時間が2342msしかない一方、要求する重なりは5625msだった。開始位置を捨てず実残時間へ短縮する。制御の遅れも100ms一律棄却にせず、残る区間の中で入場位置と時間を補正する。`TeeAudioProcessor`のsink.flushはEOSでも呼ばれるため、出力計測で音声が残っている窓を消さない。`MediaTimeLevelMeter`は媒体時刻・period・世代で数値窓を照合する。
-- 歌詞は曲のURIで分離し、LINE_SYNCED/SYLLABLE_SYNCEDの行開始と次行開始に従う。自動アニメーションと手動・アクセシビリティのスクロールを区別する。本文をログ・fixture・Gitへ保存せず合成文で画面を検査する。`docs/lyrics.md`。
+- 歌詞は曲のURIで分離し、LINE_SYNCED/SYLLABLE_SYNCEDの行開始と次行開始に従う。表示場所は拡大プレイヤーの再生中の曲のみとし、再生していない曲の詳細画面には置かない。自動アニメーションと手動・アクセシビリティのスクロールを区別する。本文をログ・fixture・Gitへ保存せず合成文で画面を検査する。`docs/lyrics.md`。
 
 - 2026-09-15、検索入力キャンセルがOAuth更新の応答受け取りと保存の間へ入り、入れ替わった更新トークンを失う経路を確認した。更新開始後は`SessionManager`のmutex内で`NonCancellable + IO`により保存まで完了させ、アカウント世代照合を維持する。`SecureSessionStoreTest`でキャンセル後の新storeからの連続更新を検査する。サーバーで失効済みの値は復元できず、通常ログインの本人操作が必要。
 - 「お気に入りの曲」の専用URIは原本rootlist内の通常プレイリストではない。Repositoryの専用factoryとTRACKコレクションへ接続し、UIだけに一度追加する。所属・削除確認は装飾後の曲一覧ではなく全ページの原本URIを使う。コレクションWriteRequestとジャンルpreviewのページ構造は`docs/api-contracts.md`、保存回帰は`SavedLibraryActionsTest`。
