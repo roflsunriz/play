@@ -2,10 +2,12 @@
 
 ## 2026-09-15の結果
 
-### v0.3.0の公開準備
+### v0.3.0の公開
 
 - ユーザーのプッシュ・リリース許可を受け、公開済みv0.2.0以降の追加機能と修正をv0.3.0へまとめた。versionCodeを3へ更新し、変更履歴を日付付きの節へ移した。README、署名方針、更新手順を現行の導線と照合した。
 - バージョン更新後の`testDebugUnitTest lintDebug assembleRelease`が成功（55秒）。APKメタデータはversionName 0.3.0、versionCode 3、既存applicationIdを保持。223件のJVM回帰、既存の実機機能検証に加え、公開DBの依存監査を再実行し481依存・該当0件を確認した。`build/qa/release-030-build.log`、`release-030-osv.json`。
+- 公開対象は`66b918f09b4a7e2217ac46eb23c429c1bdffd027`。[main CI](https://github.com/roflsunriz/play/actions/runs/34948350157)成功後に同コミットへ`v0.3.0`タグを付け、[Release CI](https://github.com/roflsunriz/play/actions/runs/34948882672)も成功した。[正式リリース](https://github.com/roflsunriz/play/releases/tag/v0.3.0)にAPKとSHA-256ファイルを公開し、本文がCHANGELOGの抽出結果と一致した。
+- 公開後にダウンロードしたAPKは専用証明書、デバッグ無効、versionCode 3を確認。SHA-256は`507011da51e468f4148b34ae00800c16eb8c3f1d1949611283cf17872839a7d8`で添付検証値と一致した。実機SH-R80Pへデータ保持更新し、端末から取得したAPKとも一致。「お気に入りの曲」表示1件、ログイン案内0件を確認した。`build/qa/release-030-public/`、`release-030-device.xml`。
 
 ### 特定の検索語で全体の取得に失敗する問題
 
