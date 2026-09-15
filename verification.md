@@ -2,6 +2,11 @@
 
 ## 2026-09-15の結果
 
+### v0.3.0の公開準備
+
+- ユーザーのプッシュ・リリース許可を受け、公開済みv0.2.0以降の追加機能と修正をv0.3.0へまとめた。versionCodeを3へ更新し、変更履歴を日付付きの節へ移した。README、署名方針、更新手順を現行の導線と照合した。
+- バージョン更新後の`testDebugUnitTest lintDebug assembleRelease`が成功（55秒）。APKメタデータはversionName 0.3.0、versionCode 3、既存applicationIdを保持。223件のJVM回帰、既存の実機機能検証に加え、公開DBの依存監査を再実行し481依存・該当0件を確認した。`build/qa/release-030-build.log`、`release-030-osv.json`。
+
 ### 特定の検索語で全体の取得に失敗する問題
 
 - 実機SH-R80Pで「トリッカル」の全件/プレイリストが`Profile response belongs to a different user`、「インターネット」の全件/ジャンルが`Unexpected catalog entity`になる4条件を修正前に再現した。`build/qa/search-regression-before.log`。再ログインや保存データの変更は行わず、保存済み認証を使った。
