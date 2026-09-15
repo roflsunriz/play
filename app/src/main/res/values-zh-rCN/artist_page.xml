@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">关注</string>
+    <string name="artist_following">已关注</string>
+    <string name="artist_unfollow">取消关注</string>
+    <string name="artist_monthly_listeners">每月听众%1$s人</string>
+    <string name="artist_followers">%1$s位关注者</string>
+    <string name="artist_world_rank">全球排名：%1$s</string>
+    <string name="artist_popular_tracks">热门歌曲</string>
+    <string name="artist_discography">音乐作品</string>
+    <string name="artist_singles_eps">单曲和EP</string>
+    <string name="artist_no_releases">此类别暂无作品</string>
+    <string name="artist_song_radios">歌曲电台</string>
+    <string name="artist_radio_for_song">%1$s电台</string>
+    <string name="artist_about">详情</string>
+    <string name="artist_no_biography">暂无艺人简介</string>
+    <string name="artist_appears_on">参与作品</string>
+    <string name="artist_featuring_playlists">包含该艺人的歌单</string>
+    <string name="artist_discovered_on">发现于以下歌单</string>
+    <string name="artist_suggested">推荐艺人</string>
+    <string name="artist_partial_content">部分相关内容无法加载（%1$d项）。</string>
+</resources>

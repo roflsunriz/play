@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">Suivre</string>
+    <string name="artist_following">Suivi</string>
+    <string name="artist_unfollow">Ne plus suivre</string>
+    <string name="artist_monthly_listeners">%1$s auditeurs mensuels</string>
+    <string name="artist_followers">%1$s abonnés</string>
+    <string name="artist_world_rank">Classement mondial : %1$s</string>
+    <string name="artist_popular_tracks">Titres populaires</string>
+    <string name="artist_discography">Discographie</string>
+    <string name="artist_singles_eps">Singles et EP</string>
+    <string name="artist_no_releases">Aucune sortie dans cette catégorie</string>
+    <string name="artist_song_radios">Radios des titres</string>
+    <string name="artist_radio_for_song">Radio de %1$s</string>
+    <string name="artist_about">À propos</string>
+    <string name="artist_no_biography">Aucune biographie disponible</string>
+    <string name="artist_appears_on">Apparaît sur</string>
+    <string name="artist_featuring_playlists">Playlists avec cet artiste</string>
+    <string name="artist_discovered_on">Découvert sur</string>
+    <string name="artist_suggested">Artistes suggérés</string>
+    <string name="artist_partial_content">Certains contenus associés n’ont pas pu être chargés (%1$d).</string>
+</resources>

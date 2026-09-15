@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">Подписаться</string>
+    <string name="artist_following">Вы подписаны</string>
+    <string name="artist_unfollow">Отписаться</string>
+    <string name="artist_monthly_listeners">%1$s слушателей в месяц</string>
+    <string name="artist_followers">%1$s подписчиков</string>
+    <string name="artist_world_rank">Место в мире: %1$s</string>
+    <string name="artist_popular_tracks">Популярные треки</string>
+    <string name="artist_discography">Дискография</string>
+    <string name="artist_singles_eps">Синглы и EP</string>
+    <string name="artist_no_releases">В этой категории нет релизов</string>
+    <string name="artist_song_radios">Радио по трекам</string>
+    <string name="artist_radio_for_song">Радио по треку %1$s</string>
+    <string name="artist_about">Об исполнителе</string>
+    <string name="artist_no_biography">Биография недоступна</string>
+    <string name="artist_appears_on">Участие в релизах</string>
+    <string name="artist_featuring_playlists">Плейлисты с исполнителем</string>
+    <string name="artist_discovered_on">Находят в плейлистах</string>
+    <string name="artist_suggested">Рекомендуемые исполнители</string>
+    <string name="artist_partial_content">Не удалось загрузить часть связанных материалов (%1$d).</string>
+</resources>

@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">فالو کریں</string>
+    <string name="artist_following">فالو کر رہے ہیں</string>
+    <string name="artist_unfollow">ان فالو کریں</string>
+    <string name="artist_monthly_listeners">ماہانہ %1$s سامعین</string>
+    <string name="artist_followers">%1$s فالوورز</string>
+    <string name="artist_world_rank">عالمی درجہ: %1$s</string>
+    <string name="artist_popular_tracks">مقبول گانے</string>
+    <string name="artist_discography">موسیقی کے کام</string>
+    <string name="artist_singles_eps">سنگلز اور EP</string>
+    <string name="artist_no_releases">اس زمرے میں کوئی ریلیز نہیں</string>
+    <string name="artist_song_radios">گانوں کے ریڈیو</string>
+    <string name="artist_radio_for_song">%1$s ریڈیو</string>
+    <string name="artist_about">تفصیلات</string>
+    <string name="artist_no_biography">فنکار کا تعارف دستیاب نہیں</string>
+    <string name="artist_appears_on">شرکت والے کام</string>
+    <string name="artist_featuring_playlists">اس فنکار کی پلے لسٹس</string>
+    <string name="artist_discovered_on">ان پلے لسٹس میں دریافت</string>
+    <string name="artist_suggested">تجویز کردہ فنکار</string>
+    <string name="artist_partial_content">کچھ متعلقہ مواد لوڈ نہیں ہو سکا (%1$d)۔</string>
+</resources>

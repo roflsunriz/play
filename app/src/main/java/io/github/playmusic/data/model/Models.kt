@@ -48,6 +48,7 @@ data class ContentDetail(
     val releaseDate: String? = null,
     val playlistMetadata: PlaylistMetadata? = null,
     val relatedContent: List<SpotifyContent> = emptyList(),
+    val artistPage: ArtistPage? = null,
 )
 
 enum class RepeatMode(val apiValue: String) {

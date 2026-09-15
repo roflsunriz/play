@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">फ़ॉलो करें</string>
+    <string name="artist_following">फ़ॉलो कर रहे हैं</string>
+    <string name="artist_unfollow">अनफ़ॉलो करें</string>
+    <string name="artist_monthly_listeners">%1$s मासिक श्रोता</string>
+    <string name="artist_followers">%1$s फ़ॉलोअर</string>
+    <string name="artist_world_rank">विश्व रैंक: %1$s</string>
+    <string name="artist_popular_tracks">लोकप्रिय गाने</string>
+    <string name="artist_discography">डिस्कोग्राफ़ी</string>
+    <string name="artist_singles_eps">सिंगल और EP</string>
+    <string name="artist_no_releases">इस श्रेणी में कोई रिलीज़ नहीं है</string>
+    <string name="artist_song_radios">गानों का रेडियो</string>
+    <string name="artist_radio_for_song">%1$s रेडियो</string>
+    <string name="artist_about">जानकारी</string>
+    <string name="artist_no_biography">कलाकार की जीवनी उपलब्ध नहीं है</string>
+    <string name="artist_appears_on">इनमें शामिल</string>
+    <string name="artist_featuring_playlists">इस कलाकार वाली प्लेलिस्ट</string>
+    <string name="artist_discovered_on">इन प्लेलिस्ट में मिला</string>
+    <string name="artist_suggested">सुझाए गए कलाकार</string>
+    <string name="artist_partial_content">कुछ संबंधित सामग्री लोड नहीं हुई (%1$d)।</string>
+</resources>

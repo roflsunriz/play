@@ -46,7 +46,12 @@ class SpotifyRepository(
     private val profileNames = AccountMemoryCache<String, UserProfileClient.Profile>(256, 256, { 1 }, 4)
     private val libraries = AccountMemoryCache<ContentKind, List<SpotifyContent>>(3, 3, { 1 }, 3)
     private val collections = AccountMemoryCache<String, List<String>>(1, 1, { 1 }, 1)
-    private val details = AccountMemoryCache<String, ContentDetail>(24, 6000, { it.tracks.size.coerceAtLeast(1) }, 2)
+    private val details = AccountMemoryCache<String, ContentDetail>(24, 6000, { detail ->
+        (detail.tracks.size + detail.relatedContent.size + (detail.artistPage?.let { page ->
+            page.discography.size + page.appearsOn.size + page.featuringPlaylists.size +
+                page.discoveredOnPlaylists.size + page.suggestedArtists.size + page.songRadioSeeds.size
+        } ?: 0)).coerceAtLeast(1)
+    }, 2)
 
     suspend fun createPlaylist(name: String, description: String = ""): SpotifyContent = writePlaylist(
         onSuccess = { account, content -> playlistDiskCache?.updateItem(account, content) }) {
@@ -228,6 +233,13 @@ class SpotifyRepository(
         withContext(Dispatchers.IO) { resolveOwners(catalog.search(query, filter)) }
 
     suspend fun radio(content: SpotifyContent): SpotifyContent = withContext(Dispatchers.IO) { catalog.radio(content) }
+
+    suspend fun setArtistFollowed(content: SpotifyContent, followed: Boolean): Boolean = withContext(Dispatchers.IO) {
+        require(content.kind == ContentKind.ARTIST)
+        val account = currentAccount()
+        try { catalog.setArtistFollowed(content.uri, followed).also { checkAccount(account) } }
+        finally { details.invalidate(account, content.uri) }
+    }
 
     suspend fun detail(content: SpotifyContent, forceRefresh: Boolean = false): ContentDetail = withContext(Dispatchers.IO) {
         // This is a view of the saved-track library, so do not retain a second, stale copy.

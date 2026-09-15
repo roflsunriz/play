@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">متابعة</string>
+    <string name="artist_following">تتم المتابعة</string>
+    <string name="artist_unfollow">إلغاء المتابعة</string>
+    <string name="artist_monthly_listeners">%1$s مستمع شهريًا</string>
+    <string name="artist_followers">%1$s متابع</string>
+    <string name="artist_world_rank">الترتيب العالمي: %1$s</string>
+    <string name="artist_popular_tracks">الأغاني الرائجة</string>
+    <string name="artist_discography">الأعمال الموسيقية</string>
+    <string name="artist_singles_eps">الأغاني المنفردة وEP</string>
+    <string name="artist_no_releases">لا توجد إصدارات في هذه الفئة</string>
+    <string name="artist_song_radios">راديو الأغاني</string>
+    <string name="artist_radio_for_song">راديو %1$s</string>
+    <string name="artist_about">نبذة</string>
+    <string name="artist_no_biography">لا تتوفر سيرة الفنان</string>
+    <string name="artist_appears_on">شارك في</string>
+    <string name="artist_featuring_playlists">قوائم تتضمن هذا الفنان</string>
+    <string name="artist_discovered_on">تم اكتشافه في</string>
+    <string name="artist_suggested">فنانون مقترحون</string>
+    <string name="artist_partial_content">تعذر تحميل بعض المحتويات ذات الصلة (%1$d).</string>
+</resources>

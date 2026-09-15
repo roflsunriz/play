@@ -1,0 +1,12 @@
+<resources>
+    <string name="artist_follow">フォロー</string><string name="artist_following">フォロー中</string><string name="artist_unfollow">フォローを解除</string>
+    <string name="artist_monthly_listeners">月間リスナー %1$s人</string><string name="artist_followers">フォロワー %1$s人</string>
+    <string name="artist_world_rank">世界ランキング %1$s位</string><string name="artist_popular_tracks">人気曲</string>
+    <string name="artist_discography">ディスコグラフィー</string><string name="artist_singles_eps">シングル・EP</string>
+    <string name="artist_no_releases">この種類の作品はありません</string><string name="artist_song_radios">ソングラジオ</string>
+    <string name="artist_radio_for_song">%1$sのラジオ</string><string name="artist_about">詳細情報</string>
+    <string name="artist_no_biography">アーティスト紹介は提供されていません</string><string name="artist_appears_on">参加作品</string>
+    <string name="artist_featuring_playlists">このアーティストを含むプレイリスト</string><string name="artist_discovered_on">発見したプレイリスト</string>
+    <string name="artist_suggested">おすすめのアーティスト</string>
+    <string name="artist_partial_content">関連コンテンツのうち%1$d件を取得できませんでした。</string>
+</resources>

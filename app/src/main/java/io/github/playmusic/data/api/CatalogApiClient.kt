@@ -4,6 +4,7 @@ import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SpotifyContent
 import io.github.playmusic.data.model.SearchFilter
+import io.github.playmusic.data.model.ArtistRelease
 import io.github.playmusic.data.api.CatalogJson.objects
 import io.github.playmusic.data.auth.DesktopClientProfile
 import kotlinx.coroutines.Dispatchers
@@ -104,10 +105,8 @@ class CatalogApiClient(
 
     private suspend fun artistDetail(uri: String): ContentDetail = coroutineScope {
         require(uri.matches(ARTIST_URI)) { "Invalid artist URI" }
-        val overview = async {
-            CatalogJson.content(query(Operation.ARTIST, JSONObject().put("uri", uri).put("locale", "intl-ja")
-                .put("preReleaseV2", false)).getJSONObject("artistUnion"), ContentKind.ARTIST)
-        }
+        val overview = async { artistOverview(uri) }
+        val releases = async { artistDiscography(uri) }
         val uris = mutableListOf<String>()
         var offset = 0
         do {
@@ -124,7 +123,48 @@ class CatalogApiClient(
             require(next == null || (next > offset && items.isNotEmpty())) { "Artist pagination did not advance" }
             offset = next ?: -1
         } while (offset >= 0)
-        ContentDetail(overview.await().also { require(it.uri == uri) { "Unexpected artist overview" } }, tracks(uris))
+        val artist = overview.await()
+        val popularTracks = tracks(uris)
+        ContentDetail(CatalogJson.content(artist, ContentKind.ARTIST), popularTracks,
+            artistPage = ArtistCatalogJson.overview(artist, releases.await(), popularTracks))
+    }
+
+    /** Follow/unfollow uses the same service library mutation as the public artist page. */
+    suspend fun setArtistFollowed(uri: String, followed: Boolean): Boolean {
+        require(uri.matches(ARTIST_URI)) { "Invalid artist URI" }
+        val username = session.username()
+        query(if (followed) Operation.ADD_TO_LIBRARY else Operation.REMOVE_FROM_LIBRARY,
+            JSONObject().put("libraryItemUris", JSONArray().put(uri)))
+        check(session.username() == username) { "Account changed while updating artist follow state" }
+        val saved = artistOverview(uri).getBoolean("saved")
+        check(session.username() == username) { "Account changed while confirming artist follow state" }
+        check(saved == followed) { "Artist follow change was not confirmed" }
+        return saved
+    }
+
+    internal suspend fun artistOverview(uri: String, locale: String = "intl-ja"): JSONObject {
+        require(uri.matches(ARTIST_URI)) { "Invalid artist URI" }
+        val artist = query(Operation.ARTIST, JSONObject().put("uri", uri).put("locale", locale)
+            .put("preReleaseV2", false)).getJSONObject("artistUnion")
+        require(artist.getString("__typename") == "Artist" && artist.getString("uri") == uri) { "Unexpected artist overview" }
+        return artist
+    }
+
+    private suspend fun artistDiscography(uri: String): List<ArtistRelease> {
+        val releases = mutableListOf<ArtistRelease>()
+        var offset = 0
+        do {
+            val artist = query(Operation.ARTIST_DISCOGRAPHY, JSONObject().put("uri", uri).put("offset", offset)
+                .put("limit", ALBUM_PAGE_SIZE).put("order", "DATE_DESC")).getJSONObject("artistUnion")
+            require(artist.getString("__typename") == "Artist") { "Artist discography is unavailable" }
+            val page = artist.getJSONObject("discography").getJSONObject("all")
+            val count = page.getJSONArray("items").length()
+            val total = page.getInt("totalCount")
+            require(total >= 0 && (count > 0 || offset >= total)) { "Artist discography pagination did not advance" }
+            releases += ArtistCatalogJson.releaseGroups(page)
+            offset += count
+        } while (offset < total)
+        return releases.distinctBy { it.content.uri }
     }
 
     private suspend fun showDetail(uri: String): ContentDetail = coroutineScope {
@@ -251,6 +291,9 @@ class CatalogApiClient(
         SEARCH_GENRES("searchGenres", "9e1c0e056c46239dd1956ea915b988913c87c04ce3dadccdb537774490266f46"),
         ARTIST("queryArtistOverview", "7bdc7185c219898c7a2b659cfff2f8ce066dd2d9a97f8b7c4bde92ccfec28310"),
         ARTIST_TRACKS("getArtistNameAndTracks", "0adaf1a1a8a94c7ed095639c4d9456d2b1cfac16ac511d5dd2b01b6dd89f748a"),
+        ARTIST_DISCOGRAPHY("queryArtistDiscographyAll", "5e07d323febb57b4a56a42abbf781490e58764aa45feb6e3dc0591564fc56599"),
+        ADD_TO_LIBRARY("addToLibrary", "1ad0d40b3c09660d818b9e770eb1e84745dfbe941df159a64f8772b6fa2bfc3a"),
+        REMOVE_FROM_LIBRARY("removeFromLibrary", "1ad0d40b3c09660d818b9e770eb1e84745dfbe941df159a64f8772b6fa2bfc3a"),
         SHOW("queryShowMetadataV2", "40202837452991ffa80ced96987bc1a937e21d5a89df5bf1fb743110e4d6e93a"),
         SHOW_EPISODES("queryPodcastEpisodes", "06046f9b939d56c8eb7cdbb687da938de1164c006871aec91dc26e4dc7d8eb08"),
         EPISODE("getEpisodeOrChapter", "3416929067571ac4b79db16716be3c6ea5f6265f7975a0ee94b1fc5ee1dc1e9d"),

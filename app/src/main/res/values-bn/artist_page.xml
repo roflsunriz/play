@@ -1,0 +1,21 @@
+<resources>
+    <string name="artist_follow">অনুসরণ করুন</string>
+    <string name="artist_following">অনুসরণ করছেন</string>
+    <string name="artist_unfollow">অনুসরণ বন্ধ করুন</string>
+    <string name="artist_monthly_listeners">মাসে %1$s শ্রোতা</string>
+    <string name="artist_followers">%1$s অনুসারী</string>
+    <string name="artist_world_rank">বিশ্ব র‍্যাঙ্ক: %1$s</string>
+    <string name="artist_popular_tracks">জনপ্রিয় গান</string>
+    <string name="artist_discography">ডিস্কোগ্রাফি</string>
+    <string name="artist_singles_eps">সিঙ্গল ও EP</string>
+    <string name="artist_no_releases">এই বিভাগে কোনো প্রকাশনা নেই</string>
+    <string name="artist_song_radios">গানের রেডিও</string>
+    <string name="artist_radio_for_song">%1$s রেডিও</string>
+    <string name="artist_about">বিস্তারিত</string>
+    <string name="artist_no_biography">শিল্পীর জীবনী নেই</string>
+    <string name="artist_appears_on">অংশগ্রহণ করা কাজ</string>
+    <string name="artist_featuring_playlists">এই শিল্পীর প্লেলিস্ট</string>
+    <string name="artist_discovered_on">যেসব প্লেলিস্টে পাওয়া যায়</string>
+    <string name="artist_suggested">প্রস্তাবিত শিল্পী</string>
+    <string name="artist_partial_content">কিছু সম্পর্কিত বিষয়বস্তু লোড হয়নি (%1$d)।</string>
+</resources>

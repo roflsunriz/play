@@ -39,7 +39,14 @@ class CatalogNavigationTest {
         val backend = Backend { request ->
             when (request.body.getString("operationName")) {
                 "queryArtistOverview" -> Reply(data("artistUnion", entity("artist", ARTIST_ID)
+                    .put("__typename", "Artist").put("saved", false).put("stats", JSONObject())
+                    .put("relatedContent", JSONObject().put("appearsOn", JSONObject().put("items", JSONArray()))
+                        .put("featuringV2", JSONObject().put("items", JSONArray()))
+                        .put("discoveredOnV2", JSONObject().put("items", JSONArray()))
+                        .put("relatedArtists", JSONObject().put("items", JSONArray())))
                     .put("profile", JSONObject().put("name", "Artist"))))
+                "queryArtistDiscographyAll" -> Reply(data("artistUnion", JSONObject().put("__typename", "Artist")
+                    .put("discography", JSONObject().put("all", JSONObject().put("items", JSONArray()).put("totalCount", 0)))))
                 "getArtistNameAndTracks" -> {
                     val offset = request.body.getJSONObject("variables").getInt("offset")
                     assertTrue(offset == 0 || offset == 1)
