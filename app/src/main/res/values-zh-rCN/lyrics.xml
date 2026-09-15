@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">歌词</string>
+    <string name="lyrics_unavailable">这首歌曲暂无歌词。</string>
+    <string name="lyrics_failed">无法加载歌词。请检查网络或重新登录后重试。</string>
+    <string name="lyrics_retry">重试</string>
+    <string name="lyrics_empty">未提供歌词内容。</string>
+    <string name="lyrics_unsynced">此歌词没有时间信息。</string>
+    <string name="lyrics_sync">同步</string>
+    <string name="lyrics_provider">歌词提供方：%1$s</string>
+    <string name="lyrics_limited">服务方限制了这首歌曲可显示的歌词。</string>
+</resources>

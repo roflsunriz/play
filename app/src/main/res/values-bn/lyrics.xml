@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">গানের কথা</string>
+    <string name="lyrics_unavailable">এই গানের কথা পাওয়া যাচ্ছে না।</string>
+    <string name="lyrics_failed">গানের কথা লোড হয়নি। সংযোগ পরীক্ষা করুন বা আবার সাইন ইন করে চেষ্টা করুন।</string>
+    <string name="lyrics_retry">আবার চেষ্টা করুন</string>
+    <string name="lyrics_empty">গানের কথার কোনো লাইন দেওয়া হয়নি।</string>
+    <string name="lyrics_unsynced">এই গানের কথায় সময়ের তথ্য নেই।</string>
+    <string name="lyrics_sync">সিঙ্ক করুন</string>
+    <string name="lyrics_provider">গানের কথা প্রদানকারী: %1$s</string>
+    <string name="lyrics_limited">পরিষেবাটি এই গানের উপলব্ধ কথা সীমিত করেছে।</string>
+</resources>

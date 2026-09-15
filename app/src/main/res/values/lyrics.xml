@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">Lyrics</string>
+    <string name="lyrics_unavailable">Lyrics are not available for this track.</string>
+    <string name="lyrics_failed">Could not load lyrics. Check your connection or sign in again, then retry.</string>
+    <string name="lyrics_retry">Retry</string>
+    <string name="lyrics_empty">No lyric lines were provided.</string>
+    <string name="lyrics_unsynced">These lyrics have no timing information.</string>
+    <string name="lyrics_sync">Sync</string>
+    <string name="lyrics_provider">Lyrics provided by %1$s</string>
+    <string name="lyrics_limited">The service limits the lyrics available for this track.</string>
+</resources>

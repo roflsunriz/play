@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">كلمات الأغنية</string>
+    <string name="lyrics_unavailable">كلمات هذه الأغنية غير متاحة.</string>
+    <string name="lyrics_failed">تعذر تحميل الكلمات. تحقق من الاتصال أو سجل الدخول مجددًا ثم أعد المحاولة.</string>
+    <string name="lyrics_retry">إعادة المحاولة</string>
+    <string name="lyrics_empty">لم يتم توفير أسطر للكلمات.</string>
+    <string name="lyrics_unsynced">لا تحتوي هذه الكلمات على معلومات توقيت.</string>
+    <string name="lyrics_sync">مزامنة</string>
+    <string name="lyrics_provider">الكلمات مقدمة من %1$s</string>
+    <string name="lyrics_limited">تحد الخدمة من الكلمات المتاحة لهذه الأغنية.</string>
+</resources>

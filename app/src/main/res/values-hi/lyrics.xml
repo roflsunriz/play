@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">गीत के बोल</string>
+    <string name="lyrics_unavailable">इस गाने के बोल उपलब्ध नहीं हैं।</string>
+    <string name="lyrics_failed">बोल लोड नहीं हुए। कनेक्शन जाँचें या फिर से साइन इन करें और दोबारा कोशिश करें।</string>
+    <string name="lyrics_retry">फिर कोशिश करें</string>
+    <string name="lyrics_empty">बोलों की कोई पंक्ति नहीं मिली।</string>
+    <string name="lyrics_unsynced">इन बोलों में समय की जानकारी नहीं है।</string>
+    <string name="lyrics_sync">सिंक करें</string>
+    <string name="lyrics_provider">बोल प्रदाता: %1$s</string>
+    <string name="lyrics_limited">सेवा ने इस गाने के उपलब्ध बोल सीमित किए हैं।</string>
+</resources>

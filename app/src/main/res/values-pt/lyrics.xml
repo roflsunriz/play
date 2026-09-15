@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">Letra</string>
+    <string name="lyrics_unavailable">A letra desta música não está disponível.</string>
+    <string name="lyrics_failed">Não foi possível carregar a letra. Confira a conexão ou entre novamente e tente outra vez.</string>
+    <string name="lyrics_retry">Tentar novamente</string>
+    <string name="lyrics_empty">Nenhuma linha da letra foi fornecida.</string>
+    <string name="lyrics_unsynced">Esta letra não tem informações de tempo.</string>
+    <string name="lyrics_sync">Sincronizar</string>
+    <string name="lyrics_provider">Letra fornecida por %1$s</string>
+    <string name="lyrics_limited">O serviço limita a letra disponível para esta música.</string>
+</resources>

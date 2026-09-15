@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_title">歌詞</string>
+    <string name="lyrics_unavailable">この曲の歌詞は配信されていません。</string>
+    <string name="lyrics_failed">歌詞を取得できませんでした。通信状態やログインを確認して再試行してください。</string>
+    <string name="lyrics_retry">再試行</string>
+    <string name="lyrics_empty">歌詞の行がありません。</string>
+    <string name="lyrics_unsynced">この歌詞には同期時刻がありません。</string>
+    <string name="lyrics_sync">同期する</string>
+    <string name="lyrics_provider">歌詞提供：%1$s</string>
+    <string name="lyrics_limited">配信元により、この曲に表示できる歌詞が制限されています。</string>
+</resources>
