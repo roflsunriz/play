@@ -34,7 +34,8 @@ class LivePlaybackTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val app = (context.applicationContext as PlayApplication).container
         check(app.sessionStore.loadSession()?.refreshToken != null) { "Complete normal sign-in first" }
-        val item = SpotifyContent("4CeeEOM32jQcH3eN9Q2dGj", TRACK, "", "", null, ContentKind.TRACK)
+        val trackUri = InstrumentationRegistry.getArguments().getString("trackUri") ?: TRACK
+        val item = SpotifyContent(trackUri.substringAfterLast(':'), trackUri, "", "", null, ContentKind.TRACK)
         val detail = app.repository.detail(item).content
         assertTrue(detail.durationMs > 120_000)
         var failure: String? = null
@@ -79,7 +80,7 @@ class LivePlaybackTest {
                 awaitState("Pause protected audio") { !app.localPlayback.state.value.playWhenReady }
                 app.localPlayback.resume()
                 awaitState("Resume protected audio") { app.localPlayback.state.value.isPlaying }
-                assertEquals(TRACK, app.localPlayback.state.value.item?.uri)
+                assertEquals(trackUri, app.localPlayback.state.value.item?.uri)
                 if (InstrumentationRegistry.getArguments().getString("fullTrack") == "true") {
                     app.localPlayback.seek(0)
                     awaitState("Restart full track") {
@@ -108,13 +109,13 @@ class LivePlaybackTest {
                 }
                 app.localPlayback.previous()
                 awaitState("Previous protected item") {
-                    app.localPlayback.state.value.item?.uri == TRACK && app.localPlayback.state.value.isPlaying &&
+                    app.localPlayback.state.value.item?.uri == trackUri && app.localPlayback.state.value.isPlaying &&
                         app.localPlayback.state.value.progressMs in 500..5_000
                 }
                 app.localPlayback.setRepeat(RepeatMode.TRACK)
                 app.localPlayback.seek(detail.durationMs - 1_200)
                 awaitState("Repeat protected item") {
-                    app.localPlayback.state.value.item?.uri == TRACK && app.localPlayback.state.value.isPlaying &&
+                    app.localPlayback.state.value.item?.uri == trackUri && app.localPlayback.state.value.isPlaying &&
                         app.localPlayback.state.value.progressMs in 500..4_000
                 }
                 app.localPlayback.setRepeat(RepeatMode.CONTEXT)
@@ -122,7 +123,7 @@ class LivePlaybackTest {
                 awaitState("Last queue item") { app.localPlayback.state.value.item?.uri == secondUri && app.localPlayback.state.value.isPlaying }
                 app.localPlayback.seek(second.durationMs - 1_200)
                 awaitState("Repeat protected queue") {
-                    app.localPlayback.state.value.item?.uri == TRACK && app.localPlayback.state.value.isPlaying &&
+                    app.localPlayback.state.value.item?.uri == trackUri && app.localPlayback.state.value.isPlaying &&
                         app.localPlayback.state.value.progressMs in 500..4_000
                 }
                 app.localPlayback.setShuffle(true)

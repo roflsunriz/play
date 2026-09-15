@@ -36,6 +36,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 
 ## 調査・検証で確認した注意点
 
+- 2026-09-15、一部の旧版曲の配信情報は、要求したURIと異なる再生可能版のURIをmediaのキーとして返す。`item.metadata.uri`とそのキーを照合し、`linked_from_uri`が要求URIと一致する唯一の候補を使う。先頭要素や曲名一致で代替しない。Queen Jewels全16曲で旧実装の失敗を確認。根拠と検証は`docs/api-contracts.md`、`StreamingApiClientTest`。
 - 音質設定は`AppContainer.audioEffects`で端末単位に保持する。音声スレッドはimmutableな`state.value.settings`だけを読み、保存・認証・UI更新を行わない。Media3のカスタムprocessorはfloat/圧縮passthrough/offloadで迂回され得るため、30バンドEQはPCM16経路へ接続し、計測用serviceも本番processorの後へmeterを置く。設計と根拠は`docs/audio-effects.md`。
 - 2026-09-13、ユーザーがプッシュとリリースを許可し、続いて送信先`roflsunriz/play`のActions SecretsへのPlay専用署名鍵・パスワード登録を明示承認した。4つの署名Secretsを登録済み。秘密値は標準入力へ改行を加えず渡し、引数・ログ・Gitへ出さない。共用debug秘密鍵は外部へ送らない。ローカル控えは`.signing/`、既存実機の移行は署名履歴とAndroid 9以降用の一度限りの移行APKで検証する。
 - v0.2.0で、明示承認を得て実機のPlayを専用の公開署名へ移行済み。以降、共用debug鍵のAPKをそのまま上書きできるとは扱わない。実機で開発用APKを検証する場合は本体とテストAPKを同じ専用鍵で署名し、署名不一致を理由に本体や認証データを消さない。公開APKはdebuggableにせず、署名の識別子と手順は`SECURITY.md`と`how-to-update.md`を使う。

@@ -1,5 +1,18 @@
 # 検証手順と結果
 
+## 2026-09-15の結果
+
+### 旧版の曲・アルバムで再生開始に失敗する問題
+
+- 実機SH-R80Pの保存アルバムQueen Jewelsは全16曲が旧実装で`Audio manifest is missing`になった。ユーザー指定の保存プレイリスト内Fearless Pt. IIも同じ失敗で、`AudioOutputTest`から`ERROR_CODE_IO_UNSPECIFIED`を再現した。検索の同名曲は別URIで正常に再生できた。ログは`build/qa/streaming-library-jewels-before.log`、`streaming-daily-before.log`、`streaming-daily-audio-before.log`。
+- 両作品の実応答は再生可能版を別URIで返し、`item.metadata.linked_from_uri`に要求URIを保持していた。形式10は存在した。元URIに対応する唯一の再生可能版を選ぶよう修正し、無関係・URI不一致・対応欠落・null・複数候補・アルバムURIを拒否する回帰を追加した。正常な別版のテストは修正前に失敗し、修正後は既存の認証更新・キャッシュ・配信先検証を含むJVM162件が成功した。
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease`が成功。lintはエラー0・既存警告5件。初回はWindowsのKotlin共有キャッシュ権限、別の全検査ではGradleのレポート保存時のファイル競合を検出し、環境設定を変えず昇格・逐次再実行で成功した。最終ログは`streaming-final-build.log`。
+- 修正版の`StreamingAccountTest`で対象プレイリストの曲とアルバム全16曲が成功（19.947秒）。最初の再検査ではプレイリスト曲の通信に一時的なConnectExceptionが発生したため、成功扱いにせず再実行した。`streaming-resolution-after.log`、`streaming-resolution-repeat.log`。
+- 元のFearless Pt. IIのURIで`AudioOutputTest(fullTrack=true)`が198.395秒で成功。背景へ移って自然終端まで再生し、冒頭15/15・中盤19/19・終盤20/20区間に音声があった。`LivePlaybackTest(trackUri=元URI)`も18.961秒で成功し、90秒へのシーク、一時停止・再開、自然終端、前後の曲、曲/リストのリピート、シャッフル、元URIの保持を確認した。`streaming-daily-full-audio.log`、`streaming-daily-amplitudes.log`、`streaming-daily-controls.log`。
+- Queen Jewels先頭曲の元URIでも`AudioOutputTest(fullTrack=true)`が275.354秒で成功し、約4分25秒の背景再生が自然終端へ到達した。冒頭15/15・中盤19/19・終盤20/20区間に音声があった。`streaming-jewels-full-audio.log`、`streaming-jewels-amplitudes.log`。全16曲は配信情報の解決、音声完走はこの代表曲を検査している。
+- プッシュ前監査は公式配布物とのSHA-256一致を確認したOSV-Scanner v2.5.1と同日更新の公開DBで実行し、依存481件に該当する既知の脆弱性0件。`streaming-osv.json`、`streaming-osv.log`。README・更新手順・認証とキャッシュの運用を照合し、旧版を使う再現手順を更新した。
+- 専用証明書で署名した非debugの`build/outputs/play-0.2.0-relink.apk`を実機へ上書きし、通常起動後の保存ログイン・ライブラリ・対象プレイリスト64曲の保持を確認した。2026-09-15 13:47:11更新、versionName 0.2.0の未リリース修正版。SHA-256は`da462893cb38b6f0f649a395c1388df1b4b064066e4da2176349c3f42b3798cc`。署名検証ログは`streaming-release-sign.log`。既存データの消去、通常参照アプリの変更、既存プレイリストの書き換えは行っていない。
+
 ## 2026-09-13の結果
 
 ### 未コミットの診断試作の整理

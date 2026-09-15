@@ -42,6 +42,8 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 音声の無音化は `AudioOutputTest` に `liveAudio=true` を指定して確認する。実機から音を出し、既知の検証曲の16〜30秒区間に音声が含まれるかを測定する。`fullTrack=true`も指定すると途中でホーム画面へ移し、曲の終端・中盤・終盤の音声も確認する。音声・鍵・認証情報を記録せず、端末全体の音量を変更しない。再生位置だけの成功判定へ戻さない。
 
+特定の旧版だけが再生に失敗する場合は、検索で見つかる別版ではなく、実際に保存されている曲を確認する。`StreamingAccountTest`へ`liveStreaming=true`と`albumQuery`（保存アルバム名の一意な部分文字列）、または`playlistName`（完全一致）と`trackTitle`（曲名の部分文字列）を渡すと、元の一覧を変更せず再生情報を解決する。両組を指定すると2検査を実行する。検査ログにある元の曲URIを`AudioOutputTest`と`LivePlaybackTest`の`trackUri`へ渡して、音声・シーク・前後移動・リピートも確認する。配信情報だけの成功を再生成功と扱わない。
+
 ログインの自動復帰を変更した場合は `BrowserReturnTest` を `externalBrowserProbe=true` で確認する。
 
 プレイリスト編集は、許可された実アカウントで`PlaylistAccountTest`に`livePlaylists=true`を指定して検証する。テストが作る非公開リストだけを変更し、名前・説明・画像の実取得、収録曲、削除、既存一覧の維持まで確認する。前回の検証用URIがrootlistに残る場合は新規作成を停止するため、対象を確認して削除してから再実行する。画面は分離AVDで`PlaylistEditorScreenTest`、`PlaylistArtworkTest`、`PlaylistViewModelTest`を実行し、キーボードが表示された低い横画面とRTLも確認する。

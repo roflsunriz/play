@@ -31,7 +31,16 @@ class StreamingApiClient(
         cache[key]?.takeIf { now() < it.expiresAt }?.let { return@withLock it.audio }
         val metadata = request("/track-playback/v1/media/$uri", mapOf("manifestFileFormat" to "file_ids_mp4"))
         val media = metadata.getJSONObject("media")
-        val entry = media.optJSONObject(uri) ?: error("Audio manifest is missing")
+        // Unavailable editions are relinked by the service under the playable track's URI.
+        // Accept only an unambiguous replacement explicitly linked to the requested track.
+        val entry = media.optJSONObject(uri) ?: media.keys().asSequence().mapNotNull { candidateUri ->
+            val candidate = media.optJSONObject(candidateUri)
+            val identity = candidate?.optJSONObject("item")?.optJSONObject("metadata")
+            candidate?.takeIf {
+                candidateUri.matches(TRACK_URI) && identity?.optString("uri") == candidateUri &&
+                    identity.optString("linked_from_uri") == uri
+            }
+        }.singleOrNull() ?: error("Audio manifest is missing")
         val item = entry.getJSONObject("item")
         val files = item.getJSONObject("manifest").getJSONArray("file_ids_mp4")
         val file = (0 until files.length()).map(files::getJSONObject)

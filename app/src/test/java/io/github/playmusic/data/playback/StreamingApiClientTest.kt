@@ -12,8 +12,49 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URI
+import org.json.JSONObject
 
 class StreamingApiClientTest {
+    @Test fun resolvesRelinkedAudioUsingTheExplicitOriginalIdentity(): Unit = runBlocking {
+        val response = relinkedManifest()
+        // An unrelated item may precede the matching replacement in a response.
+        response.getJSONObject("media").put(OTHER, JSONObject(manifest()).getJSONObject("media").getJSONObject(TRACK))
+        val calls = mutableListOf<Connection>()
+        val api = StreamingApiClient(Tokens(), openConnection = { uri ->
+            Connection(uri, 200, if (uri.path.startsWith("/track-playback/")) response.toString() else storage())
+                .also { calls += it }
+        })
+        val audio = api.resolve(TRACK)
+        assertEquals(FILE, audio.fileId)
+        assertEquals(listOf(CDN), audio.urls)
+        assertEquals(audio, api.resolve(TRACK))
+        assertEquals(2, calls.size)
+        assertTrue(calls.first().url.path.endsWith(TRACK))
+        assertTrue(calls.last().url.path.endsWith("/10/$FILE"))
+    }
+
+    @Test fun rejectsUnrelatedMalformedAndAmbiguousRelinks() {
+        val missingLink = relinkedManifest().apply { replacementMetadata(this).remove("linked_from_uri") }
+        val wrongLink = relinkedManifest().apply { replacementMetadata(this).put("linked_from_uri", OTHER) }
+        val wrongIdentity = relinkedManifest().apply { replacementMetadata(this).put("uri", OTHER) }
+        val nullLink = relinkedManifest().apply { replacementMetadata(this).put("linked_from_uri", JSONObject.NULL) }
+        val ambiguous = relinkedManifest().apply {
+            val second = JSONObject(getJSONObject("media").getJSONObject(REPLACEMENT).toString())
+            second.getJSONObject("item").getJSONObject("metadata").put("uri", OTHER)
+            getJSONObject("media").put(OTHER, second)
+        }
+        val wrongKind = relinkedManifest().toString().replace(REPLACEMENT, "spotify:album:0000000000000000000002")
+        for (body in listOf(missingLink, wrongLink, wrongIdentity, nullLink, ambiguous).map(JSONObject::toString) + wrongKind) {
+            var calls = 0
+            val api = StreamingApiClient(Tokens(), openConnection = { uri ->
+                calls++
+                Connection(uri, 200, body)
+            })
+            assertThrows(IllegalStateException::class.java) { runBlocking { api.resolve(TRACK) } }
+            assertEquals(1, calls)
+        }
+    }
+
     @Test fun resolvesFullAudioAndExpiresTheAccountScopedCache(): Unit = runBlocking {
         val tokens = Tokens()
         val calls = mutableListOf<Connection>()
@@ -104,8 +145,19 @@ class StreamingApiClientTest {
         {"format":"10","file_id":"$FILE"}]}}}}}"""
     private fun storage() = """{"result":"CDN","fileid":"$FILE","cdnurl":["$CDN"],"ttl":86400}"""
 
+    private fun relinkedManifest(): JSONObject {
+        val entry = JSONObject(manifest()).getJSONObject("media").getJSONObject(TRACK)
+        entry.getJSONObject("item").put("metadata", JSONObject().put("uri", REPLACEMENT).put("linked_from_uri", TRACK))
+        return JSONObject().put("media", JSONObject().put(REPLACEMENT, entry))
+    }
+
+    private fun replacementMetadata(response: JSONObject) = response.getJSONObject("media")
+        .getJSONObject(REPLACEMENT).getJSONObject("item").getJSONObject("metadata")
+
     companion object {
         private const val TRACK = "spotify:track:0000000000000000000001"
+        private const val REPLACEMENT = "spotify:track:0000000000000000000002"
+        private const val OTHER = "spotify:track:0000000000000000000003"
         private const val FILE = "0123456789abcdef0123456789abcdef01234567"
         private const val CDN = "https://audio.scdn.co/audio?synthetic=capability"
     }
