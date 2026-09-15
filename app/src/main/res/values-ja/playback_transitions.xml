@@ -11,4 +11,5 @@
     <string name="playback_automix_hint">対応するプレイリストでは、提供された曲間のつなぎ方を使います。</string>
     <string name="playback_settings_save_failed">再生設定を保存できませんでした。再試行すると現在の設定を保存します。</string>
     <string name="playback_automix_failed">曲間の自動調整を取得できませんでした。通常のつなぎ方で再生します。</string>
+    <string name="playback_switch_busy">ライセンス取得が混雑しているため曲を切り替えられませんでした。現在の曲を続けて再生します。</string>
 </resources>

@@ -2,6 +2,12 @@
 
 ## 2026-09-15の結果
 
+### シーク・曲切替時のライセンス429の修正
+
+- 連続再生は成功するがシークや曲切替で`ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED`になることを、診断版を実機へ入れて再現した。原因はライセンスのHTTP 429（空本文、時に`Retry-After`付き）で、3曲前後の連続取得で制限に入り、Exoの即時再試行も全滅していた。認証の期限・更新とは無関係（残り52分の再利用中に発生、再取得しても変わらない）ことを確認した。
+- `LicenseHttpClient`は429/503を認証不良と区別し、同じ要求・認証のまま送り直す。`Retry-After`（秒数・HTTP日付、最大60秒）に従い、なければ10秒・30秒・60秒で最大3回送り直す。要求全体は`LicensePacer`で4秒以上空ける。取得不能が確定した重なりでは切り替え先を諦め、鳴っている曲を止めず切り替えの断念を通知する（`playback_switch_busy`を11言語へ追加）。
+- 診断版の実機で429の連続→60秒超の待ち→HTTP 200での回復と切替完了を確認した。以降の最終版（診断除去）でも連続切替で即時エラーを出さず待機することを確認した。JVM235件失敗0、`lintDebug` エラー0、`assembleDebug`・`assembleDebugAndroidTest` 成功。実音源の長時間聴取と放棄通知の目視は未実行。
+
 ### アクオス実機への反映（4件の未公開修正）
 
 - `testDebugUnitTest lintDebug assembleRelease` が成功し、`tools/sign-release.ps1` で専用署名した `build/outputs/play-updated.apk` を生成した。証明書SHA-256は `SECURITY.md` の公開識別子と一致、debuggableでないことを確認。バージョンは0.3.0・versionCode 3のまま（今回の4修正はUnreleasedへ記録）。

@@ -11,4 +11,5 @@
     <string name="playback_settings_save_failed">प्लेबैक सेटिंग सेव नहीं हुई। फिर कोशिश करें।</string>
     <string name="playback_stop">रोकें</string>
     <string name="playback_automix_failed">अपने-आप ट्रांज़िशन का डेटा लोड नहीं हुआ। सामान्य ट्रांज़िशन इस्तेमाल होगा।</string>
+    <string name="playback_switch_busy">लाइसेंस सर्वर व्यस्त है, इसलिए गाना बदला नहीं जा सका। मौजूदा गाना बजता रहेगा।</string>
 </resources>

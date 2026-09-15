@@ -11,4 +11,5 @@
     <string name="playback_settings_save_failed">无法保存播放设置，请重试。</string>
     <string name="playback_stop">停止</string>
     <string name="playback_automix_failed">无法加载自动过渡数据，将使用常规歌曲过渡。</string>
+    <string name="playback_switch_busy">许可证服务器繁忙，未能切换歌曲。将继续播放当前歌曲。</string>
 </resources>

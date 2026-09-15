@@ -70,8 +70,10 @@ class AuthenticatedDrmCallbackTest {
             },
         )
 
-    private fun licenseHttp(status: Int = 200, reply: ByteArray = RESPONSE): LicenseHttpClient =
-        LicenseHttpClient { uri -> Connection(uri, status, reply) }
+    private fun licenseHttp(status: Int = 200, reply: ByteArray = RESPONSE): LicenseHttpClient {
+        LicensePacer.resetForTests()
+        return LicenseHttpClient(openConnection = { uri -> Connection(uri, status, reply) })
+    }
 
     private class Connection(uri: URI, private val status: Int, private val reply: ByteArray) :
         HttpURLConnection(uri.toURL()) {

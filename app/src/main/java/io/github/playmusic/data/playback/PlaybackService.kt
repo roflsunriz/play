@@ -60,6 +60,9 @@ open class PlaybackService : MediaSessionService() {
             beforeAudioFocus = ::awaitPlaybackForeground,
             onAutomixFailure = {
                 (application as PlayApplication).container.localPlayback.reportWarning(getString(R.string.playback_automix_failed))
+            },
+            onSwitchAbandoned = {
+                (application as PlayApplication).container.localPlayback.reportWarning(getString(R.string.playback_switch_busy))
             })
         val launch = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)

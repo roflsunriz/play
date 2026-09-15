@@ -80,6 +80,93 @@ class LicenseHttpClientTest {
     }
 
     @Test
+    fun rateLimitedLicenseRequestsBackOffAndReplayTheSameMessage() {
+        val connections = mutableListOf<Connection>()
+        val attempts = mutableListOf<Boolean>()
+        val sleeps = mutableListOf<Long>()
+        val client = client(connections, statuses = listOf(429, 200),
+            headers = listOf(mapOf("Retry-After" to "2")), sleeps = sleeps)
+        val response = client.post(LICENSE, REQUEST) { refresh -> attempts += refresh; headers(refresh) }
+        assertArrayEquals(RESPONSE, response)
+        assertEquals(listOf(false, false), attempts)
+        assertEquals(listOf(2_000L), sleeps)
+        assertEquals(2, connections.size)
+        assertTrue(connections.all { it.sent.toByteArray().contentEquals(REQUEST) && it.disconnected })
+    }
+
+    @Test
+    fun persistentRateLimitingFailsAfterThreeRetriesWithGrowingDelays() {
+        val connections = mutableListOf<Connection>()
+        val sleeps = mutableListOf<Long>()
+        val client = client(connections, statuses = listOf(429, 429, 429, 429, 429), sleeps = sleeps)
+        val error = runCatching {
+            client.post(LICENSE, REQUEST) { attempts -> headers(attempts) }
+        }.exceptionOrNull() as LicenseHttpClient.LicenseHttpException
+        assertEquals(429, error.responseCode)
+        assertEquals(4, connections.size)
+        assertEquals(listOf(10_000L, 30_000L, 60_000L), sleeps)
+        assertNoSecrets(error)
+    }
+
+    @Test
+    fun retryAfterHeaderValuesAreParsedAndCapped() {
+        val future = java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("GMT")
+        }.format(java.util.Date(System.currentTimeMillis() + 5_000))
+        val connections = mutableListOf<Connection>()
+        val sleeps = mutableListOf<Long>()
+        val client = client(connections, statuses = listOf(429, 429, 429, 200),
+            headers = listOf(mapOf("Retry-After" to "120"), mapOf("Retry-After" to "not-a-date"),
+                mapOf("Retry-After" to future)), sleeps = sleeps)
+        assertArrayEquals(RESPONSE, client.post(LICENSE, REQUEST, ::headers))
+        assertEquals(60_000L, sleeps[0])
+        assertEquals(30_000L, sleeps[1])
+        assertTrue(sleeps[2] in 1_000L..10_000L)
+        assertEquals(4, connections.size)
+    }
+
+    @Test
+    fun backToBackLicenseRequestsAreSpacedProcessWide() {
+        val firstPace = mutableListOf<Long>()
+        val firstSleeps = mutableListOf<Long>()
+        assertArrayEquals(RESPONSE, client(mutableListOf(), sleeps = firstSleeps, paceSleeps = firstPace)
+            .post(LICENSE, REQUEST, ::headers))
+        assertTrue(firstPace.isEmpty() && firstSleeps.isEmpty())
+        val secondPace = mutableListOf<Long>()
+        val secondSleeps = mutableListOf<Long>()
+        assertArrayEquals(RESPONSE, client(mutableListOf(), sleeps = secondSleeps, paceSleeps = secondPace,
+            resetPacer = false).post(LICENSE, REQUEST, ::headers))
+        assertTrue(secondSleeps.isEmpty())
+        assertEquals(1, secondPace.size)
+        assertTrue(secondPace.single() in 1L..4_000L)
+    }
+
+    @Test
+    fun pastRetryAfterDatesDoNotWaitAndOtherBusySignalsMatchRateLimiting() {        val connections = mutableListOf<Connection>()
+        val sleeps = mutableListOf<Long>()
+        val client = client(connections, statuses = listOf(503, 200),
+            headers = listOf(mapOf("Retry-After" to "Thu, 01 Jan 1970 00:00:00 GMT")), sleeps = sleeps)
+        assertArrayEquals(RESPONSE, client.post(LICENSE, REQUEST, ::headers))
+        assertEquals(listOf(0L), sleeps)
+    }
+
+    @Test
+    fun rateLimitFailuresAreRecognizedThroughTheirCauseChain() {
+        val limited = LicenseHttpClient.LicenseHttpException(LicenseHttpClient.Failure.HTTP, 429)
+        val busy = LicenseHttpClient.LicenseHttpException(LicenseHttpClient.Failure.HTTP, 503)
+        val denied = LicenseHttpClient.LicenseHttpException(LicenseHttpClient.Failure.HTTP, 403)
+        assertTrue(isLicenseRateLimited(limited))
+        assertTrue(isLicenseRateLimited(busy))
+        assertTrue(isLicenseRateLimited(java.io.IOException("outer", busy)))
+        assertTrue(isLicenseRateLimited(java.io.IOException("outer",
+            java.io.IOException("middle", limited))))
+        assertFalse(isLicenseRateLimited(denied))
+        assertFalse(isLicenseRateLimited(java.io.IOException("outer", denied)))
+        assertFalse(isLicenseRateLimited(java.io.IOException("plain")))
+        assertFalse(isLicenseRateLimited(null))
+    }
+
+    @Test
     fun compressedResponsesAreDecodedAndBothMessageDirectionsHaveBounds() {
         val compressed = gzip(RESPONSE)
         assertArrayEquals(RESPONSE, client(mutableListOf(), reply = compressed, gzip = true)
@@ -137,13 +224,19 @@ class LicenseHttpClientTest {
     }
 
     private fun client(connections: MutableList<Connection>, statuses: List<Int> = listOf(200),
-        reply: ByteArray = RESPONSE, gzip: Boolean = false): LicenseHttpClient = LicenseHttpClient { uri ->
-        val status = statuses.getOrElse(connections.size) { statuses.last() }
-        Connection(uri, status, reply, gzip).also { connections += it }
+        reply: ByteArray = RESPONSE, gzip: Boolean = false,
+        headers: List<Map<String, String>> = emptyList(), sleeps: MutableList<Long>? = null,
+        resetPacer: Boolean = true, paceSleeps: MutableList<Long>? = null): LicenseHttpClient {
+        if (resetPacer) LicensePacer.resetForTests()
+        return LicenseHttpClient({ uri ->
+            val status = statuses.getOrElse(connections.size) { statuses.last() }
+            Connection(uri, status, reply, gzip, headers.getOrElse(connections.size) { emptyMap() })
+                .also { connections += it }
+        }, { sleeps?.add(it) }, { paceSleeps?.add(it) })
     }
 
     private class Connection(uri: URI, private val status: Int, private val reply: ByteArray,
-        private val gzip: Boolean) : HttpURLConnection(uri.toURL()) {
+        private val gzip: Boolean, private val headers: Map<String, String> = emptyMap()) : HttpURLConnection(uri.toURL()) {
         val sent = ByteArrayOutputStream()
         var disconnected = false
         var errorReads = 0
@@ -155,7 +248,8 @@ class LicenseHttpClientTest {
             return ByteArrayInputStream("$ACCESS $CLIENT_TOKEN $BODY_SECRET".toByteArray())
         }
         override fun getContentEncoding(): String? = if (gzip) "gzip" else null
-        override fun getHeaderField(name: String): String? = if (name.equals("Location", true)) "https://outside.invalid/$ACCESS" else null
+        override fun getHeaderField(name: String): String? = headers[name]
+            ?: if (name.equals("Location", true)) "https://outside.invalid/$ACCESS" else null
         override fun connect() = Unit
         override fun disconnect() { disconnected = true }
         override fun usingProxy() = false

@@ -42,6 +42,7 @@ class TransitionPlayer(
     private val automix: AutomixResolver? = null,
     private val beforeAudioFocus: suspend () -> Unit = {},
     private val onAutomixFailure: () -> Unit = {},
+    private val onSwitchAbandoned: () -> Unit = {},
 ) : ForwardingSimpleBasePlayer(first) {
     private val engines = listOf(first, second)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -528,7 +529,14 @@ class TransitionPlayer(
         overlap = scope.launch(start = CoroutineStart.LAZY) {
             val start = incoming.currentPosition
             while (isActive && active === incoming) {
-                if (incoming.playerError != null) {
+                val incomingError = incoming.playerError
+                if (incomingError != null) {
+                    if (outgoing.isPlaying && isLicenseRateLimited(incomingError)) {
+                        // The next song's license is rate-limited: abandon the switch and
+                        // keep the current song playing instead of failing the player.
+                        abandonOverlap(incoming, outgoing)
+                        return@launch
+                    }
                     // Keep the requested song and its error visible; do not silently restore a
                     // different item or allow its outgoing tail to keep playing indefinitely.
                     break
@@ -548,6 +556,18 @@ class TransitionPlayer(
     }
 
     private fun spare(): ExoPlayer = if (active === engines[0]) engines[1] else engines[0]
+    private fun abandonOverlap(incoming: ExoPlayer, outgoing: ExoPlayer) {
+        incoming.pause(); incoming.stop(); incoming.clearMediaItems(); incoming.pauseAtEndOfMediaItems = false
+        incoming.playbackParameters = PlaybackParameters.DEFAULT
+        tail = null
+        active = outgoing
+        headGain = 1f; tailGain = 0f
+        outgoing.pauseAtEndOfMediaItems = false
+        setPlayer(outgoing)
+        overlap = null
+        applyVolumes(); invalidateState()
+        onSwitchAbandoned()
+    }
     private fun applyVolumes() {
         active.volume = userVolume * envelope * headGain * duckGain
         tail?.volume = userVolume * envelope * tailGain * duckGain

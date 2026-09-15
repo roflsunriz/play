@@ -11,4 +11,5 @@
     <string name="playback_settings_save_failed">No se pudieron guardar los ajustes. Vuelve a intentarlo.</string>
     <string name="playback_stop">Detener</string>
     <string name="playback_automix_failed">No se pudieron cargar las transiciones automáticas. Se usará la transición habitual.</string>
+    <string name="playback_switch_busy">El servidor de licencias está ocupado y no se pudo cambiar de canción. Se sigue reproduciendo la canción actual.</string>
 </resources>

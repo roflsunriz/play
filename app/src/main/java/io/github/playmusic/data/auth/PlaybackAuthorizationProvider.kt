@@ -63,7 +63,9 @@ class PlaybackAuthorizationProvider(
         val credentials = try { acquire(source.accessToken, forceRefresh) }
         catch (error: PlaybackAuthorizationClient.PlaybackAuthorizationException) {
             if (error.stage != PlaybackAuthorizationClient.Stage.TRANSFER ||
-                error.failure != PlaybackAuthorizationClient.Failure.HTTP || error.status != 401) throw error
+                error.failure != PlaybackAuthorizationClient.Failure.HTTP || error.status != 401) {
+                throw error
+            }
             val owner = source.owner
             val current = sourceToken(false)
             check(current.owner == owner) { "Sign-in changed while playback authorization was being prepared" }
