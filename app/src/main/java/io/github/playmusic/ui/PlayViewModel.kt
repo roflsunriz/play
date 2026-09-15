@@ -10,6 +10,7 @@ import io.github.playmusic.data.auth.SpotifyAuthException
 import io.github.playmusic.data.auth.BrowserAuthorizationClient
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
+import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.SpotifyContent
 import io.github.playmusic.data.model.SearchFilter
@@ -23,6 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -66,6 +68,8 @@ data class PlayUiState(
     val playlistSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
     val albumSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
     val trackSort: LibrarySort = LibrarySort.LIBRARY_ORDER,
+    val playlistDetailSort: DetailSort = DetailSort.ADDED_NEWEST,
+    val albumDetailSort: DetailSort = DetailSort.TRACK_ORDER,
     val libraries: Map<LibrarySection, List<SpotifyContent>> = emptyMap(),
     val suggestedItems: List<SpotifyContent> = emptyList(),
     val searchSuggestions: List<SpotifyContent> = emptyList(),
@@ -136,6 +140,11 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { container.repository.playlistCacheFailures.collect {
             if (mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(playlistSyncFailed = true)
         } }
+        viewModelScope.launch {
+            val settings = container.detailSorts.state.first { it.isReady }.settings
+            mutableState.value = mutableState.value.copy(
+                playlistDetailSort = settings.playlistDetailSort, albumDetailSort = settings.albumDetailSort)
+        }
         if (mutableState.value.isLoggedIn) {
             prefetchLibraries()
             refreshPlayback()
@@ -332,6 +341,46 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         }
         updateVisibleItems()
     }
+
+    fun updateDetailSort(sort: DetailSort) {
+        val current = mutableState.value
+        val kind = current.selectedContent?.kind ?: return
+        if (sort !in DetailSort.options(kind)) return
+        mutableState.value = when (kind) {
+            ContentKind.PLAYLIST -> current.copy(playlistDetailSort = sort)
+            ContentKind.ALBUM -> current.copy(albumDetailSort = sort)
+            else -> return
+        }
+        container.detailSorts.setSettings(io.github.playmusic.data.playback.DetailSortSettings(
+            mutableState.value.playlistDetailSort, mutableState.value.albumDetailSort))
+    }
+
+    private fun detailSortFor(kind: ContentKind): DetailSort = when (kind) {
+        ContentKind.PLAYLIST -> mutableState.value.playlistDetailSort
+        ContentKind.ALBUM -> mutableState.value.albumDetailSort
+        else -> DetailSort.TRACK_ORDER
+    }
+
+    /** Tracks in the order currently displayed, so playback follows the chosen sort. */
+    private fun orderedDetailTracks(detail: ContentDetail?): List<SpotifyContent> {
+        if (detail == null) return emptyList()
+        val sort = detailSortFor(detail.content.kind).takeIf { it in DetailSort.options(detail.content.kind) }
+            ?: DetailSort.TRACK_ORDER
+        return presentDetailTracks(detail.tracks, sort)
+    }
+
+    internal fun visibleDetail(): ContentDetail? {
+        val detail = mutableState.value.detail ?: return null
+        return detail.copy(tracks = orderedDetailTracks(detail))
+    }
+
+    internal fun detailSort(): DetailSort {
+        val kind = mutableState.value.selectedContent?.kind ?: return DetailSort.TRACK_ORDER
+        return detailSortFor(kind).takeIf { it in DetailSort.options(kind) } ?: DetailSort.TRACK_ORDER
+    }
+
+    internal fun detailSortOptions(): List<DetailSort> =
+        DetailSort.options(mutableState.value.selectedContent?.kind ?: return listOf(DetailSort.TRACK_ORDER))
 
     fun updateSearchQuery(query: String) {
         contentRequestJob?.cancel()
@@ -728,7 +777,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                     list.any { it.uri == content.uri }
                 } ?: listOf(content)
                 ContentKind.ALBUM, ContentKind.PLAYLIST, ContentKind.ARTIST ->
-                    (detail?.takeIf { it.content.uri == content.uri } ?: container.repository.detail(content)).tracks
+                    orderedDetailTracks(detail?.takeIf { it.content.uri == content.uri })
+                        .ifEmpty { container.repository.detail(content).let { orderedDetailTracks(it) } }
                 else -> throw IllegalArgumentException("Unsupported playback item")
             }.filter { it.isPlayable != false }
             check(tracks.isNotEmpty()) { "No playable tracks are available" }
@@ -739,7 +789,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun playDetailTrack(index: Int) {
-        val source = mutableState.value.detail?.tracks ?: return
+        val source = orderedDetailTracks(mutableState.value.detail)
         if (index !in source.indices || source[index].isPlayable == false) return
         val tracks = source.filter { it.isPlayable != false }
         val selectedIndex = source.take(index).count { it.isPlayable != false }

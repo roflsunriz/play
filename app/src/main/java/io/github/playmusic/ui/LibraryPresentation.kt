@@ -1,6 +1,7 @@
 package io.github.playmusic.ui
 
 import io.github.playmusic.data.model.ContentKind
+import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.SpotifyContent
 import java.text.Normalizer
 import java.util.Locale
@@ -58,6 +59,25 @@ internal fun presentLibrary(items: List<SpotifyContent>, query: String, sort: Li
 
 private fun normalizeLibraryText(text: String): String =
     Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
+
+internal fun presentDetailTracks(tracks: List<SpotifyContent>, sort: DetailSort): List<SpotifyContent> {
+    val byTitle = compareBy<SpotifyContent> { normalizeLibraryText(it.title) }
+    return when (sort) {
+        DetailSort.TRACK_ORDER -> tracks
+        DetailSort.TITLE -> tracks.sortedWith(byTitle)
+        DetailSort.ARTIST -> tracks.sortedWith(compareBy<SpotifyContent> {
+            normalizeLibraryText(it.artists.firstOrNull()?.name ?: it.subtitle)
+        }.then(byTitle))
+        DetailSort.ALBUM -> tracks.sortedWith(compareBy<SpotifyContent> {
+            normalizeLibraryText(it.albumTitle.orEmpty())
+        }.then(compareBy<SpotifyContent> { it.discNumber ?: Int.MAX_VALUE }
+            .then(compareBy<SpotifyContent> { it.trackNumber ?: Int.MAX_VALUE })).then(byTitle))
+        DetailSort.ADDED_NEWEST -> tracks.sortedWith(
+            compareByDescending<SpotifyContent> { it.addedAtMs ?: Long.MIN_VALUE })
+        DetailSort.PLAYCOUNT -> tracks.sortedWith(
+            compareByDescending<SpotifyContent> { it.playcount ?: Long.MIN_VALUE }.then(byTitle))
+    }
+}
 
 /** Two visible items and at most two upcoming items keep background work small. */
 internal fun viewportPrefetchItems(items: List<SpotifyContent>, visibleIndices: List<Int>): List<SpotifyContent> {

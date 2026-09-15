@@ -13,6 +13,10 @@
     <string name="sort_track_count">الأكثر مقاطع</string>
     <string name="sort_duration">الأقصر أولًا</string>
     <string name="sort_duration_descending">الأطول أولًا</string>
+    <string name="sort_album">الألبوم</string>
+    <string name="sort_date_added">الأحدث إضافة</string>
+    <string name="sort_album_order">ترتيب الألبوم</string>
+    <string name="sort_plays">الأكثر تشغيلًا</string>
     <string name="suggested_content">مقترحات من مكتبتك</string>
     <string name="matching_suggestions">مطابقات في مكتبتك</string>
     <string name="search_results">نتائج البحث</string>

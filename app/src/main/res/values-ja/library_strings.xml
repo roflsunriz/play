@@ -13,6 +13,10 @@
     <string name="sort_track_count">曲数が多い順</string>
     <string name="sort_duration">短い曲から</string>
     <string name="sort_duration_descending">長い曲から</string>
+    <string name="sort_album">アルバム</string>
+    <string name="sort_date_added">追加日が新しい順</string>
+    <string name="sort_album_order">アルバム順</string>
+    <string name="sort_plays">再生数が多い順</string>
     <string name="suggested_content">ライブラリからのおすすめ</string>
     <string name="matching_suggestions">ライブラリ内の候補</string>
     <string name="search_results">検索結果</string>

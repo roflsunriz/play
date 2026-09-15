@@ -1,6 +1,8 @@
 package io.github.playmusic.ui
 
+import io.github.playmusic.data.model.ContentArtist
 import io.github.playmusic.data.model.ContentKind
+import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.SpotifyContent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -43,6 +45,34 @@ class LibraryPresentationTest {
         assertEquals(listOf(short, long, unknown), presentLibrary(listOf(long, unknown, short), "", LibrarySort.DURATION))
         assertEquals(listOf(long, short, unknown), presentLibrary(listOf(short, unknown, long), "", LibrarySort.DURATION_DESCENDING))
         assertEquals(listOf(long, short), presentLibrary(listOf(short, long), "", LibrarySort.CREATOR))
+    }
+
+    @Test fun detailSortOptionsDifferByContainerKind() {
+        assertEquals(listOf(DetailSort.ADDED_NEWEST, DetailSort.TITLE, DetailSort.ARTIST, DetailSort.ALBUM),
+            DetailSort.options(ContentKind.PLAYLIST))
+        assertEquals(listOf(DetailSort.TRACK_ORDER, DetailSort.TITLE, DetailSort.PLAYCOUNT),
+            DetailSort.options(ContentKind.ALBUM))
+        assertEquals(listOf(DetailSort.TRACK_ORDER), DetailSort.options(ContentKind.TRACK))
+        assertEquals(listOf(DetailSort.TRACK_ORDER), DetailSort.options(ContentKind.ARTIST))
+    }
+
+    @Test fun detailTracksSortByTitleArtistAlbumAddedDateAndPlays() {
+        fun track(id: String) = item(id, kind = ContentKind.TRACK)
+        val old = track("old").copy(title = "Zulu", subtitle = "Amy, Zed", albumTitle = "Beta",
+            artists = listOf(ContentArtist("spotify:artist:amy", "Amy")),
+            addedAtMs = 1_000, playcount = 10, discNumber = 1, trackNumber = 2)
+        val recent = track("recent").copy(title = "Alpha", subtitle = "Zed", albumTitle = "Alpha",
+            artists = listOf(ContentArtist("spotify:artist:zed", "Zed")),
+            addedAtMs = 9_000, playcount = 900, discNumber = 1, trackNumber = 1)
+        val undated = track("undated").copy(title = "Mike", subtitle = "Amy", albumTitle = "Beta",
+            addedAtMs = null, playcount = null, discNumber = 2, trackNumber = 1)
+        val source = listOf(old, undated, recent)
+        assertEquals(source, presentDetailTracks(source, DetailSort.TRACK_ORDER))
+        assertEquals(listOf(recent, undated, old), presentDetailTracks(source, DetailSort.TITLE))
+        assertEquals(listOf(undated, old, recent), presentDetailTracks(source, DetailSort.ARTIST))
+        assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.ALBUM))
+        assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.ADDED_NEWEST))
+        assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.PLAYCOUNT))
     }
 
     @Test fun viewportPrefetchIsBoundedAndPrioritizesVisibleContent() {

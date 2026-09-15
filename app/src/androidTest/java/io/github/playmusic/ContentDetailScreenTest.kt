@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
+import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.PlaylistMetadata
 import io.github.playmusic.data.model.SpotifyContent
 import io.github.playmusic.ui.ContentDetailScreen
@@ -189,6 +190,27 @@ class ContentDetailScreenTest {
         composeRule.onNodeWithTag("detail-artists").assertDoesNotExist()
         scrollToItem("track-count", "detail-track-count")
             .assertTextEquals(composeRule.activity.resources.getQuantityString(R.plurals.track_count, 0, 0))
+    }
+
+    @Test fun detailSortMenuOffersKindOptionsAndReportsSelection() {
+        val playlist = playlist()
+        val first = track.copy(id = "a", uri = "spotify:track:aaaaaaaaaaaaaaaaaaaaaa", title = "Beta")
+        val second = track.copy(id = "b", uri = "spotify:track:bbbbbbbbbbbbbbbbbbbbbb", title = "Alpha")
+        var selected: DetailSort? = null
+        var sort by mutableStateOf(DetailSort.ADDED_NEWEST)
+        render {
+            ContentDetailScreen(playlist, ContentDetail(playlist, listOf(first, second)), false,
+                {}, {}, {}, {}, sort = sort, sortOptions = DetailSort.options(ContentKind.PLAYLIST),
+                onSortChanged = { selected = it; sort = it })
+        }
+        scrollToItem("sort", "detail-sort-button").performClick()
+        for (tag in listOf("added_newest", "title", "artist", "album")) {
+            composeRule.onNodeWithTag("detail-sort-$tag").assertExists()
+        }
+        composeRule.onNodeWithTag("detail-sort-title").performClick()
+        composeRule.runOnIdle { assertEquals(DetailSort.TITLE, selected) }
+        composeRule.onNodeWithTag("content-detail").performScrollToKey("1:${second.uri}")
+        scrollToItem("0:${first.uri}", "detail-track-0")
     }
 
     private fun playlist() = SpotifyContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",

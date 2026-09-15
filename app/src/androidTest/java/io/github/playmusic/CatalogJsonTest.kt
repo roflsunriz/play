@@ -46,6 +46,34 @@ class CatalogJsonTest {
         assertEquals(true, detail.isPlayable)
     }
 
+    @Test fun albumTracksExposeDiscOrderAndPlaysWithoutRequiringThem() {
+        val data = fixture("album-detail.json").getJSONObject("albumUnion")
+        val tracks = CatalogJson.albumTracks(data, CatalogJson.content(data, ContentKind.ALBUM))
+        assertEquals((1..13).toList(), tracks.map { it.trackNumber })
+        assertTrue(tracks.all { it.discNumber == 1 })
+        assertTrue(tracks.all { it.playcount == null })
+    }
+
+    @Test fun playsAndPositionsAcceptOnlyValidValues() {
+        fun track(extra: String) = CatalogJson.content(JSONObject(
+            """{"uri":"spotify:track:synthetic","name":"Synthetic",$extra}"""), ContentKind.TRACK)
+        val full = track(""""playcount":"123456789","trackNumber":2,"discNumber":1""")
+        assertEquals(123456789L, full.playcount)
+        assertEquals(2, full.trackNumber)
+        assertEquals(1, full.discNumber)
+        val missing = track(""""playcount":null""")
+        assertEquals(null, missing.playcount)
+        assertEquals(null, missing.trackNumber)
+        assertEquals(null, missing.discNumber)
+        for (extra in listOf(""""playcount":"10 plays"""", """"playcount":""""", """"playcount":-1""",
+            """"trackNumber":0""", """"trackNumber":"two"""", """"discNumber":-1""")) {
+            val parsed = track(extra)
+            assertEquals(null, parsed.playcount)
+            assertEquals(null, parsed.trackNumber)
+            assertEquals(null, parsed.discNumber)
+        }
+    }
+
     @Test fun invalidMetadataDoesNotTurnIntoAnEmptySuccessfulResult() {
         assertThrows(Exception::class.java) { CatalogJson.search(JSONObject(), ContentKind.TRACK) }
         assertThrows(Exception::class.java) {

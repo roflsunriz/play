@@ -13,6 +13,10 @@
     <string name="sort_track_count">Most tracks</string>
     <string name="sort_duration">Shortest first</string>
     <string name="sort_duration_descending">Longest first</string>
+    <string name="sort_album">Album</string>
+    <string name="sort_date_added">Recently added</string>
+    <string name="sort_album_order">Album order</string>
+    <string name="sort_plays">Most played</string>
     <string name="suggested_content">Suggested from your library</string>
     <string name="matching_suggestions">Matches in your library</string>
     <string name="search_results">Search results</string>

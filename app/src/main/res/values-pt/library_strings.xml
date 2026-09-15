@@ -13,6 +13,10 @@
     <string name="sort_track_count">Mais músicas</string>
     <string name="sort_duration">Mais curtas primeiro</string>
     <string name="sort_duration_descending">Mais longas primeiro</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_date_added">Adição recente</string>
+    <string name="sort_album_order">Ordem do álbum</string>
+    <string name="sort_plays">Mais tocadas</string>
     <string name="suggested_content">Sugestões da sua biblioteca</string>
     <string name="matching_suggestions">Correspondências na biblioteca</string>
     <string name="search_results">Resultados da pesquisa</string>

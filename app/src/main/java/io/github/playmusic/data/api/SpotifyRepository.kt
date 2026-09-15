@@ -46,6 +46,7 @@ class SpotifyRepository(
     private val profileNames = AccountMemoryCache<String, UserProfileClient.Profile>(256, 256, { 1 }, 4)
     private val libraries = AccountMemoryCache<ContentKind, List<SpotifyContent>>(3, 3, { 1 }, 3)
     private val collections = AccountMemoryCache<String, List<String>>(1, 1, { 1 }, 1)
+    private val collectionDates = AccountMemoryCache<String, Map<String, Long>>(1, 1, { 1 }, 1)
     private val details = AccountMemoryCache<String, ContentDetail>(24, 6000, { detail ->
         (detail.tracks.size + detail.relatedContent.size + (detail.artistPage?.let { page ->
             page.discography.size + page.appearsOn.size + page.featuringPlaylists.size +
@@ -102,9 +103,11 @@ class SpotifyRepository(
                 collectionWriter.setSaved(account, content.uri, saved)
                 checkAccount(account)
                 collections.invalidate(account, "collection")
+                collectionDates.invalidate(account, "collection")
                 check((content.uri in collectionUris("collection", true)) == saved) { "Saved item did not match the requested change" }
             } finally {
                 collections.invalidate(account, "collection")
+                collectionDates.invalidate(account, "collection")
                 libraries.invalidate(account, ContentKind.TRACK)
                 libraries.invalidate(account, ContentKind.ALBUM)
                 details.invalidate(account, LIKED_SONGS_URI)
@@ -198,7 +201,7 @@ class SpotifyRepository(
         return details.peek(account, content.uri)
     }
 
-    fun clearCache() { libraries.clear(); collections.clear(); details.clear(); profileNames.clear() }
+    fun clearCache() { libraries.clear(); collections.clear(); collectionDates.clear(); details.clear(); profileNames.clear() }
 
     suspend fun cachedPlaylists(): List<SpotifyContent>? = withContext(Dispatchers.IO) {
         val account = currentAccount()
@@ -256,10 +259,12 @@ class SpotifyRepository(
     private suspend fun loadDetail(content: SpotifyContent, forceRefresh: Boolean): ContentDetail {
         if (isLikedSongs(content)) {
             val tracks = library(ContentKind.TRACK, forceRefresh)
-            return ContentDetail(content.copy(trackCount = tracks.size), tracks, tracks.size)
+            val addedAt = collectionAddedAt("collection", forceRefresh)
+            val dated = tracks.map { it.copy(addedAtMs = addedAt[it.uri]) }
+            return ContentDetail(content.copy(trackCount = tracks.size), dated, tracks.size)
         }
         if (content.kind != ContentKind.PLAYLIST) return catalog.detail(content)
-        val uris = mutableListOf<String>()
+        val entries = mutableListOf<Pair<String, Long?>>()
         var offset = 0
         var first: SpClientProto.PlaylistDetail? = null
         var total: Int
@@ -270,7 +275,7 @@ class SpotifyRepository(
             val page = SpClientProto.parsePlaylist(response.bodyBytes)
             if (first == null) first = page
             require(page.offset == offset) { "Playlist pagination returned a different position" }
-            uris += page.items.map { it.uri }.filter { it.startsWith("spotify:track:") }
+            entries += page.items.filter { it.uri.startsWith("spotify:track:") }.map { it.uri to it.timestampMs }
             total = page.totalLength ?: (offset + page.items.size)
             if (!page.truncated) break
             check(page.items.isNotEmpty()) { "Playlist pagination did not advance" }
@@ -285,7 +290,9 @@ class SpotifyRepository(
             subtitle = ownerName.orEmpty(),
             description = metadata.description,
             trackCount = total)
-        return ContentDetail(updated, catalog.tracks(uris), total,
+        return ContentDetail(updated, catalog.tracks(entries.map { it.first }).mapIndexed { index, track ->
+            track.copy(addedAtMs = entries[index].second)
+        }, total,
             playlistMetadata = playlists.metadata(metadata, content.uri))
     }
 
@@ -504,9 +511,20 @@ class SpotifyRepository(
         }
     }
 
-    private suspend fun loadCollectionUris(kind: String): List<String> {
+    private suspend fun loadCollectionUris(kind: String): List<String> =
+        loadCollectionEntries(kind).map { it.first }
+
+    private suspend fun collectionAddedAt(kind: String, forceRefresh: Boolean): Map<String, Long> {
+        val account = currentAccount()
+        return collectionDates.get(account, kind, forceRefresh) {
+            checkAccount(account)
+            loadCollectionEntries(kind).toMap().also { checkAccount(account) }
+        }
+    }
+
+    private suspend fun loadCollectionEntries(kind: String): List<Pair<String, Long>> {
         val username = sessionManager.username()
-        val uris = linkedSetOf<String>()
+        val entries = linkedMapOf<String, Long>()
         val seenTokens = mutableSetOf<String>()
         var pageToken: String? = null
         do {
@@ -518,13 +536,13 @@ class SpotifyRepository(
             val page = SpClientProto.parseCollectionPage(response.bodyBytes)
             check(response.bodyBytes.isNotEmpty()) { "Collection response is empty" }
             page.items.forEach { item ->
-                if (item.removed) uris.remove(item.uri)
-                else if (item.uri.isNotBlank()) uris.add(item.uri)
+                if (item.removed) entries.remove(item.uri)
+                else if (item.uri.isNotBlank()) entries[item.uri] = item.addedAtSeconds * 1_000L
             }
             pageToken = page.nextPageToken
             check(pageToken == null || seenTokens.add(pageToken)) { "Collection pagination did not advance" }
         } while (pageToken != null)
-        return uris.toList()
+        return entries.toList()
     }
 
     companion object {

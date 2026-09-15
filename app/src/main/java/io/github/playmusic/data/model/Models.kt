@@ -22,6 +22,18 @@ enum class SearchFilter(val kinds: List<ContentKind>) {
 
 data class ContentArtist(val uri: String, val name: String)
 
+enum class DetailSort {
+    TRACK_ORDER, TITLE, ARTIST, ALBUM, ADDED_NEWEST, PLAYCOUNT;
+
+    companion object {
+        fun options(kind: ContentKind): List<DetailSort> = when (kind) {
+            ContentKind.PLAYLIST -> listOf(ADDED_NEWEST, TITLE, ARTIST, ALBUM)
+            ContentKind.ALBUM -> listOf(TRACK_ORDER, TITLE, PLAYCOUNT)
+            else -> listOf(TRACK_ORDER)
+        }
+    }
+}
+
 data class SpotifyContent(
     val id: String,
     val uri: String,
@@ -39,6 +51,10 @@ data class SpotifyContent(
     val trackCount: Int? = null,
     val releaseDate: String? = null,
     val artists: List<ContentArtist> = emptyList(),
+    val addedAtMs: Long? = null,
+    val playcount: Long? = null,
+    val trackNumber: Int? = null,
+    val discNumber: Int? = null,
 )
 
 data class ContentDetail(

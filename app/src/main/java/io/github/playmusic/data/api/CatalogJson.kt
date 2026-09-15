@@ -52,6 +52,12 @@ internal object CatalogJson {
             trackCount = entity.optJSONObject("tracksV2")?.count("totalCount"),
             releaseDate = releaseDate(parent ?: entity) ?: album?.releaseDate,
             artists = artists.ifEmpty { album?.artists.orEmpty() },
+            playcount = entity.optString("playcount").takeIf { it.all(Char::isDigit) && it.isNotBlank() }
+                ?.toLongOrNull()?.takeIf { it >= 0 },
+            trackNumber = (entity.opt("trackNumber") as? Number)?.toString()?.toLongOrNull()
+                ?.takeIf { it in 1..Int.MAX_VALUE.toLong() }?.toInt(),
+            discNumber = (entity.opt("discNumber") as? Number)?.toString()?.toLongOrNull()
+                ?.takeIf { it in 1..Int.MAX_VALUE.toLong() }?.toInt(),
         )
     }
 

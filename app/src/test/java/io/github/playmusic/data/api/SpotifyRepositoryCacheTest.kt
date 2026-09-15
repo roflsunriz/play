@@ -97,6 +97,18 @@ class SpotifyRepositoryCacheTest {
     }
 
     @Test
+    fun playlistDetailTracksKeepTheirAddedDatesInItemOrder() = runBlocking {
+        val server = Server()
+        val item = server.repository.library(ContentKind.PLAYLIST).single()
+        server.playlistItems = listOf("spotify:track:second" to 2_000L, "spotify:track:first" to 1_000L,
+            "spotify:track:second" to 3_000L, "spotify:track:unstamped" to null)
+        val detail = server.repository.detail(item, forceRefresh = true)
+        assertEquals(listOf("spotify:track:second", "spotify:track:first",
+            "spotify:track:second", "spotify:track:unstamped"), detail.tracks.map { it.uri })
+        assertEquals(listOf(2_000L, 1_000L, 3_000L, null), detail.tracks.map { it.addedAtMs })
+    }
+
+    @Test
     fun detailIsCachedAndFailedForceRefreshKeepsTheVisibleValueUntilRetrySucceeds() = runBlocking {
         val server = Server()
         val item = server.repository.library(ContentKind.PLAYLIST).single()
@@ -232,6 +244,7 @@ class SpotifyRepositoryCacheTest {
         @Volatile var failChanges = false
         var searchRegressions = false
         var wrongProfile = false
+        var playlistItems: List<Pair<String, Long?>> = emptyList()
         val connection: (URI) -> HttpURLConnection = { uri -> Connection(uri, ::respond).also { requests += it } }
         val api = SpotifyApiClient(tokens, connection)
         val repository = SpotifyRepository(api, tokens, CatalogApiClient(tokens, connection), { tokens.account })
@@ -269,8 +282,15 @@ class SpotifyRepositoryCacheTest {
                 fieldBytes(3, fieldString(1, PLAYLIST_URI)) + fieldBytes(4,
                     fieldBytes(2, attributes()) + fieldVarint(3, 0) + fieldString(5, checkNotNull(tokens.account)) + fieldVarint(9, 400)))
 
-        private fun playlist(): ByteArray = fieldBytes(1, byteArrayOf(1)) + fieldVarint(2, 0) +
-            fieldBytes(3, attributes()) + fieldString(16, checkNotNull(tokens.account)) + fieldBytes(5, ByteArray(0))
+        private fun playlist(): ByteArray {
+            val items = playlistItems.fold(ByteArray(0)) { bytes, (uri, stamp) ->
+                val item = fieldString(1, uri) +
+                    (stamp?.let { fieldBytes(2, fieldVarint(2, it)) } ?: byteArrayOf())
+                bytes + fieldBytes(3, item)
+            }
+            return fieldBytes(1, byteArrayOf(1)) + fieldVarint(2, 0) +
+                fieldBytes(3, attributes()) + fieldString(16, checkNotNull(tokens.account)) + fieldBytes(5, items)
+        }
 
         private fun catalog(request: Connection): ByteArray {
             val operation = JSONObject(request.sentBody.toString(Charsets.UTF_8)).getString("operationName")
@@ -281,7 +301,11 @@ class SpotifyRepositoryCacheTest {
             val track = JSONObject().put("uri", "spotify:track:track").put("name", "Track")
             val data = when (operation) {
                 "getAlbum" -> JSONObject().put("albumUnion", album)
-                "decorateContextTracks" -> JSONObject().put("tracks", JSONArray().put(track))
+                "decorateContextTracks" -> {
+                    val uris = JSONObject(request.sentBody.toString(Charsets.UTF_8)).getJSONObject("variables").getJSONArray("uris")
+                    JSONObject().put("tracks", JSONArray((0 until uris.length()).map { uris.getString(it) }
+                        .map { JSONObject().put("uri", it).put("name", "Track") }))
+                }
                 "getTrack" -> JSONObject().put("trackUnion", track)
                 "searchAlbums", "searchTracks", "searchPlaylists", "searchArtists", "searchPodcasts", "searchEpisodes", "searchGenres" -> {
                     val (key, entity) = when (operation) {

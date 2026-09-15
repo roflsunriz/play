@@ -13,6 +13,10 @@
     <string name="sort_track_count">Больше треков</string>
     <string name="sort_duration">Сначала короткие</string>
     <string name="sort_duration_descending">Сначала длинные</string>
+    <string name="sort_album">Альбом</string>
+    <string name="sort_date_added">Недавно добавленные</string>
+    <string name="sort_album_order">Порядок альбома</string>
+    <string name="sort_plays">Часто слушаемые</string>
     <string name="suggested_content">Предложения из медиатеки</string>
     <string name="matching_suggestions">Совпадения в медиатеке</string>
     <string name="search_results">Результаты поиска</string>

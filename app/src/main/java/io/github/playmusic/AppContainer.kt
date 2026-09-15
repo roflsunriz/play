@@ -28,6 +28,7 @@ class AppContainer(
     val localPlayback = LocalPlayback(context)
     val audioEffects by lazy { io.github.playmusic.data.audio.AudioEffectsStore(context) }
     val playbackTransitions by lazy { io.github.playmusic.data.playback.PlaybackTransitionStore(context) }
+    val detailSorts by lazy { io.github.playmusic.data.playback.DetailSortStore(context) }
     val lyricsApi by lazy { io.github.playmusic.data.api.LyricsApiClient(sessionManager) }
     val sleepTimer by lazy { io.github.playmusic.data.playback.SleepTimerManager(context) }
     val likedSongsTitle get() = applicationContext.getString(R.string.liked_songs)

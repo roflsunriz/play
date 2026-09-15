@@ -88,6 +88,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.playmusic.R
+import io.github.playmusic.data.model.ContentDetail
+import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.model.SpotifyContent
@@ -177,6 +179,10 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onArtistRadio = viewModel::openArtistRadio,
                 lyricsContent = { content -> LyricsRoute(content, state.playback, viewModel.lyricsApi,
                     onSeek = { viewModel.seekLyrics(content, it) }) },
+                visibleDetail = viewModel.visibleDetail(),
+                detailSort = viewModel.detailSort(),
+                detailSortOptions = viewModel.detailSortOptions(),
+                onDetailSortChanged = viewModel::updateDetailSort,
             )
         }
     }
@@ -289,6 +295,10 @@ internal fun HomeScreen(
     onArtistRadio: (SpotifyContent) -> Unit = {},
     lyricsContent: @Composable (SpotifyContent) -> Unit = {},
     onStop: () -> Unit = {},
+    visibleDetail: ContentDetail? = null,
+    detailSort: DetailSort = DetailSort.TRACK_ORDER,
+    detailSortOptions: List<DetailSort> = listOf(DetailSort.TRACK_ORDER),
+    onDetailSortChanged: (DetailSort) -> Unit = {},
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
@@ -407,8 +417,9 @@ internal fun HomeScreen(
                         ArtistPageScreen(state.selectedContent, state.detail, state.isLoading, state.artistFollowBusy,
                             state.artistRadioBusy, onPlay, onPlayDetailTrack, onOpenContent, onArtistFollow, onArtistRadio,
                             onContentActions, savedUris, onRefresh)
-                    else ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
-                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris)
+                    else ContentDetailScreen(state.selectedContent, visibleDetail, state.isLoading, onPlay, onOpenContent,
+                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris,
+                        sort = detailSort, sortOptions = detailSortOptions, onSortChanged = onDetailSortChanged)
                 }
             } else {
                 listStates.SaveableStateProvider(state.selectedSection.name) {

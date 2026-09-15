@@ -1,6 +1,7 @@
 package io.github.playmusic.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,11 +16,15 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.FilledIconButton
@@ -27,7 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +51,7 @@ import coil3.compose.AsyncImage
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
+import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.SpotifyContent
 import java.util.Locale
 
@@ -59,6 +68,9 @@ internal fun ContentDetailScreen(
     onDeletePlaylist: () -> Unit = {},
     onContentActions: (SpotifyContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
+    sort: DetailSort = DetailSort.TRACK_ORDER,
+    sortOptions: List<DetailSort> = listOf(DetailSort.TRACK_ORDER),
+    onSortChanged: (DetailSort) -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val content = detail?.content ?: selected
@@ -170,6 +182,13 @@ internal fun ContentDetailScreen(
                 }
             }
         }
+        if (sortOptions.size > 1) {
+            item(key = "sort") {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    DetailSortMenu(sort, sortOptions, onSortChanged)
+                }
+            }
+        }
         itemsIndexed(detail?.tracks.orEmpty(), key = { index, item -> "$index:${item.uri}" }) { index, track ->
             Card(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onPlayTrack(index) },
                 enabled = track.isPlayable != false,
@@ -203,3 +222,30 @@ internal fun ContentDetailScreen(
 
 private fun durationLabel(milliseconds: Long): String =
     String.format(Locale.getDefault(), "%d:%02d", milliseconds / 60_000, milliseconds / 1_000 % 60)
+
+@Composable
+internal fun DetailSortMenu(sort: DetailSort, options: List<DetailSort>, onSelected: (DetailSort) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("detail-sort-button")) {
+            Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort_by))
+        }
+        DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(text = { Text(stringResource(option.label())) },
+                    leadingIcon = { if (option == sort) Icon(Icons.Default.Check, stringResource(R.string.sort_selected)) },
+                    onClick = { expanded = false; onSelected(option) },
+                    modifier = Modifier.testTag("detail-sort-${option.name.lowercase()}"))
+            }
+        }
+    }
+}
+
+private fun DetailSort.label(): Int = when (this) {
+    DetailSort.TRACK_ORDER -> R.string.sort_album_order
+    DetailSort.TITLE -> R.string.sort_title
+    DetailSort.ARTIST -> R.string.sort_artist
+    DetailSort.ALBUM -> R.string.sort_album
+    DetailSort.ADDED_NEWEST -> R.string.sort_date_added
+    DetailSort.PLAYCOUNT -> R.string.sort_plays
+}

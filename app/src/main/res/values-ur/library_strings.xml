@@ -13,6 +13,10 @@
     <string name="sort_track_count">زیادہ گانے پہلے</string>
     <string name="sort_duration">چھوٹے گانے پہلے</string>
     <string name="sort_duration_descending">لمبے گانے پہلے</string>
+    <string name="sort_album">البم</string>
+    <string name="sort_date_added">حال ہی میں شامل کردہ پہلے</string>
+    <string name="sort_album_order">البم کی ترتیب</string>
+    <string name="sort_plays">سب سے زیادہ چلائے گئے پہلے</string>
     <string name="suggested_content">آپ کی لائبریری سے تجاویز</string>
     <string name="matching_suggestions">لائبریری میں مماثلتیں</string>
     <string name="search_results">تلاش کے نتائج</string>

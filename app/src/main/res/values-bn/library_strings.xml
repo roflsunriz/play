@@ -13,6 +13,10 @@
     <string name="sort_track_count">বেশি গান আগে</string>
     <string name="sort_duration">ছোট গান আগে</string>
     <string name="sort_duration_descending">বড় গান আগে</string>
+    <string name="sort_album">অ্যালবাম</string>
+    <string name="sort_date_added">সম্প্রতি যোগ করা আগে</string>
+    <string name="sort_album_order">অ্যালবাম ক্রম</string>
+    <string name="sort_plays">সবচেয়ে বেশি বাজানো আগে</string>
     <string name="suggested_content">আপনার লাইব্রেরি থেকে প্রস্তাবিত</string>
     <string name="matching_suggestions">লাইব্রেরিতে মিলে যাওয়া</string>
     <string name="search_results">অনুসন্ধানের ফলাফল</string>
