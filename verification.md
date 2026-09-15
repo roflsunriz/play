@@ -12,6 +12,8 @@
 - Queen Jewels先頭曲の元URIでも`AudioOutputTest(fullTrack=true)`が275.354秒で成功し、約4分25秒の背景再生が自然終端へ到達した。冒頭15/15・中盤19/19・終盤20/20区間に音声があった。`streaming-jewels-full-audio.log`、`streaming-jewels-amplitudes.log`。全16曲は配信情報の解決、音声完走はこの代表曲を検査している。
 - プッシュ前監査は公式配布物とのSHA-256一致を確認したOSV-Scanner v2.5.1と同日更新の公開DBで実行し、依存481件に該当する既知の脆弱性0件。`streaming-osv.json`、`streaming-osv.log`。README・更新手順・認証とキャッシュの運用を照合し、旧版を使う再現手順を更新した。
 - 専用証明書で署名した非debugの`build/outputs/play-0.2.0-relink.apk`を実機へ上書きし、通常起動後の保存ログイン・ライブラリ・対象プレイリスト64曲の保持を確認した。2026-09-15 13:47:11更新、versionName 0.2.0の未リリース修正版。SHA-256は`da462893cb38b6f0f649a395c1388df1b4b064066e4da2176349c3f42b3798cc`。署名検証ログは`streaming-release-sign.log`。既存データの消去、通常参照アプリの変更、既存プレイリストの書き換えは行っていない。
+- 通常版の対象プレイリスト画面から5曲目のFearless Pt. IIをタップし、実際に再生・一時停止した。MediaSessionは89,251msでPAUSED、error=null。画面も対象曲と再生進行を確認した（`streaming-release-playing.png`）。再生中はuiautomatorのidle待ちが失敗したため、その古い階層を再生確認に使わず、画面画像とMediaSessionで検証した。
+- 最初のmain CIはSDKセットアップで`Failed to find package 'tools'`となり、Gradle実行前に失敗した。[使用中アクションの入力定義](https://github.com/android-actions/setup-android/blob/v4.0.1/action.yml)と実ログを照合し、通常・リリース両ワークフローへ`packages: platform-tools`を明示した。cmdline-tools、SDK Platform、Build Toolsの導入は維持する。
 
 ## 2026-09-13の結果
 
