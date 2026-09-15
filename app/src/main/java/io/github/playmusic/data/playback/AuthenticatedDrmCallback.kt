@@ -8,6 +8,7 @@ import androidx.media3.exoplayer.drm.ExoMediaDrm
 import androidx.media3.exoplayer.drm.HttpMediaDrmCallback
 import androidx.media3.exoplayer.drm.MediaDrmCallback
 import androidx.media3.exoplayer.drm.MediaDrmCallbackException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import io.github.playmusic.data.auth.PlaybackAuthorizationProvider
 import java.net.URI
@@ -18,8 +19,10 @@ import java.util.UUID
 internal class AuthenticatedDrmCallback(
     private val authorization: PlaybackAuthorizationProvider,
     private val licenseHttp: LicenseHttpClient = LicenseHttpClient(),
+    private val wrapFailure: (cause: Exception, bytesLoaded: Long) -> Exception =
+        { cause, loaded -> defaultFailure(cause, loaded) },
 ) : MediaDrmCallback {
-    private val http = DefaultHttpDataSource.Factory().setConnectTimeoutMs(15_000).setReadTimeoutMs(20_000)
+    private val http by lazy { DefaultHttpDataSource.Factory().setConnectTimeoutMs(15_000).setReadTimeoutMs(20_000) }
 
     override fun executeProvisionRequest(uuid: UUID, request: ExoMediaDrm.ProvisionRequest): MediaDrmCallback.Response =
         HttpMediaDrmCallback(StreamingApiClient.LICENSE_URL, http).executeProvisionRequest(uuid, request)
@@ -33,9 +36,21 @@ internal class AuthenticatedDrmCallback(
             // LoadEventInfo is optional in Media3 1.11.1; do not expose request secrets through analytics.
             MediaDrmCallback.Response.Builder(response).build()
         } catch (error: LicenseHttpClient.LicenseHttpException) {
+            throw wrapFailure(error, error.bytesLoaded)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            // Authorization failures carry only stage/failure/status, never tokens or message bytes.
+            throw wrapFailure(error, 0)
+        }
+    }
+
+    internal companion object {
+        internal fun defaultFailure(cause: Exception, bytesLoaded: Long): MediaDrmCallbackException {
+            // The spec carries only the license endpoint, never request headers or message bytes.
             val safeSpec = DataSpec.Builder().setUri(StreamingApiClient.LICENSE_URL)
                 .setHttpMethod(DataSpec.HTTP_METHOD_POST).build()
-            throw MediaDrmCallbackException(safeSpec, safeSpec.uri, emptyMap(), error.bytesLoaded, error)
+            return MediaDrmCallbackException(safeSpec, safeSpec.uri, emptyMap(), bytesLoaded, cause)
         }
     }
 }

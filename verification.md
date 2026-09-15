@@ -2,6 +2,13 @@
 
 ## 2026-09-15の結果
 
+### 初回ログイン直後のDRMライセンス取得失敗の修正
+
+- 症状はフレッシュインストール直後と初回ログイン直後に`ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED`となり、10秒以降が復号できない一方、時間経過で再生できる場合があること。再生派生認証の初回取得が複数往復（sessiontransfer→OTT→公開bundle最大8MB→TOTP→token→client-token）のため、DRMスレッド上の`runBlocking`取得が最初の暗号境界に間に合わないことが原因と特定した。キャッシュ後は成功するため時間経過で解消したように見える。
+- `LicenseHttpClient`が認証例外（再生用認証・端末認証・未ログイン）をNETWORKへ変換して原因を消していたため、そのまま伝播させるようにした。`AuthenticatedDrmCallback`は認証失敗も原因を保持して包装し、秘密値は保持しない。包装関数はJVMで差し替え可能にし、端末依存の`DataSpec`生成は製品の既定経路に残した。
+- `PlayViewModel`はログイン完了直後（初期起動・通常ログイン・従来ログイン）と再生開始3経路（`play`・`playDetailTrack`・`seekLyrics`）で`playbackAuthorization.prepare()`を接続した。ログイン直後は裏で事前取得し、再生開始前は取得待ちしてから`localPlayback.play()`する。事前取得の失敗時は再生自体を止めず、DRMコールバックの401再取得に任せる。ログアウト時は事前取得を取り消す。
+- JVM228件が失敗0（新規5件：認証例外の非マスク、コールバックの原因保持3件、事前取得の再利用）。`testDebugUnitTest lintDebug assembleDebug`が成功、lintエラー0。実機のフル音声確認（`AudioOutputTest(fullTrack=true)`）は未実行であり、実機検証時に10秒以降の音声と自然終端を確認すること。
+
 ### v0.3.0の公開
 
 - ユーザーのプッシュ・リリース許可を受け、公開済みv0.2.0以降の追加機能と修正をv0.3.0へまとめた。versionCodeを3へ更新し、変更履歴を日付付きの節へ移した。README、署名方針、更新手順を現行の導線と照合した。

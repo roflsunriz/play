@@ -1,5 +1,8 @@
 package io.github.playmusic.data.playback
 
+import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
+import io.github.playmusic.data.auth.PlaybackAuthorizationClient
+import io.github.playmusic.data.auth.SpotifyAuthException
 import kotlinx.coroutines.CancellationException
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -61,6 +64,14 @@ internal class LicenseHttpClient(
         } catch (error: CancellationException) {
             throw error
         } catch (error: LicenseHttpException) {
+            throw error
+        } catch (error: PlaybackAuthorizationClient.PlaybackAuthorizationException) {
+            // Fresh sign-ins fail here while their derived credentials are still propagating.
+            // Keep the stage/failure/status so the DRM error can be told apart from a network fault.
+            throw error
+        } catch (error: SpotifyAuthException) {
+            throw error
+        } catch (error: BrowserAuthorizationRequiredException) {
             throw error
         } catch (_: Exception) {
             // Network/header errors can quote credentials or message bytes. Never retain their cause.

@@ -23,6 +23,17 @@ class PlaybackAuthorizationProviderTest {
         assertEquals(listOf(false, false, true), forced)
     }
 
+    @Test fun preparedAuthorizationIsReusedByLicenseRequests() = runTest {
+        var calls = 0
+        val provider = PlaybackAuthorizationProvider({ sourceSnapshot("own-source") }, { _, _ ->
+            calls++
+            credentials("web-$calls", 20_000)
+        }, { 1000 })
+        provider.prepare(LICENSE)
+        assertEquals("Bearer web-1", provider.headers(LICENSE)["Authorization"])
+        assertEquals(1, calls)
+    }
+
     @Test fun invalidatesForAnotherSignInAndAfterLogout() = runTest {
         var source: String? = "first"
         var calls = 0

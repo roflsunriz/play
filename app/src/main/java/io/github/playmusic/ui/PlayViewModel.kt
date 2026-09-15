@@ -16,13 +16,17 @@ import io.github.playmusic.data.model.SearchFilter
 import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.data.audio.EqualizerPreset
 import io.github.playmusic.data.audio.settings
+import io.github.playmusic.data.playback.StreamingApiClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import java.net.URI
 
 enum class LibrarySection(val kind: ContentKind?) {
     PLAYLISTS(ContentKind.PLAYLIST),
@@ -118,6 +122,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     private var legacyLoginJob: Job? = null
     private var playbackRequestJob: Job? = null
     private var playbackSnapshotJob: Job? = null
+    private var playbackWarmupJob: Job? = null
     private val detailHistory = ArrayDeque<ContentDetail>()
     private var playlistWriteJob: Job? = null
     private var playlistImageJob: Job? = null
@@ -134,6 +139,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         if (mutableState.value.isLoggedIn) {
             prefetchLibraries()
             refreshPlayback()
+            warmPlaybackAuthorization()
         }
     }
 
@@ -169,6 +175,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         contentRequestJob?.cancel()
         legacyLoginJob?.cancel()
         playbackRequestJob?.cancel()
+        playbackWarmupJob?.cancel()
         mutableState.value = mutableState.value.copy(isAuthorizing = true, isLoading = false,
             browserAuthorization = null, loginPending = null, error = null)
         browserAuthorizationJob = viewModelScope.launch {
@@ -195,6 +202,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 mutableState.value = PlayUiState(username = username, isLoggedIn = true, isBrowserAuthorized = true)
                 prefetchLibraries()
                 refreshPlayback()
+                warmPlaybackAuthorization()
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 mutableState.value = mutableState.value.copy(isAuthorizing = false, browserAuthorization = null,
@@ -283,6 +291,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         )
         prefetchLibraries()
         refreshPlayback()
+        warmPlaybackAuthorization()
     }
 
     fun selectSection(section: LibrarySection) {
@@ -423,6 +432,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun seekLyrics(content: SpotifyContent, positionMs: Long) = executePlaybackRequest {
+        runCatching { ensurePlaybackAuthorization() }
         if (container.localPlayback.snapshot().item?.uri == content.uri) container.localPlayback.seekAndPlay(positionMs)
         else container.localPlayback.play(listOf(content), startPositionMs = positionMs)
     }
@@ -688,6 +698,24 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         }.also { playbackSnapshotJob = it }
     }
 
+    /**
+     * Warms the derived playback credentials in the background right after sign-in, so the
+     * first license request does not pay the multi-round-trip cost on the DRM thread.
+     */
+    private fun warmPlaybackAuthorization() {
+        playbackWarmupJob?.cancel()
+        playbackWarmupJob = viewModelScope.launch {
+            runCatching { ensurePlaybackAuthorization() }
+        }
+    }
+
+    /** Awaits warmed credentials before ExoPlayer prepares a new track. Failures are left to the DRM callback. */
+    private suspend fun ensurePlaybackAuthorization() {
+        withContext(Dispatchers.IO) {
+            container.playbackAuthorization.prepare(URI(StreamingApiClient.LICENSE_URL))
+        }
+    }
+
     fun play(content: SpotifyContent) {
         if (!mutableState.value.isBrowserAuthorized) {
             mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.LOGIN_REQUIRED))
@@ -705,6 +733,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             }.filter { it.isPlayable != false }
             check(tracks.isNotEmpty()) { "No playable tracks are available" }
             val index = if (content.kind == ContentKind.TRACK) tracks.indexOfFirst { it.uri == content.uri }.coerceAtLeast(0) else 0
+            runCatching { ensurePlaybackAuthorization() }
             container.localPlayback.play(tracks, index, contextUri = content.takeUnless { it.kind == ContentKind.TRACK }?.uri)
         }
     }
@@ -715,7 +744,10 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         val tracks = source.filter { it.isPlayable != false }
         val selectedIndex = source.take(index).count { it.isPlayable != false }
         val contextUri = mutableState.value.detail?.content?.uri
-        executePlaybackRequest { container.localPlayback.play(tracks, selectedIndex, contextUri = contextUri) }
+        executePlaybackRequest {
+            runCatching { ensurePlaybackAuthorization() }
+            container.localPlayback.play(tracks, selectedIndex, contextUri = contextUri)
+        }
     }
 
     fun togglePlayPause() = executePlaybackRequest {
@@ -750,6 +782,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         legacyLoginJob?.cancel()
         playbackRequestJob?.cancel()
         playbackSnapshotJob?.cancel()
+        playbackWarmupJob?.cancel()
         val clearFailure = runCatching { container.sessionManager.clearSession() }.exceptionOrNull()
         if (clearFailure == null) container.repository.clearCache()
         playlistWriteJob?.cancel()

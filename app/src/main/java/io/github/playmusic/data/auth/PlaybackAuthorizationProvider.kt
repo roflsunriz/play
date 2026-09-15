@@ -44,6 +44,15 @@ class PlaybackAuthorizationProvider(
     private val mutex = Mutex()
     private var cached: Cached? = null
 
+    /**
+     * Warms the short-lived credentials before the DRM thread needs them. A fresh sign-in
+     * derives them over several round trips, so awaiting them outside playback keeps the first
+     * license request from timing out at the first encrypted boundary.
+     */
+    suspend fun prepare(uri: URI) {
+        headers(uri)
+    }
+
     suspend fun headers(uri: URI, forceRefresh: Boolean = false): Map<String, String> = mutex.withLock {
         var source = try { sourceToken(false) } catch (error: Exception) { cached = null; throw error }
         val previous = cached
