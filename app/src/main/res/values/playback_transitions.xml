@@ -4,6 +4,7 @@
     <string name="playback_fade_in">Fade in when playing</string>
     <string name="playback_fade_out">Fade out when pausing or stopping</string>
     <string name="playback_crossfade">Crossfade between tracks</string>
+    <string name="playback_seek_crossfade">Crossfade when seeking</string>
     <string name="playback_fade_seconds">%1$d s</string>
     <string name="playback_peak_normalizer">Peak volume normalizer</string>
     <string name="playback_automix">Automix</string>

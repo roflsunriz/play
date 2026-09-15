@@ -58,6 +58,11 @@ internal fun PlaybackSettingsScreen(state: PlaybackTransitionState,
                     state.isReady, "crossfade", { onChange(current.copy(crossfadeEnabled = it)) },
                     { onChange(current.copy(crossfadeSeconds = it)) })
             }
+            item("seek-crossfade") {
+                FadeSetting(stringResource(R.string.playback_seek_crossfade), current.seekCrossfadeEnabled, current.seekCrossfadeSeconds,
+                    state.isReady, "seek-crossfade", { onChange(current.copy(seekCrossfadeEnabled = it)) },
+                    { onChange(current.copy(seekCrossfadeSeconds = it)) })
+            }
             item("normalizer") {
                 PlaybackSettingSwitch(stringResource(R.string.playback_peak_normalizer), current.peakNormalizationEnabled,
                     state.isReady, "peak-normalizer") { onChange(current.copy(peakNormalizationEnabled = it)) }

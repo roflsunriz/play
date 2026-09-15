@@ -3,6 +3,7 @@
     <string name="playback_fade_in">Fondu au démarrage</string>
     <string name="playback_fade_out">Fondu lors de la pause ou de l’arrêt</string>
     <string name="playback_crossfade">Fondu enchaîné entre les titres</string>
+    <string name="playback_seek_crossfade">Fondu enchaîné lors des sauts de lecture</string>
     <string name="playback_fade_seconds">%1$d s</string>
     <string name="playback_peak_normalizer">Normaliseur des niveaux de crête</string>
     <string name="playback_automix">Automix</string>

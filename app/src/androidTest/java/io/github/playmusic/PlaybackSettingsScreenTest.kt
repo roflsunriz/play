@@ -80,6 +80,24 @@ class PlaybackSettingsScreenTest {
         compose.runOnIdle { assertEquals(1, retries) }
     }
 
+    @Test fun seekCrossfadeToggleAndSliderStayIndependentFromTrackCrossfade() {
+        var state by mutableStateOf(PlaybackTransitionState(isReady = true))
+        var changed: PlaybackTransitionSettings? = null
+        compose.setContent { PlayTheme {
+            PlaybackSettingsScreen(state, { changed = it; state = state.copy(settings = it) }, {}, {})
+        } }
+        compose.onNodeWithTag("playback-settings-list").performScrollToKey("seek-crossfade")
+        compose.onNodeWithTag("seek-crossfade-switch").assertIsOff().performScrollTo().performClick().assertIsOn()
+        compose.runOnIdle { assertEquals(true, changed?.seekCrossfadeEnabled) }
+        compose.onNodeWithTag("seek-crossfade-slider").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(7f) }
+        compose.onNodeWithTag("seek-crossfade-seconds").assertTextEquals(compose.activity.getString(R.string.playback_fade_seconds, 7))
+        compose.runOnIdle {
+            assertEquals(7, changed?.seekCrossfadeSeconds)
+            assertTrue(changed?.crossfadeEnabled == true)
+            assertEquals(5, changed?.crossfadeSeconds)
+        }
+    }
+
     @Test fun expandedPlayerStopUsesItsOwnTransportAction() {
         val track = SpotifyContent("track", "spotify:track:track", "Synthetic song", "", null, ContentKind.TRACK)
         var stops = 0

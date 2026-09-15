@@ -4,6 +4,7 @@
     <string name="playback_fade_in">再生時にフェードイン</string>
     <string name="playback_fade_out">一時停止・停止時にフェードアウト</string>
     <string name="playback_crossfade">曲間のクロスフェード</string>
+    <string name="playback_seek_crossfade">シーク時のクロスフェード</string>
     <string name="playback_fade_seconds">%1$d秒</string>
     <string name="playback_peak_normalizer">ピーク音量ノーマライザー</string>
     <string name="playback_automix">Automix</string>

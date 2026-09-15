@@ -3,6 +3,7 @@
     <string name="playback_fade_in">Aumentar o volume ao iniciar</string>
     <string name="playback_fade_out">Diminuir o volume ao pausar ou parar</string>
     <string name="playback_crossfade">Transição gradual entre músicas</string>
+    <string name="playback_seek_crossfade">Transição gradual ao mudar de posição</string>
     <string name="playback_fade_seconds">%1$d s</string>
     <string name="playback_peak_normalizer">Normalizador de volume de pico</string>
     <string name="playback_automix">Automix</string>

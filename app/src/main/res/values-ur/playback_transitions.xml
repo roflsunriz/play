@@ -3,6 +3,7 @@
     <string name="playback_fade_in">بجانا شروع کرتے وقت آواز آہستہ بڑھائیں</string>
     <string name="playback_fade_out">روکنے یا وقفہ دیتے وقت آواز آہستہ کم کریں</string>
     <string name="playback_crossfade">گانوں کے درمیان کراس فیڈ</string>
+    <string name="playback_seek_crossfade">سیک کے دوران کراس فیڈ</string>
     <string name="playback_fade_seconds">%1$d سیکنڈ</string>
     <string name="playback_peak_normalizer">پیک والیوم نارملائزر</string>
     <string name="playback_automix">Automix</string>

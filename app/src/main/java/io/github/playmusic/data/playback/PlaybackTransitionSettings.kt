@@ -9,11 +9,14 @@ data class PlaybackTransitionSettings(
     val crossfadeSeconds: Int = 5,
     val peakNormalizationEnabled: Boolean = false,
     val automixEnabled: Boolean = true,
+    val seekCrossfadeEnabled: Boolean = false,
+    val seekCrossfadeSeconds: Int = 3,
 ) {
-    init { require(fadeInSeconds in 1..12 && fadeOutSeconds in 1..12 && crossfadeSeconds in 1..12) }
+    init { require(fadeInSeconds in 1..12 && fadeOutSeconds in 1..12 && crossfadeSeconds in 1..12 && seekCrossfadeSeconds in 1..12) }
     val fadeInMs: Long get() = if (fadeInEnabled) fadeInSeconds * 1_000L else 0
     val fadeOutMs: Long get() = if (fadeOutEnabled) fadeOutSeconds * 1_000L else 0
     val crossfadeMs: Long get() = if (crossfadeEnabled) crossfadeSeconds * 1_000L else 0
+    val seekCrossfadeMs: Long get() = if (seekCrossfadeEnabled) seekCrossfadeSeconds * 1_000L else 0
 }
 
 data class PlaybackTransitionState(

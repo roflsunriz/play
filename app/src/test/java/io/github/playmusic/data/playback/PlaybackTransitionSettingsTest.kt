@@ -6,17 +6,26 @@ import org.junit.Test
 
 class PlaybackTransitionSettingsTest {
     @Test fun settingsRoundTripPreservesEachIndependentDurationAndToggle() {
-        val settings = PlaybackTransitionSettings(false, 1, true, 12, false, 7, true, false)
+        val settings = PlaybackTransitionSettings(false, 1, true, 12, false, 7, true, false, true, 4)
         assertEquals(settings, PlaybackTransitionStore.decode(PlaybackTransitionStore.encode(settings)))
         assertEquals(0L, settings.fadeInMs)
         assertEquals(12_000L, settings.fadeOutMs)
         assertEquals(0L, settings.crossfadeMs)
+        assertEquals(4_000L, settings.seekCrossfadeMs)
+        assertEquals(0L, PlaybackTransitionSettings().seekCrossfadeMs)
+    }
+    @Test fun settingsSavedBeforeSeekCrossfadeDecodeWithItsDefaults() {
+        val legacy = "{\"schemaVersion\":1,\"fadeInEnabled\":true,\"fadeInSeconds\":3," +
+            "\"fadeOutEnabled\":true,\"fadeOutSeconds\":3,\"crossfadeEnabled\":true,\"crossfadeSeconds\":5," +
+            "\"peakNormalizationEnabled\":false,\"automixEnabled\":true}"
+        assertEquals(PlaybackTransitionSettings(), PlaybackTransitionStore.decode(legacy))
     }
     @Test fun invalidDurationAndFutureSchemaAreRejected() {
         for (seconds in listOf(-1, 0, 13, Int.MAX_VALUE)) {
             assertTrue(runCatching { PlaybackTransitionSettings(fadeInSeconds = seconds) }.isFailure)
             assertTrue(runCatching { PlaybackTransitionSettings(fadeOutSeconds = seconds) }.isFailure)
             assertTrue(runCatching { PlaybackTransitionSettings(crossfadeSeconds = seconds) }.isFailure)
+            assertTrue(runCatching { PlaybackTransitionSettings(seekCrossfadeSeconds = seconds) }.isFailure)
         }
         assertTrue(runCatching { PlaybackTransitionStore.decode("{\"schemaVersion\":2}") }.isFailure)
     }

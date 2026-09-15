@@ -72,13 +72,16 @@ class PlaybackTransitionStore(context: Context) {
             .put("fadeInEnabled", value.fadeInEnabled).put("fadeInSeconds", value.fadeInSeconds)
             .put("fadeOutEnabled", value.fadeOutEnabled).put("fadeOutSeconds", value.fadeOutSeconds)
             .put("crossfadeEnabled", value.crossfadeEnabled).put("crossfadeSeconds", value.crossfadeSeconds)
-            .put("peakNormalizationEnabled", value.peakNormalizationEnabled).put("automixEnabled", value.automixEnabled).toString()
+            .put("peakNormalizationEnabled", value.peakNormalizationEnabled).put("automixEnabled", value.automixEnabled)
+            .put("seekCrossfadeEnabled", value.seekCrossfadeEnabled).put("seekCrossfadeSeconds", value.seekCrossfadeSeconds).toString()
 
         internal fun decode(text: String): PlaybackTransitionSettings = JSONObject(text).let {
             require(it.getInt("schemaVersion") == 1)
             PlaybackTransitionSettings(it.getBoolean("fadeInEnabled"), it.getInt("fadeInSeconds"),
                 it.getBoolean("fadeOutEnabled"), it.getInt("fadeOutSeconds"), it.getBoolean("crossfadeEnabled"),
-                it.getInt("crossfadeSeconds"), it.getBoolean("peakNormalizationEnabled"), it.getBoolean("automixEnabled"))
+                it.getInt("crossfadeSeconds"), it.getBoolean("peakNormalizationEnabled"), it.getBoolean("automixEnabled"),
+                // Settings saved before the seek crossfade existed keep their behavior.
+                it.optBoolean("seekCrossfadeEnabled", false), it.optInt("seekCrossfadeSeconds", 3))
         }
     }
 }

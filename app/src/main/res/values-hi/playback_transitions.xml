@@ -3,6 +3,7 @@
     <string name="playback_fade_in">बजाना शुरू करते समय धीरे आवाज़ बढ़ाएँ</string>
     <string name="playback_fade_out">रोकते या विराम देते समय धीरे आवाज़ घटाएँ</string>
     <string name="playback_crossfade">गानों के बीच क्रॉसफ़ेड</string>
+    <string name="playback_seek_crossfade">सीक करते समय क्रॉसफ़ेड</string>
     <string name="playback_fade_seconds">%1$d सेकंड</string>
     <string name="playback_peak_normalizer">पीक वॉल्यूम नॉर्मलाइज़र</string>
     <string name="playback_automix">Automix</string>

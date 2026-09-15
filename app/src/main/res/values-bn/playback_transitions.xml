@@ -3,6 +3,7 @@
     <string name="playback_fade_in">শুরুতে ধীরে শব্দ বাড়ান</string>
     <string name="playback_fade_out">বিরতি বা বন্ধের সময় ধীরে শব্দ কমান</string>
     <string name="playback_crossfade">গানের মাঝে ক্রসফেড</string>
+    <string name="playback_seek_crossfade">সিক করার সময় ক্রসফেড</string>
     <string name="playback_fade_seconds">%1$d সেকেন্ড</string>
     <string name="playback_peak_normalizer">পিক ভলিউম নর্মালাইজার</string>
     <string name="playback_automix">Automix</string>

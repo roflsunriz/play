@@ -3,6 +3,7 @@
     <string name="playback_fade_in">Плавное начало воспроизведения</string>
     <string name="playback_fade_out">Плавное затухание при паузе и остановке</string>
     <string name="playback_crossfade">Плавный переход между треками</string>
+    <string name="playback_seek_crossfade">Плавный переход при перемотке</string>
     <string name="playback_fade_seconds">%1$d сек.</string>
     <string name="playback_peak_normalizer">Нормализация пиковой громкости</string>
     <string name="playback_automix">Automix</string>

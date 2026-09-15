@@ -3,6 +3,7 @@
     <string name="playback_fade_in">开始播放时淡入</string>
     <string name="playback_fade_out">暂停或停止时淡出</string>
     <string name="playback_crossfade">歌曲间交叉淡化</string>
+    <string name="playback_seek_crossfade">跳转播放时交叉淡化</string>
     <string name="playback_fade_seconds">%1$d秒</string>
     <string name="playback_peak_normalizer">峰值音量标准化</string>
     <string name="playback_automix">Automix</string>

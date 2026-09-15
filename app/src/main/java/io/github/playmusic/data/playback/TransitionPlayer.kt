@@ -27,6 +27,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /** A stable MediaSession player over two standard Media3/DRM decoders.
  * All mutable state is owned by the application looper. Only the incoming decoder is exposed
@@ -289,6 +290,9 @@ class TransitionPlayer(
         val sameItem = targetIndex == active.currentMediaItemIndex ||
             (targetIndex == C.INDEX_UNSET && seekCommand in setOf(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
                 Player.COMMAND_SEEK_TO_DEFAULT_POSITION, Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD))
+        if (sameItem && tail == null && active.isPlaying && !sleeping && seekOverlap(positionMs)) {
+            return Futures.immediateVoidFuture()
+        }
         if (sameItem && tail == null) {
             // Seeking within this song does not change the queued successor. Keep its DRM
             // session and decoder ready; rebuilding it near the exit cue can miss Automix.
@@ -469,12 +473,48 @@ class TransitionPlayer(
         if (order.size == from.mediaItemCount) to.setShuffleOrder(DefaultShuffleOrder(order.toIntArray(), 0L))
     }
 
+    /**
+     * Crossfades within the playing song when the seek crossfade is enabled: the spare
+     * decoder starts the same queue at the target position while the old position fades
+     * out. Returns false when the overlap is unavailable so the caller seeks directly.
+     */
+    private fun seekOverlap(positionMs: Long): Boolean {
+        val owner = active
+        val config = settings()
+        if (config.seekCrossfadeMs <= 0 || sleeping || tail != null || !owner.isPlaying) return false
+        val index = owner.currentMediaItemIndex
+        if (index == C.INDEX_UNSET || owner.currentMediaItem == null) return false
+        val duration = owner.duration
+        if (duration == C.TIME_UNSET || duration <= 0) return false
+        val target = (if (positionMs == C.TIME_UNSET) 0 else positionMs).coerceIn(0, duration)
+        if (abs(target - owner.currentPosition) < 500) return false
+        val length = TransitionEnvelope.overlapMs(config.seekCrossfadeMs,
+            (duration - owner.currentPosition).coerceAtLeast(0) * 2, (duration - target).coerceAtLeast(0) * 2)
+        if (length <= 0) return false
+        cancelPreparation()
+        val incoming = spare()
+        incoming.pause()
+        incoming.volume = 0f
+        incoming.pauseAtEndOfMediaItems = false
+        incoming.repeatMode = owner.repeatMode
+        incoming.shuffleModeEnabled = owner.shuffleModeEnabled
+        incoming.playbackParameters = owner.playbackParameters
+        incoming.setMediaItems(List(owner.mediaItemCount, owner::getMediaItemAt), index, target)
+        copyShuffleOrder(owner, incoming)
+        incoming.prepare()
+        beginOverlap(incoming, length, null)
+        return true
+    }
+
     private fun beginOverlap(incoming: ExoPlayer, duration: Long, recipe: AutomixTransition?) {
         if (overlap != null || desiredPlaying != true || sleeping) return
         val outgoing = active
         trace("begin recipe=${recipe != null} length=$duration outPosition=${outgoing.currentPosition}" +
             " inPosition=${incoming.currentPosition} outDuration=${outgoing.duration} inDuration=${incoming.duration}" +
             " outStart=${recipe?.outgoingStartMs} inStart=${recipe?.incomingStartMs} speed=${incoming.playbackParameters.speed}")
+        // Every overlap owns the gains from full envelope: a stale fade must neither
+        // silence the mix nor pause the new head when it finishes.
+        ramp?.cancel(); ramp = null; envelope = 1f
         finalFadeStarted = false
         lastExplicitSeekPositionMs = null; skippedRecipeForSeek = false
         outgoing.pauseAtEndOfMediaItems = true
