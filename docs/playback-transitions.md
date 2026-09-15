@@ -14,7 +14,7 @@ MediaSessionには`TransitionPlayer`を接続し、Android標準DRMを使う2つ
 
 2つの線形ゲインの和を1にし、同じ波形が重なっても過大な出力にならないようにする。短い曲は前後の曲の半分を上限として重なりを短くする。次の曲が準備できなかった場合は、無音の次曲を前提に現在の曲を消さず通常の曲送りへ戻す。
 
-次・前・新しい選曲、シーク、リピート、シャッフル、通知の再生操作は同じトランスポートを通る。2つのデコーダーの音声フォーカスを1つにまとめ、一方の破棄で他方の音声フォーカスを失わない。Android 15以降のバックグラウンド再開では、前景サービスの通知更新が完了してから音声フォーカスを要求する。待機中にキャンセル・別操作が入った場合は、古い完了が新しい待機を消さないよう世代を照合する。
+次・前・新しい選曲、シーク、リピート、シャッフル、通知の再生操作は同じトランスポートを通る。2つのデコーダーの音声フォーカスを1つにまとめ、一方の破棄で他方の音声フォーカスを失わない。Android 15以降のバックグラウンド再開では、前景サービスの通知更新が完了してから音声フォーカスを要求する。待機中にキャンセル・別操作が入った場合は、古い完了が新しい待機を消さないよう世代を照合する。選曲の置き換えに続く重複した再生要求は、重なりがゲインを持っている間は両デコーダーを消音せずフェードも作り直さない。
 
 ## ピーク音量ノーマライザー
 
@@ -36,7 +36,7 @@ MediaSessionには`TransitionPlayer`を接続し、Android標準DRMを使う2つ
 
 - `PlaybackTransitionSettingsTest`、`PeakNormalizerTest`、`AutomixMetadataTest`、`AutomixApiClientTest`：秒数境界、音量包絡、PCMピーク、実応答のcuepoint、対象・所属・アカウント・キャッシュ・型の検査。
 - `PlaybackSettingsScreenTest`、`PlaybackTransitionStoreTest`、`PeakNormalizerAudioProcessorTest`：画面の全設定、保存・再構築・破損・保存失敗、実PCM processorの接続。
-- `PlaybackTransitionsTest`、`PlaybackTransitionFailureTest`：2曲同時再生、通知相当の操作、待機中の中断、バックグラウンド再開、エラー時の有効な状態、両デコーダー停止。
+- `PlaybackTransitionsTest`、`PlaybackTransitionFailureTest`：2曲同時再生、通知相当の操作、待機中の中断、バックグラウンド再開、エラー時の有効な状態、両デコーダー停止。選曲置き換え直後に両デコーダーが消音されないことも検査する。
 - 実機は`LiveAutomixAccountTest`に`liveAutomix=true`、`LivePlaybackTransitionsTest`に`liveTransitions=true`を指定する。後者は実際に音を出す。Automixの音声検査では`automixPlaylistUri`と、必要ならその原本に含まれる`automixFromUri`・`automixToUri`を両方指定する。未指定なら先頭2曲を使う。
 
 実音声の検査は2つのデコーダーそれぞれのDSP後PCMのRMS・ピークと最終ゲインを読む。`StreamMetadata.positionOffsetUs`から媒体時刻を付けた100msの数値窓を保持し、現在の再生位置と同じperiod・generationの窓を使う。EOSは端末へ渡した音声が鳴り終わったことを意味しないため窓を消さず、シーク・新ストリームで分離する。実検証音源ではencoderDelay/encoderPaddingが0であることも確認する。波形を保持したり、単なる計測時刻の新しさを音声の有無として扱ったりしない。

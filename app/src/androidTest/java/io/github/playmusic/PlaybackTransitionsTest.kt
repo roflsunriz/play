@@ -65,6 +65,42 @@ class PlaybackTransitionsTest {
         }
     }
 
+    @Test fun replacingTheQueueMidSongCrossfadesWithoutSilencingBothDecoders(): Unit = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val store = (context.applicationContext as PlayApplication).container.playbackTransitions
+        val original = store.state.first { it.isReady }.settings
+        val playback = LocalPlayback(context, PlaybackTestService::class.java)
+        suspend fun <T> read(block: TransitionPlayer.() -> T): T = withContext(Dispatchers.Main) {
+            (checkNotNull(PlaybackTestService.activeSession).player as TransitionPlayer).block()
+        }
+        suspend fun await(predicate: suspend () -> Boolean) = withTimeout(20_000) { while (!predicate()) delay(20) }
+        fun track(id: String) = SpotifyContent(id, "spotify:track:$id", "Synthetic $id", "", null,
+            ContentKind.TRACK, durationMs = 12_000)
+        val first = listOf(track("a".padStart(22, '0')))
+        val second = listOf(track("b".padStart(22, '0')))
+        try {
+            store.setSettings(PlaybackTransitionSettings(fadeInSeconds = 1, fadeOutSeconds = 1, crossfadeSeconds = 2, automixEnabled = false))
+            playback.play(first)
+            await { read { audioEngines().any { it.isPlaying && it.volume > .99f } } }
+            // Tapping another song replaces the queue while it is sounding. The trailing
+            // play() must not silence both decoders and restart the fade: the outgoing
+            // song keeps full gain until the overlap fades it out.
+            playback.play(second)
+            read {
+                val total = audioEngines().sumOf { it.volume.toDouble() }.toFloat()
+                assertTrue("Replacing the queue must not silence both decoders (total=$total)", total > .9f)
+            }
+            await { read { audioEngines().count { it.isPlaying } == 2 } }
+            await { read { audioEngines().count { it.isPlaying } == 1 && audioEngines().any { it.isPlaying && it.volume > .99f } } }
+            read { assertEquals(second.single().uri, currentMediaItem?.mediaId) }
+            playback.stop()
+            await { read { playbackState == Player.STATE_IDLE && audioEngines().none { it.isPlaying || it.playWhenReady } } }
+        } finally {
+            playback.clear(); playback.release()
+            store.setSettings(original); store.persistNow()
+        }
+    }
+
     @Test fun fadesOverlapPauseCancelSeekAndSleepShareTheServiceTransport(): Unit = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val store = (context.applicationContext as PlayApplication).container.playbackTransitions

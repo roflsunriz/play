@@ -2,6 +2,12 @@
 
 ## 2026-09-15の結果
 
+### 選曲切り替えのクロスフェードが一旦無音になる問題の修正
+
+- 一覧から別の曲を選ぶと、先にaが無音になってからa→bのクロスフェードが再生されることを報告された。`handleSetMediaItems` の重なり分岐はaを鳴らしたままbを開始するが、直後の`play()`→`startPlayback()` がbの未再生だけを見てエンベロープを0へ初期化し、両デコーダーを消音してから非同期にフェードインし直していたことが原因。
+- `startPlayback()` は重なり有効中は両エンジンの再生だけ再確認して音量へ触れず、全音量で再生中かつフェードも動作中でなければ再生状態だけ再確認して戻るようにした。フェード反転（一時停止直後の再開）は従来どおり現在の音量から戻す。
+- 新規回帰 `replacingTheQueueMidSongCrossfadesWithoutSilencingBothDecoders` は修正前 `total=0.0` で失敗、修正後、分離AVD（emulator-5554、実機に触れず）で `PlaybackTransitionsTest` 3件、`PlaybackTransitionFailureTest` 5件、`ExpandedPlayerScreenTest` 5件が成功。JVM228件失敗0、`lintDebug` エラー0、`assembleDebug`・`assembleDebugAndroidTest` 成功。実音源での聴感確認は未実行。
+
 ### 歌詞の表示場所を拡大プレイヤーへ移動
 
 - 再生していない曲の歌詞を見せないよう、`ContentDetailScreen` の歌詞slotを除去し、`ExpandedPlayerScreen`（縦・横両配置）の操作部の下へ移動した。`LyricsRoute` は再生中の曲URIで取得し直し、プレイヤーを離れれば本文も破棄される。

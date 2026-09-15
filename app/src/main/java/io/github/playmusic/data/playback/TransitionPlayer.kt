@@ -149,14 +149,27 @@ class TransitionPlayer(
 
     private fun startPlayback() {
         val generation = ++startGeneration
-        starting?.cancel()
-        ramp?.cancel(); ramp = null
-        val alreadyPlaying = active.isPlaying
+        starting?.cancel(); starting = null
         transportError = null
         finalFadeStarted = false
         desiredPlaying = true
-        if (!alreadyPlaying) envelope = 0f
-        applyVolumes()
+        if (overlap != null) {
+            // setMediaItems+play for the next song starts its overlap before this
+            // redundant play() arrives. The overlap owns the gains: keep both engines
+            // playing and leave the envelope alone instead of silencing them and
+            // restarting the fade after focus/buffering.
+            active.play(); tail?.play()
+            invalidateState()
+            return
+        }
+        if (active.isPlaying && ramp == null && envelope == 1f) {
+            // Already sounding at full gain; only re-assert play state.
+            active.play()
+            invalidateState()
+            return
+        }
+        ramp?.cancel(); ramp = null
+        if (!active.isPlaying) { envelope = 0f; applyVolumes() }
         // Android 15+ only grants background audio focus after the playback service is
         // actually foreground. Advertise the user play intent, await that notification,
         // and only then acquire focus and start both decoders.
