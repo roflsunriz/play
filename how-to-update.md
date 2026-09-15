@@ -133,3 +133,15 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 不具合のある更新は対象コミットをrevertし、既存の認証情報を保ったまま以前のAPKへ戻す。暗号化セッションの形式を変更するときはスキーマ番号と移行・破損時の処理を同時に検証する。外部APIが変わった場合、失敗を空一覧へ置き換えて隠さず、利用者へ取得失敗を示す。
 
 セッション形式3は旧形式2を読み込んだ際に暗号化して移行する。形式3を未対応の古いAPKへ戻すと保存認証を読めないため、再ログインが必要になる。旧APKへの切り戻しで認証状態を保持できるとは扱わない。本人がブラウザー認証中の端末には再インストール・強制終了・instrumentationを実行せず、完了または期限切れを確認する。
+
+### 再生遷移・同期歌詞・アーティストの追加検証
+
+通常のビルド/JVM検査に加え、分離AVDで`PlaybackSettingsScreenTest`、`LyricsPanelTest`、`ArtistPageScreenTest`、`PlaybackTransitionsTest`、`PlaybackTransitionFailureTest`、`PeakNormalizerAudioProcessorTest`、`PlaybackTransitionStoreTest`を実行する。日本語縦画面・英語の低い横画面・狭幅RTLを含め、`screenshotPrefix`で保存した合成画面を確認する。タイマーは従来の専用AVD試験で最大12秒の減衰も確認する。
+
+実アカウントの読み取りは`LyricsAccountTest(liveLyrics=true, trackUri指定)`、`ArtistPageAccountTest(liveArtist=true)`、`LiveAutomixAccountTest(liveAutomix=true)`。アーティストの検証対象は名前の一致だけで決めず、公式ページで確認したIDを使う。紹介文が未提供の場合も実応答とモデルの一致を検査し、存在しない本文を補わない。
+
+実音声は`LivePlaybackTransitionsTest`に`liveTransitions=true`を指定する。Automixは`automixPlaylistUri`と、必要ならその原本に含まれる`automixFromUri`・`automixToUri`を指定する。2つの音声の実出力を区別して測り、アプリ全体の音量は変えず、検証後にEQと再生設定を戻す。[再生の設計](docs/playback-transitions.md)に詳細をまとめる。
+
+フォローの書き込みは未フォロー1組の一時変更と復元を明示許可された場合のみ、`ArtistFollowAccountTest`へ`liveArtistFollow=true`を指定する。以前のジャーナルが残ると新規操作を止める。アカウント・対象を確認し、その一時追加分だけを解除して元の原本集合を確認する。
+
+実測用のログは時刻・型・件数・音声レベルだけにし、歌詞、音声、認証情報、音声鍵を保存しない。メディア情報の診断控えはGit外に置く。

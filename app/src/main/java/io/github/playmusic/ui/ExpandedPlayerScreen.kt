@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -60,6 +61,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -83,6 +85,7 @@ internal fun ExpandedPlayerScreen(
     modifier: Modifier = Modifier,
     onContentActions: (SpotifyContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
+    onStop: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val haptics = LocalHapticFeedback.current
@@ -99,9 +102,13 @@ internal fun ExpandedPlayerScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.player_close))
                 }
                 Text(stringResource(R.string.player_now_playing), style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 8.dp).testTag("expanded-player-heading"))
-                Spacer(Modifier.weight(1f))
+                    modifier = Modifier.weight(1f).padding(start = 8.dp).testTag("expanded-player-heading"),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                 playback.item?.let { ContentAddButton(it, it.uri in savedUris, onContentActions) }
+                IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onStop() },
+                    modifier = Modifier.testTag("expanded-player-stop")) {
+                    Icon(Icons.Default.Stop, stringResource(R.string.playback_stop))
+                }
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 if (horizontal) {

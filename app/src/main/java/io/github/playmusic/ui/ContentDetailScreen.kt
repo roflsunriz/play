@@ -59,6 +59,7 @@ internal fun ContentDetailScreen(
     onDeletePlaylist: () -> Unit = {},
     onContentActions: (SpotifyContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
+    lyricsContent: @Composable (SpotifyContent) -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val content = detail?.content ?: selected
@@ -160,6 +161,7 @@ internal fun ContentDetailScreen(
                 }
             }
         }
+        if (content.kind == ContentKind.TRACK) item(key = "lyrics") { lyricsContent(content) }
         if (detail == null && !isLoading) {
             item(key = "retry") {
                 Column {

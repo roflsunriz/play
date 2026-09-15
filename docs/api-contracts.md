@@ -190,3 +190,24 @@ python tools/import-search-capture.py captures/recovered/search-response-origina
 自動テストは `CatalogJsonTest` と `CatalogNavigationTest`。これらの追加データは確認した型から組み立てた合成応答であり、実アカウントの生データではない。読み取り専用の実アカウント検証は `CatalogNavigationAccountTest` へ `liveCatalog=true` を明示し、報告された検索語と全分類、曲からアーティスト・ラジオ、番組からエピソード、ジャンルの詳細を確認する。実行結果と認証条件は [検証記録](../verification.md) を参照する。
 
 実機の初回ジャンル詳細で、`browsePage`に含まれる`sectionItems`には`pagingInfo`が無いことを確認した。公開画面もここでは`items`と`totalCount`だけを使い、全件表示で`browseSection`を別途開く。初回の件数が総件数に満たない場合は`browseSection`のoffset=0から全ページを読み、プレビューとの重複をURIで除いて統合する。`pagingInfo`の欠落を終端とみなして残りの作品を落とさない。再現ケースを`CatalogNavigationTest`へ追加した。
+
+## 再生遷移・同期歌詞・アーティスト詳細（2026-09-15）
+
+### Automix
+
+- 型27をプレイリストURI、型28を曲URIへ要求する。`/extended-metadata/v0/extended-metadata`のtyped queryを使い、既存の保存認証で実HTTP200を確認した。
+- 応答はroot field2の配列、配列内status field1・kind field2・entities field3。entityはstatus1・uri2・Any3、Anyのtype1/value2を照合する。Any.valueの省略はproto3の空bytesとして扱い、モードの既定値0や空cuepointを受け付ける。別URI・型不一致・重複・壊れた応答は対象外の成功へ置き換えない。
+- モードは通常版の`automix_mode.proto`記述子でNONE=0/DEFAULT=1を確認し、現行はDEFAULTだけを対象とする。実検索4リストのうち1リストがDEFAULT=1、ほかは型27のentity404だった。
+- Cuepointのposition_msはfield1 int64、tempo_bpmは2 float、originは3 enum、confidenceは4 double。CuepointsのbestFadeIn=1/bestFadeOut=2/fadeIn一覧=3/fadeOut一覧=4をWindowsの配信コード・通常版の型・実応答で照合した。
+- 既存プレイリストのListAttributes field12、ItemAttributes field11はFormatListAttribute(key1,value2)。時刻field2を読んだ後も項目属性を読み進める。通常版で個人向けMix編集のrecipe属性も確認したが、今回のサービスAutomixは対象判定とcuepointを使う。
+- 実応答の控えはGit外の`build/qa/files/automix-probe/`。テスト用fixtureはURIを合成値へ置換しキャッシュ識別子を除いたcuepointデータだけを使う。製品の型・閾値・認証先は`AutomixMetadata`/`AutomixApiClient`を正本とし、遷移処理と制約は[設計](playback-transitions.md)を参照する。
+
+### 歌詞
+
+公式公開Web bundleの歌詞モジュールと既存の公開実装を照合し、`/color-lyrics/v2/track/{id}`、`format=json`、`vocalRemoval=false`、WebPlayer向けApp-Platformの要求を確認した。実機の保存認証でLINE_SYNCED 55行の配信を取得した。認証を別アプリから持ち込まず、既存SessionManagerの更新を使う。
+
+同期種別、次行の開始時刻、配信制限、出典は[歌詞設計](lyrics.md)を参照する。公式モジュールは次行の開始を区切りにし、古いendTimeMsを表示の停止条件として使わない。HTTP404だけを未配信とし、通信失敗や未知型を未配信へ変換しない。本文のログ・fixture化はしない。
+
+### アーティスト
+
+概要、全ディスコグラフィー、関連項目、フォローmutationの契約は[アーティストページ](artist-page.md)へ集約した。検索の英字名の完全一致だけでは日本語化された本来の名前を除外して同名の別アーティストを選ぶため、実検証は公式ページで確認したIDを使う。紹介文は配信元がnullを返す場合があり、言語を変えれば必ず取得できるとは扱わない。提供された本文・出典はそのまま保持し、未提供を示す。作品キャッシュの容量計算には新しい関連作品・ディスコグラフィーも含める。

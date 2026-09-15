@@ -82,6 +82,9 @@ data class PlayUiState(
     val audioEffectsOpen: Boolean = false,
     val contentActions: ContentActionsState? = null,
     val artistChoices: List<SpotifyContent> = emptyList(),
+    val playbackSettingsOpen: Boolean = false,
+    val artistFollowBusy: Boolean = false,
+    val artistRadioBusy: Boolean = false,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -97,6 +100,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
     val audioEffectsState get() = container.audioEffects.state
     val sleepTimer get() = container.sleepTimer
+    val lyricsApi get() = container.lyricsApi
+    val playbackTransitionsState get() = container.playbackTransitions.state
     private var actionsJob: Job? = null
     private var contentRequestJob: Job? = null
     private val libraryJobs = mutableMapOf<LibrarySection, Job>()
@@ -133,6 +138,16 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun openAudioEffects() { mutableState.value = mutableState.value.copy(audioEffectsOpen = true) }
+
+    fun openPlaybackSettings() { mutableState.value = mutableState.value.copy(playbackSettingsOpen = true) }
+    fun closePlaybackSettings() {
+        container.playbackTransitions.requestSave()
+        mutableState.value = mutableState.value.copy(playbackSettingsOpen = false)
+    }
+    fun updatePlaybackSettings(settings: io.github.playmusic.data.playback.PlaybackTransitionSettings) {
+        container.playbackTransitions.setSettings(settings)
+    }
+    fun retryPlaybackSettingsSave() { container.playbackTransitions.requestSave() }
 
     fun closeAudioEffects() {
         container.audioEffects.requestSave()
@@ -372,6 +387,45 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     fun retryPlaylistSync() = loadLibrary(LibrarySection.PLAYLISTS, forceRefresh = true)
 
     fun openDetail(content: SpotifyContent) = loadDetail(content, rememberCurrent = true)
+
+    fun toggleArtistFollow() {
+        val detail = mutableState.value.detail ?: return
+        val page = detail.artistPage ?: return
+        if (mutableState.value.artistFollowBusy) return
+        mutableState.value = mutableState.value.copy(artistFollowBusy = true)
+        viewModelScope.launch {
+            try {
+                val followed = container.repository.setArtistFollowed(detail.content, !page.isFollowed)
+                val latest = mutableState.value.detail
+                if (latest?.content?.uri == detail.content.uri) mutableState.value = mutableState.value.copy(
+                    detail = latest.copy(artistPage = latest.artistPage?.copy(isFollowed = followed)))
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                handleRequestFailure(exception, showLoading = false)
+            } finally { mutableState.value = mutableState.value.copy(artistFollowBusy = false) }
+        }
+    }
+
+    fun openArtistRadio(track: SpotifyContent) {
+        if (mutableState.value.artistRadioBusy) return
+        val origin = mutableState.value.selectedContent?.uri
+        val generation = accountGeneration
+        mutableState.value = mutableState.value.copy(artistRadioBusy = true)
+        viewModelScope.launch {
+            try {
+                val radio = container.repository.radio(track)
+                if (generation == accountGeneration && mutableState.value.selectedContent?.uri == origin) openDetail(radio)
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+                if (generation == accountGeneration) handleRequestFailure(exception, showLoading = false)
+            } finally { mutableState.value = mutableState.value.copy(artistRadioBusy = false) }
+        }
+    }
+
+    fun seekLyrics(content: SpotifyContent, positionMs: Long) = executePlaybackRequest {
+        if (container.localPlayback.snapshot().item?.uri == content.uri) container.localPlayback.seekAndPlay(positionMs)
+        else container.localPlayback.play(listOf(content), startPositionMs = positionMs)
+    }
 
     fun openContentActions(content: SpotifyContent) {
         if (content.kind !in setOf(ContentKind.TRACK, ContentKind.ALBUM)) return
@@ -651,7 +705,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             }.filter { it.isPlayable != false }
             check(tracks.isNotEmpty()) { "No playable tracks are available" }
             val index = if (content.kind == ContentKind.TRACK) tracks.indexOfFirst { it.uri == content.uri }.coerceAtLeast(0) else 0
-            container.localPlayback.play(tracks, index)
+            container.localPlayback.play(tracks, index, contextUri = content.takeUnless { it.kind == ContentKind.TRACK }?.uri)
         }
     }
 
@@ -660,12 +714,15 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         if (index !in source.indices || source[index].isPlayable == false) return
         val tracks = source.filter { it.isPlayable != false }
         val selectedIndex = source.take(index).count { it.isPlayable != false }
-        executePlaybackRequest { container.localPlayback.play(tracks, selectedIndex) }
+        val contextUri = mutableState.value.detail?.content?.uri
+        executePlaybackRequest { container.localPlayback.play(tracks, selectedIndex, contextUri = contextUri) }
     }
 
     fun togglePlayPause() = executePlaybackRequest {
         if (mutableState.value.playback.playWhenReady) container.localPlayback.pause() else container.localPlayback.resume()
     }
+
+    fun stopPlayback() = executePlaybackRequest { container.localPlayback.stop() }
 
     fun next() = executePlaybackRequest { container.localPlayback.next() }
 

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -119,6 +120,10 @@ fun PlayRoute(viewModel: PlayViewModel) {
             onFailure = viewModel::reportLoginFailure,
             onBrowserOpened = viewModel::markBrowserOpened,
         )
+    } else if (state.playbackSettingsOpen) {
+        val settings by viewModel.playbackTransitionsState.collectAsStateWithLifecycle()
+        PlaybackSettingsScreen(settings, viewModel::updatePlaybackSettings, viewModel::retryPlaybackSettingsSave,
+            viewModel::closePlaybackSettings)
     } else if (state.audioEffectsOpen) {
         val effects by viewModel.audioEffectsState.collectAsStateWithLifecycle()
         AudioEffectsScreen(effects, viewModel::updateAudioEffects, viewModel::applyEqualizerPreset,
@@ -146,6 +151,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onLogout = viewModel::logout,
                 onPlay = viewModel::play,
                 onPlayPause = viewModel::togglePlayPause,
+                onStop = viewModel::stopPlayback,
                 onNext = viewModel::next,
                 onPrevious = viewModel::previous,
                 onSeek = viewModel::seek,
@@ -166,6 +172,11 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onSleepTimer = { sleepTimerOpen = true },
                 onContentActions = viewModel::openContentActions,
                 onSearchFilter = viewModel::selectSearchFilter,
+                onPlaybackSettings = viewModel::openPlaybackSettings,
+                onArtistFollow = viewModel::toggleArtistFollow,
+                onArtistRadio = viewModel::openArtistRadio,
+                lyricsContent = { content -> LyricsRoute(content, state.playback, viewModel.lyricsApi,
+                    onSeek = { viewModel.seekLyrics(content, it) }) },
             )
         }
     }
@@ -273,6 +284,11 @@ internal fun HomeScreen(
     onSleepTimer: () -> Unit = {},
     onContentActions: (SpotifyContent) -> Unit = {},
     onSearchFilter: (io.github.playmusic.data.model.SearchFilter) -> Unit = {},
+    onPlaybackSettings: () -> Unit = {},
+    onArtistFollow: () -> Unit = {},
+    onArtistRadio: (SpotifyContent) -> Unit = {},
+    lyricsContent: @Composable (SpotifyContent) -> Unit = {},
+    onStop: () -> Unit = {},
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
@@ -280,7 +296,7 @@ internal fun HomeScreen(
         .flatMap { state.libraries[it].orEmpty() }.map { it.uri }.toSet() }
     if (playerExpanded && state.playback.item != null) {
         ExpandedPlayerScreen(state.playback, onPlayPause, onNext, onPrevious, onSeek, onShuffle, onRepeat,
-            onBack = { playerExpanded = false }, onContentActions = onContentActions, savedUris = savedUris)
+            onBack = { playerExpanded = false }, onContentActions = onContentActions, savedUris = savedUris, onStop = onStop)
         return
     }
     BackHandler(enabled = state.selectedContent != null, onBack = onBack)
@@ -336,6 +352,9 @@ internal fun HomeScreen(
                         Icon(Icons.Default.Menu, stringResource(R.string.settings))
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.playback_settings_title)) },
+                            leadingIcon = { Icon(Icons.Default.Tune, null) }, modifier = Modifier.testTag("playback-settings-menu-item"),
+                            onClick = { menuExpanded = false; onPlaybackSettings() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.sleep_timer_title)) },
                             leadingIcon = { Icon(Icons.Default.Timer, null) },
                             modifier = Modifier.testTag("sleep-timer-menu-item"),
@@ -383,8 +402,12 @@ internal fun HomeScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (state.selectedContent != null) {
                 listStates.SaveableStateProvider("detail:${state.selectedContent.uri}") {
-                    ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
-                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris)
+                    if (state.selectedContent.kind == io.github.playmusic.data.model.ContentKind.ARTIST)
+                        ArtistPageScreen(state.selectedContent, state.detail, state.isLoading, state.artistFollowBusy,
+                            state.artistRadioBusy, onPlay, onPlayDetailTrack, onOpenContent, onArtistFollow, onArtistRadio,
+                            onContentActions, savedUris, onRefresh)
+                    else ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
+                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris, lyricsContent)
                 }
             } else {
                 listStates.SaveableStateProvider(state.selectedSection.name) {
