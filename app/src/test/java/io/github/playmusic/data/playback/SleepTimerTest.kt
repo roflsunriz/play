@@ -66,6 +66,16 @@ class SleepTimerTest {
         assertEquals(0L, testScheduler.currentTime)
     }
 
+    @Test fun fadeSupportsTheFullOneToTwelveSecondRange() = runTest {
+        for (seconds in listOf(1L, 12L)) {
+            val events = mutableListOf<String>()
+            val before = testScheduler.currentTime
+            fadeForSleep(FakePlayback(events), seconds * 1_000) { events += "sleep" }
+            assertEquals(seconds * 1_000, testScheduler.currentTime - before)
+            assertEquals(listOf("stop", "sleep"), events)
+        }
+    }
+
     @Test fun cancellingDuringFadeRestoresVolumeAndDoesNotStopOrSleep() = runTest {
         val events = mutableListOf<String>()
         val player = FakePlayback(events)

@@ -6,12 +6,12 @@ import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.drm.KeyRequestInfo
 import androidx.media3.session.MediaSession
 import io.github.playmusic.data.playback.PlaybackService
+import io.github.playmusic.data.playback.TransitionPlayer
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.sqrt
@@ -28,7 +28,7 @@ class AudioProbeService : PlaybackService() {
         super.onGetSession(controllerInfo).also { session ->
             if (session != null && !observing) {
                 observing = true
-                (session.player as ExoPlayer).addAnalyticsListener(object : AnalyticsListener {
+                (session.player as TransitionPlayer).audioEngines().forEach { engine -> engine.addAnalyticsListener(object : AnalyticsListener {
                     override fun onDrmKeysLoaded(eventTime: AnalyticsListener.EventTime, keyRequestInfo: KeyRequestInfo) {
                         Log.i(TAG, "drm keys loaded")
                     }
@@ -36,7 +36,7 @@ class AudioProbeService : PlaybackService() {
                         format: Format, decoderReuseEvaluation: androidx.media3.exoplayer.DecoderReuseEvaluation?) {
                         Log.i(TAG, "input channels=${format.channelCount} drm=${format.drmInitData != null}")
                     }
-                })
+                }) }
             }
         }
 

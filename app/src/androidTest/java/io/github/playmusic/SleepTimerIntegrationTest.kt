@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -51,6 +52,9 @@ class SleepTimerIntegrationTest {
     @Test fun realAlarmFadesServiceVolumeStopsThenTurnsScreenOff(): Unit = runBlocking {
         requireTestDevice()
         val playback = LocalPlayback(context, PlaybackTestService::class.java)
+        val settings = (context.applicationContext as PlayApplication).container.playbackTransitions
+        val originalSettings = settings.state.first { it.isReady }.settings
+        settings.setSettings(originalSettings.copy(fadeOutSeconds = 12))
         wakeScreen()
         ActivityScenario.launch(PlaylistUiTestActivity::class.java).use { activity ->
             activity.onActivity { it.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
@@ -63,7 +67,7 @@ class SleepTimerIntegrationTest {
                 await(70_000) { timer.state.value.fading }
                 await(4_000) { actual { volume in 0.15f..0.65f } }
                 assertTrue(actual { isPlaying })
-                await(8_000) { timer.state.value.deadlineMillis == null && !timer.state.value.fading }
+                await(16_000) { timer.state.value.deadlineMillis == null && !timer.state.value.fading }
                 assertFalse(actual { playWhenReady })
                 assertEquals(Player.STATE_IDLE, actual { playbackState })
                 assertEquals(0.8f, actual { volume }, 0.001f)
@@ -74,6 +78,8 @@ class SleepTimerIntegrationTest {
                 playback.clear()
                 playback.release()
                 context.stopService(Intent(context, PlaybackTestService::class.java))
+                settings.setSettings(originalSettings)
+                settings.persistNow()
                 wakeScreen()
             }
         }

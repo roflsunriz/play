@@ -34,38 +34,64 @@ import androidx.media3.session.MediaSessionService
 import io.github.playmusic.MainActivity
 import io.github.playmusic.PlayApplication
 import io.github.playmusic.BuildConfig
+import io.github.playmusic.R
 import io.github.playmusic.data.audio.EqualizerAudioProcessor
+import io.github.playmusic.data.audio.PeakNormalizerAudioProcessor
+import com.google.common.util.concurrent.ListenableFuture
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeout
 
 @OptIn(UnstableApi::class)
 open class PlaybackService : MediaSessionService() {
     private var session: MediaSession? = null
     private var cache: SimpleCache? = null
     private var database: StandaloneDatabaseProvider? = null
+    private var foregroundReady: CompletableDeferred<Unit>? = null
+    private var destroying = false
 
     override fun onCreate() {
         super.onCreate()
         val database = StandaloneDatabaseProvider(this).also { this.database = it }
         val mediaCache = SimpleCache(cacheDir.resolve(cacheDirectoryName),
             LeastRecentlyUsedCacheEvictor(MUSIC_CACHE_BYTES), database).also { cache = it }
-        val player = ExoPlayer.Builder(this, createRenderers()).setMediaSourceFactory(createMediaSources(mediaCache)).build().apply {
-            trackSelectionParameters = trackSelectionParameters.buildUpon().setAudioOffloadPreferences(
-                AudioOffloadPreferences.Builder().setAudioOffloadMode(AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED).build(),
-            ).build()
-            setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
-            setHandleAudioBecomingNoisy(true)
-            setWakeMode(C.WAKE_MODE_LOCAL)
-        }
+        val player = TransitionPlayer(this, createEngine(mediaCache), createEngine(mediaCache),
+            { (application as PlayApplication).container.playbackTransitions.state.value.settings }, createAutomixResolver(),
+            beforeAudioFocus = ::awaitPlaybackForeground,
+            onAutomixFailure = {
+                (application as PlayApplication).container.localPlayback.reportWarning(getString(R.string.playback_automix_failed))
+            })
         val launch = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         session = MediaSession.Builder(this, player).setId(javaClass.simpleName).setSessionActivity(launch).build()
+        player.audioEngines().forEach { engine -> engine.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) { if (!destroying) triggerNotificationUpdate() }
+        }) }
         (application as PlayApplication).container.sleepTimer.attach(player)
     }
+
+    protected open fun createAutomixResolver(): AutomixResolver =
+        (application as PlayApplication).container.let { container ->
+            AutomixApiClient(container.sessionManager, { container.playbackTransitions.state.value.settings })
+        }
+
+    private fun createEngine(mediaCache: SimpleCache): ExoPlayer =
+        ExoPlayer.Builder(this, createRenderers()).setMediaSourceFactory(createMediaSources(mediaCache)).build().apply {
+            trackSelectionParameters = trackSelectionParameters.buildUpon().setAudioOffloadPreferences(
+                AudioOffloadPreferences.Builder().setAudioOffloadMode(AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED).build(),
+            ).build()
+            setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), false)
+            setHandleAudioBecomingNoisy(true)
+            setWakeMode(C.WAKE_MODE_LOCAL)
+        }
 
     protected open val cacheDirectoryName = "music_stream_cache"
 
     protected open fun createAudioProcessors(): Array<AudioProcessor> {
         val effects = (application as PlayApplication).container.audioEffects
-        return arrayOf(EqualizerAudioProcessor { effects.state.value.settings })
+        val transitions = (application as PlayApplication).container.playbackTransitions
+        return arrayOf(EqualizerAudioProcessor { effects.state.value.settings },
+            PeakNormalizerAudioProcessor { transitions.state.value.settings.peakNormalizationEnabled })
     }
 
     protected open fun createRenderers(): RenderersFactory = object : DefaultRenderersFactory(this) {
@@ -107,13 +133,35 @@ open class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         if (controllerInfo.packageName == packageName || controllerInfo.isTrusted) session else null
 
+    override fun onUpdateNotificationAsync(session: MediaSession, startInForegroundRequired: Boolean): ListenableFuture<Void?> {
+        val waiting = foregroundReady
+        val foreground = startInForegroundRequired || waiting != null ||
+            (session.player as? TransitionPlayer)?.audioEngines()?.any { it.isPlaying } == true
+        val update = super.onUpdateNotificationAsync(session, foreground)
+        if (waiting != null) update.addListener({
+            try { update.get(); waiting.complete(Unit) }
+            catch (error: Exception) { waiting.completeExceptionally(error) }
+        }, ContextCompat.getMainExecutor(this))
+        return update
+    }
+
+    private suspend fun awaitPlaybackForeground() {
+        val ready = CompletableDeferred<Unit>()
+        foregroundReady = ready
+        try { triggerNotificationUpdate(); withTimeout(5_000) { ready.await() } }
+        finally { if (foregroundReady === ready) foregroundReady = null }
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
         val player = session?.player
+        if ((player as? TransitionPlayer)?.audioEngines()?.any { it.isPlaying } == true) return
         if (player == null || !player.playWhenReady ||
             player.playbackState == Player.STATE_ENDED || player.playbackState == Player.STATE_IDLE) stopSelf()
     }
 
     override fun onDestroy() {
+        destroying = true
+        foregroundReady?.cancel(); foregroundReady = null
         session?.player?.let { (application as PlayApplication).container.sleepTimer.detach(it) }
         session?.run { player.release(); release() }
         session = null

@@ -1,0 +1,13 @@
+<resources>
+    <string name="playback_settings_title">Réglages de lecture</string>
+    <string name="playback_fade_in">Fondu au démarrage</string>
+    <string name="playback_fade_out">Fondu lors de la pause ou de l’arrêt</string>
+    <string name="playback_crossfade">Fondu enchaîné entre les titres</string>
+    <string name="playback_fade_seconds">%1$d s</string>
+    <string name="playback_peak_normalizer">Normaliseur des niveaux de crête</string>
+    <string name="playback_automix">Automix</string>
+    <string name="playback_automix_hint">Utiliser les transitions proposées pour les playlists compatibles.</string>
+    <string name="playback_settings_save_failed">Impossible de sauvegarder les réglages. Réessayez.</string>
+    <string name="playback_stop">Arrêter</string>
+    <string name="playback_automix_failed">Impossible de charger les transitions automatiques. La transition habituelle sera utilisée.</string>
+</resources>

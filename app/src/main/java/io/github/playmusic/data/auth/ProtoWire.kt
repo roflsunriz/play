@@ -91,6 +91,22 @@ object ProtoWire {
             return result
         }
 
+        fun readFloat(): Float {
+            val start = position
+            advance(4)
+            var bits = 0
+            for (index in 0..3) bits = bits or ((data[start + index].toInt() and 255) shl (index * 8))
+            return Float.fromBits(bits)
+        }
+
+        fun readDouble(): Double {
+            val start = position
+            advance(8)
+            var bits = 0L
+            for (index in 0..7) bits = bits or ((data[start + index].toLong() and 255) shl (index * 8))
+            return Double.fromBits(bits)
+        }
+
         private fun readLength(): Int {
             val length = readVarint()
             if (length < 0 || length > data.size - position) {

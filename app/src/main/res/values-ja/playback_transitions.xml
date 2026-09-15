@@ -1,0 +1,13 @@
+<resources>
+    <string name="playback_stop">停止</string>
+    <string name="playback_settings_title">再生設定</string>
+    <string name="playback_fade_in">再生時にフェードイン</string>
+    <string name="playback_fade_out">一時停止・停止時にフェードアウト</string>
+    <string name="playback_crossfade">曲間のクロスフェード</string>
+    <string name="playback_fade_seconds">%1$d秒</string>
+    <string name="playback_peak_normalizer">ピーク音量ノーマライザー</string>
+    <string name="playback_automix">Automix</string>
+    <string name="playback_automix_hint">対応するプレイリストでは、提供された曲間のつなぎ方を使います。</string>
+    <string name="playback_settings_save_failed">再生設定を保存できませんでした。再試行すると現在の設定を保存します。</string>
+    <string name="playback_automix_failed">曲間の自動調整を取得できませんでした。通常のつなぎ方で再生します。</string>
+</resources>

@@ -1,0 +1,13 @@
+<resources>
+    <string name="playback_settings_title">प्लेबैक सेटिंग</string>
+    <string name="playback_fade_in">बजाना शुरू करते समय धीरे आवाज़ बढ़ाएँ</string>
+    <string name="playback_fade_out">रोकते या विराम देते समय धीरे आवाज़ घटाएँ</string>
+    <string name="playback_crossfade">गानों के बीच क्रॉसफ़ेड</string>
+    <string name="playback_fade_seconds">%1$d सेकंड</string>
+    <string name="playback_peak_normalizer">पीक वॉल्यूम नॉर्मलाइज़र</string>
+    <string name="playback_automix">Automix</string>
+    <string name="playback_automix_hint">समर्थित प्लेलिस्ट में दिए गए गानों के ट्रांज़िशन इस्तेमाल करें।</string>
+    <string name="playback_settings_save_failed">प्लेबैक सेटिंग सेव नहीं हुई। फिर कोशिश करें।</string>
+    <string name="playback_stop">रोकें</string>
+    <string name="playback_automix_failed">अपने-आप ट्रांज़िशन का डेटा लोड नहीं हुआ। सामान्य ट्रांज़िशन इस्तेमाल होगा।</string>
+</resources>

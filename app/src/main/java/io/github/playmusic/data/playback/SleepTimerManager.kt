@@ -14,6 +14,7 @@ import android.util.AtomicFile
 import androidx.core.net.toUri
 import androidx.media3.common.Player
 import io.github.playmusic.R
+import io.github.playmusic.PlayApplication
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -163,17 +164,22 @@ class SleepTimerManager(context: Context) {
         try {
             val current = player
             val playback = current?.let { target -> object : SleepTimerPlayback {
-                override val active: Boolean get() = player === target && target.playWhenReady &&
+                override val active: Boolean get() = player === target && if (target is TransitionPlayer)
+                    target.hasActiveAudioOrPendingPlayback() else target.playWhenReady &&
                     target.playbackState != Player.STATE_ENDED && target.playbackState != Player.STATE_IDLE
                 override var volume: Float
                     get() = if (player === target) target.volume else 1f
                     set(value) { if (player === target) target.volume = value }
-                override fun stop() { if (player === target) { target.pause(); target.stop() } }
+                override fun stop() { if (player === target) {
+                    if (target is TransitionPlayer) target.stopImmediately() else { target.pause(); target.stop() }
+                } }
             } }
-            fadeForSleep(playback) {
-                check(canLock())
-                policy.lockNow()
-            }
+            (current as? TransitionPlayer)?.setSleepFading(true)
+            try {
+                val duration = (context.applicationContext as PlayApplication).container
+                    .playbackTransitions.state.value.settings.fadeOutSeconds * 1_000L
+                fadeForSleep(playback, duration) { check(canLock()); policy.lockNow() }
+            } finally { (current as? TransitionPlayer)?.setSleepFading(false) }
             mutex.withLock {
                 persist(null)
                 record = null

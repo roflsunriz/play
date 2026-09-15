@@ -34,14 +34,16 @@ internal interface SleepTimerPlayback {
 }
 
 /** Never starts playback. Cancellation restores the original app volume without stopping. */
-internal suspend fun fadeForSleep(player: SleepTimerPlayback?, sleep: () -> Unit) {
+internal suspend fun fadeForSleep(player: SleepTimerPlayback?, durationMs: Long = 5_000, sleep: () -> Unit) {
+    require(durationMs in 1_000..12_000)
     if (player != null && player.active) {
         val originalVolume = player.volume
         try {
-            for (step in 1..50) {
+            val steps = (durationMs / 20).toInt()
+            for (step in 1..steps) {
                 if (!player.active) break
-                delay(100)
-                player.volume = originalVolume * (1f - step / 50f)
+                delay(20)
+                player.volume = originalVolume * (1f - step.toFloat() / steps)
             }
             if (player.active) player.stop()
         } finally {

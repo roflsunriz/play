@@ -8,6 +8,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SpClientLibraryProtoTest {
+    @Test fun listAndItemFormatAttributesSurviveTimestampAndUnknownFields() {
+        fun attribute(key: String, value: String) = ProtoWire.fieldString(1, key) + ProtoWire.fieldString(2, value)
+        val header = ProtoWire.fieldString(1, "Playlist") +
+            ProtoWire.fieldBytes(12, attribute("playlistMixingEnabled", "true"))
+        val itemAttributes = ProtoWire.fieldVarint(2, 1234) + ProtoWire.fieldString(80, "unknown") +
+            ProtoWire.fieldBytes(11, attribute("automix.backend_auto_transition", "synthetic-recipe"))
+        val contents = ProtoWire.fieldBytes(3, ProtoWire.fieldString(1, "spotify:track:synthetic") +
+            ProtoWire.fieldBytes(2, itemAttributes))
+        val parsed = SpClientProto.parsePlaylist(ProtoWire.fieldBytes(3, header) + ProtoWire.fieldBytes(5, contents))
+        assertEquals(mapOf("playlistMixingEnabled" to "true"), parsed.formatAttributes)
+        assertEquals(1234L, parsed.items.single().timestampMs)
+        assertEquals(mapOf("automix.backend_auto_transition" to "synthetic-recipe"), parsed.items.single().formatAttributes)
+    }
+
     @Test
     fun rootlistTreatsRevisionAsBytesAndTimestampAsAnIndependentField() {
         val parsed = SpClientProto.parseRootlist(

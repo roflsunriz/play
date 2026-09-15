@@ -19,7 +19,9 @@ class SleepTimerAlarmReceiver : BroadcastReceiver() {
         val pending = goAsync()
         val wakeLock = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Play:sleepTimer")
-        wakeLock.acquire(10_000)
+        // Our PendingIntent is a background broadcast (no FLAG_RECEIVER_FOREGROUND).
+        // Its documented 30-second receiver budget covers the maximum 12-second fade.
+        wakeLock.acquire(25_000)
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
             try { (context.applicationContext as PlayApplication).container.sleepTimer.expire(id) }
             finally { if (wakeLock.isHeld) wakeLock.release(); pending.finish() }

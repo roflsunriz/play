@@ -1,0 +1,13 @@
+<resources>
+    <string name="playback_settings_title">پلے بیک کی ترتیبات</string>
+    <string name="playback_fade_in">بجانا شروع کرتے وقت آواز آہستہ بڑھائیں</string>
+    <string name="playback_fade_out">روکنے یا وقفہ دیتے وقت آواز آہستہ کم کریں</string>
+    <string name="playback_crossfade">گانوں کے درمیان کراس فیڈ</string>
+    <string name="playback_fade_seconds">%1$d سیکنڈ</string>
+    <string name="playback_peak_normalizer">پیک والیوم نارملائزر</string>
+    <string name="playback_automix">Automix</string>
+    <string name="playback_automix_hint">معاون پلے لسٹس میں فراہم کردہ گانوں کی منتقلی استعمال کریں۔</string>
+    <string name="playback_settings_save_failed">پلے بیک کی ترتیبات محفوظ نہیں ہو سکیں۔ دوبارہ کوشش کریں۔</string>
+    <string name="playback_stop">روکیں</string>
+    <string name="playback_automix_failed">خودکار منتقلی کا ڈیٹا لوڈ نہیں ہوا۔ معمول کی منتقلی استعمال ہوگی۔</string>
+</resources>

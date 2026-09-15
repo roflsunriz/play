@@ -44,6 +44,7 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
     private val mutableErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val state = mutableState.asStateFlow()
     val errors = mutableErrors.asSharedFlow()
+    internal fun reportWarning(message: String) { mutableErrors.tryEmit(message) }
     private var controller: MediaController? = null
     private var connection: ListenableFuture<MediaController>? = null
     private var progressJob: Job? = null
@@ -53,11 +54,12 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         mutableState.value
     }
 
-    suspend fun play(items: List<SpotifyContent>, index: Int = 0): Unit = withContext(Dispatchers.Main.immediate) {
+    suspend fun play(items: List<SpotifyContent>, index: Int = 0, startPositionMs: Long = 0,
+        contextUri: String? = null): Unit = withContext(Dispatchers.Main.immediate) {
         require(items.isNotEmpty() && index in items.indices)
         require(items.all { it.kind == ContentKind.TRACK && it.uri.matches(Regex("spotify:track:[A-Za-z0-9]{22}")) })
         connectedController().apply {
-            setMediaItems(items.map(::mediaItem), index, 0)
+            setMediaItems(items.map { mediaItem(it, contextUri) }, index, startPositionMs.coerceAtLeast(0))
             prepare()
             play()
             publish(this)
@@ -70,11 +72,18 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         play()
     }
     suspend fun pause() = command { pause() }
+    suspend fun stop() = command { stop() }
     suspend fun next() = command { if (hasNextMediaItem()) seekToNextMediaItem() }
     suspend fun previous() = command { seekToPrevious() }
     suspend fun seek(positionMs: Long) = command {
         val upper = duration.takeIf { it != C.TIME_UNSET && it >= 0 } ?: Long.MAX_VALUE
         seekTo(positionMs.coerceIn(0, upper))
+    }
+    suspend fun seekAndPlay(positionMs: Long) = command {
+        val upper = duration.takeIf { it != C.TIME_UNSET && it >= 0 } ?: Long.MAX_VALUE
+        seekTo(positionMs.coerceIn(0, upper))
+        if (playbackState == Player.STATE_IDLE) prepare()
+        play()
     }
     suspend fun setShuffle(enabled: Boolean) = command { shuffleModeEnabled = enabled }
     suspend fun setRepeat(mode: RepeatMode) = command {
@@ -163,18 +172,19 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         if (player.isPlaying && progressJob?.isActive != true) {
             progressJob = scope.launch {
                 while (isActive && controller?.isPlaying == true) {
-                    delay(500)
+                    delay(200)
                     controller?.let { mutableState.value = mutableState.value.copy(progressMs = it.currentPosition.coerceAtLeast(0)) }
                 }
             }
         } else if (!player.isPlaying) { progressJob?.cancel(); progressJob = null }
     }
 
-    private fun mediaItem(content: SpotifyContent): MediaItem = MediaItem.Builder()
+    private fun mediaItem(content: SpotifyContent, contextUri: String?): MediaItem = MediaItem.Builder()
         .setMediaId(content.uri).setUri(content.uri).setMimeType(MimeTypes.AUDIO_MP4)
         .setDrmConfiguration(MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID).setLicenseUri(StreamingApiClient.LICENSE_URL).build())
         .setMediaMetadata(MediaMetadata.Builder().setTitle(content.title).setArtist(content.subtitle)
             .setAlbumTitle(content.albumTitle).setArtworkUri(content.imageUrl?.toUri())
-            .setExtras(Bundle().apply { putLong("durationMs", content.durationMs); putString("albumUri", content.albumUri) }).build())
+            .setExtras(Bundle().apply { putLong("durationMs", content.durationMs); putString("albumUri", content.albumUri)
+                putString("contextUri", contextUri) }).build())
         .build()
 }

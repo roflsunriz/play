@@ -1,0 +1,13 @@
+<resources>
+    <string name="playback_settings_title">إعدادات التشغيل</string>
+    <string name="playback_fade_in">تلاشي الدخول عند التشغيل</string>
+    <string name="playback_fade_out">تلاشي الخروج عند الإيقاف أو الإيقاف المؤقت</string>
+    <string name="playback_crossfade">تلاشي متداخل بين الأغاني</string>
+    <string name="playback_fade_seconds">%1$d ث</string>
+    <string name="playback_peak_normalizer">تسوية ذروة مستوى الصوت</string>
+    <string name="playback_automix">Automix</string>
+    <string name="playback_automix_hint">استخدام الانتقالات المقدمة في قوائم التشغيل المدعومة.</string>
+    <string name="playback_settings_save_failed">تعذر حفظ إعدادات التشغيل. حاول مرة أخرى.</string>
+    <string name="playback_stop">إيقاف</string>
+    <string name="playback_automix_failed">تعذر تحميل الانتقال التلقائي. سيُستخدم الانتقال المعتاد.</string>
+</resources>

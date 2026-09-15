@@ -1,0 +1,13 @@
+<resources>
+    <string name="playback_settings_title">প্লেব্যাক সেটিংস</string>
+    <string name="playback_fade_in">শুরুতে ধীরে শব্দ বাড়ান</string>
+    <string name="playback_fade_out">বিরতি বা বন্ধের সময় ধীরে শব্দ কমান</string>
+    <string name="playback_crossfade">গানের মাঝে ক্রসফেড</string>
+    <string name="playback_fade_seconds">%1$d সেকেন্ড</string>
+    <string name="playback_peak_normalizer">পিক ভলিউম নর্মালাইজার</string>
+    <string name="playback_automix">Automix</string>
+    <string name="playback_automix_hint">সমর্থিত প্লেলিস্টে দেওয়া গানের ট্রানজিশন ব্যবহার করুন।</string>
+    <string name="playback_settings_save_failed">প্লেব্যাক সেটিংস সেভ করা যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="playback_stop">বন্ধ করুন</string>
+    <string name="playback_automix_failed">স্বয়ংক্রিয় ট্রানজিশন লোড হয়নি। সাধারণ ট্রানজিশন ব্যবহার হবে।</string>
+</resources>

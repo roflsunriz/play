@@ -30,13 +30,15 @@ import java.util.UUID
  */
 object SpClientProto {
 
-    data class PlaylistItem(val uri: String, val timestampMs: Long? = null, val metadata: PlaylistMetadata? = null)
+    data class PlaylistItem(val uri: String, val timestampMs: Long? = null, val metadata: PlaylistMetadata? = null,
+        val formatAttributes: Map<String, String> = emptyMap())
 
     data class PlaylistAttributes(
         val name: String?,
         val images: Map<String, String>,
         val deletedByOwner: Boolean = false,
         val description: String = "",
+        val formatAttributes: Map<String, String> = emptyMap(),
     )
 
     data class PlaylistCapabilities(
@@ -68,6 +70,7 @@ object SpClientProto {
         val description: String = "",
         val ownerUsername: String? = null,
         val capabilities: PlaylistCapabilities = PlaylistCapabilities(),
+        val formatAttributes: Map<String, String> = emptyMap(),
     )
 
     data class Rootlist(
@@ -134,6 +137,7 @@ object SpClientProto {
             description = parsedHeader?.description.orEmpty(),
             ownerUsername = ownerUsername,
             capabilities = capabilities,
+            formatAttributes = parsedHeader?.formatAttributes.orEmpty(),
         )
     }
 
@@ -260,31 +264,52 @@ object SpClientProto {
         val reader = ProtoWire.Reader(bytes)
         var uri: String? = null
         var timestamp: Long? = null
+        val attributes = mutableMapOf<String, String>()
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
                 1 -> uri = reader.readString()
                 2 -> {
                     val nested = reader.readBytes()
-                    timestamp = parseTimestamp(nested) ?: timestamp
+                    val parsed = parseItemAttributes(nested)
+                    timestamp = parsed.first ?: timestamp
+                    attributes += parsed.second
                 }
                 else -> reader.skip(reader.wireType(tag))
             }
         }
         val itemUri = uri ?: throw ProtoParseException("Playlist item is missing a URI")
-        return PlaylistItem(itemUri, timestamp)
+        return PlaylistItem(itemUri, timestamp, formatAttributes = attributes)
     }
 
-    private fun parseTimestamp(bytes: ByteArray): Long? {
+    private fun parseItemAttributes(bytes: ByteArray): Pair<Long?, Map<String, String>> {
         val reader = ProtoWire.Reader(bytes)
+        var timestamp: Long? = null
+        val attributes = mutableMapOf<String, String>()
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
-                2 -> return reader.readVarint()
+                2 -> timestamp = reader.readVarint()
+                11 -> parseFormatAttribute(reader.readBytes())?.let { attributes[it.first] = it.second }
                 else -> reader.skip(reader.wireType(tag))
             }
         }
-        return null
+        return timestamp to attributes
+    }
+
+    private fun parseFormatAttribute(bytes: ByteArray): Pair<String, String>? {
+        val reader = ProtoWire.Reader(bytes)
+        var key: String? = null
+        var value: String? = null
+        while (reader.hasNext()) {
+            val tag = reader.readTag()
+            when (reader.fieldNumber(tag)) {
+                1 -> key = reader.readString()
+                2 -> value = reader.readString()
+                else -> reader.skip(reader.wireType(tag))
+            }
+        }
+        return key?.takeIf { it.isNotBlank() }?.let { name -> value?.let { name to it } }
     }
 
     private fun parseHeader(bytes: ByteArray): PlaylistAttributes {
@@ -294,6 +319,7 @@ object SpClientProto {
         val images = mutableMapOf<String, String>()
         var picture: ByteArray? = null
         var deletedByOwner = false
+        val attributes = mutableMapOf<String, String>()
         while (reader.hasNext()) {
             val tag = reader.readTag()
             when (reader.fieldNumber(tag)) {
@@ -301,6 +327,7 @@ object SpClientProto {
                 2 -> description = reader.readString()
                 3 -> picture = reader.readBytes()
                 6 -> deletedByOwner = reader.readVarint() != 0L
+                12 -> parseFormatAttribute(reader.readBytes())?.let { attributes[it.first] = it.second }
                 13 -> parseImage(reader.readBytes())?.let { images[it.first] = it.second }
                 else -> reader.skip(reader.wireType(tag))
             }
@@ -309,7 +336,7 @@ object SpClientProto {
         if (images.isEmpty()) picture?.takeIf { it.isNotEmpty() }?.let {
             images["default"] = "https://i.scdn.co/image/${it.toHex()}"
         }
-        return PlaylistAttributes(name, images, deletedByOwner, description)
+        return PlaylistAttributes(name, images, deletedByOwner, description, attributes)
     }
 
     private fun parseCapabilities(bytes: ByteArray): PlaylistCapabilities {
