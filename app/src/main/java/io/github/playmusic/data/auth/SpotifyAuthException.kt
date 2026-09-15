@@ -1,6 +1,6 @@
 package io.github.playmusic.data.auth
 
-class SpotifyAuthException(message: String) : Exception(message)
+class SpotifyAuthException(message: String, val requiresLogin: Boolean = false) : Exception(message)
 
 class LoginVerificationRequiredException(
     val username: String,

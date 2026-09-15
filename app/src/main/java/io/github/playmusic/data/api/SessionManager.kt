@@ -9,6 +9,9 @@ import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.data.model.AuthSession
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 interface SessionTokens {
     suspend fun username(): String
@@ -52,36 +55,40 @@ class SessionManager(
             (store.loadSession() ?: throw SpotifyAuthException("Service login is required")) to sessionGeneration
         }
         if (!forceRefresh && !session.expiresSoon()) return@withLock session.accessToken
-        session.refreshToken?.let { refreshToken ->
-            val refreshed = browserAuthorizationClient.refresh(refreshToken)
-            saveRefreshedSession(session.copy(
-                accessToken = refreshed.accessToken,
-                refreshToken = refreshed.refreshToken ?: refreshToken,
-                expiresAtEpochMs = System.currentTimeMillis() + refreshed.expiresInSeconds * 1_000L,
-            ), generation)
-            return@withLock refreshed.accessToken
+        // The server rotates refresh credentials. Once sent, finish persisting the response
+        // even when the search/detail request that triggered it has been cancelled.
+        withContext(NonCancellable + Dispatchers.IO) {
+            session.refreshToken?.let { refreshToken ->
+                val refreshed = browserAuthorizationClient.refresh(refreshToken)
+                saveRefreshedSession(session.copy(
+                    accessToken = refreshed.accessToken,
+                    refreshToken = refreshed.refreshToken ?: refreshToken,
+                    expiresAtEpochMs = System.currentTimeMillis() + refreshed.expiresInSeconds * 1_000L,
+                ), generation)
+                return@withContext refreshed.accessToken
+            }
+            val storedCredential = session.storedCredential
+                ?: throw SpotifyAuthException("Service stored credentials are missing")
+            val outcome = login5Client.loginWithStoredCredential(
+                username = session.username,
+                storedCredential = storedCredential,
+                deviceId = store.loadDeviceId(),
+            )
+            val refreshed = when (outcome) {
+                is SpotifyLogin5Client.LoginOutcome.Success -> outcome
+                is SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> throw LoginVerificationRequiredException(session.username, outcome)
+            }
+            saveRefreshedSession(
+                session.copy(
+                    username = refreshed.username,
+                    accessToken = refreshed.accessToken,
+                    storedCredential = refreshed.storedCredential ?: session.storedCredential,
+                    expiresAtEpochMs = System.currentTimeMillis() + refreshed.accessTokenExpiresIn * 1_000L,
+                ),
+                generation,
+            )
+            refreshed.accessToken
         }
-        val storedCredential = session.storedCredential
-            ?: throw SpotifyAuthException("Service stored credentials are missing")
-        val outcome = login5Client.loginWithStoredCredential(
-            username = session.username,
-            storedCredential = storedCredential,
-            deviceId = store.loadDeviceId(),
-        )
-        val refreshed = when (outcome) {
-            is SpotifyLogin5Client.LoginOutcome.Success -> outcome
-            is SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> throw LoginVerificationRequiredException(session.username, outcome)
-        }
-        saveRefreshedSession(
-            session.copy(
-                username = refreshed.username,
-                accessToken = refreshed.accessToken,
-                storedCredential = refreshed.storedCredential ?: session.storedCredential,
-                expiresAtEpochMs = System.currentTimeMillis() + refreshed.accessTokenExpiresIn * 1_000L,
-            ),
-            generation,
-        )
-        refreshed.accessToken
     }
 
     override suspend fun clientToken(forceRefresh: Boolean): String =

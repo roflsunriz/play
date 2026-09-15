@@ -160,4 +160,47 @@ class SecureSessionStoreTest {
             } else assertNull(session)
         }
     }
+
+    @Test fun cancellingSearchDuringRefreshStillPersistsRotatedCredentials(): Unit = runBlocking {
+        val store = SecureSessionStore(context)
+        val started = CountDownLatch(1)
+        val continueResponse = CountDownLatch(1)
+        val refreshInputs = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val clientTokens = SpotifyClientTokenClient(openConnection = { error("Unexpected legacy authentication") })
+        val oauth = BrowserAuthorizationClient(openConnection = { uri ->
+            object : HttpURLConnection(uri.toURL()) {
+                val body = ByteArrayOutputStream()
+                override fun getOutputStream() = body
+                override fun getResponseCode(): Int {
+                    refreshInputs += body.toString("UTF-8")
+                    if (refreshInputs.size == 1) {
+                        started.countDown()
+                        check(continueResponse.await(5, TimeUnit.SECONDS))
+                    }
+                    return 200
+                }
+                override fun getInputStream() = ByteArrayInputStream(
+                    """{"access_token":"renewed-access","refresh_token":"rotated-${refreshInputs.size}","token_type":"Bearer","expires_in":3600}""".toByteArray())
+                override fun connect() = Unit
+                override fun disconnect() = Unit
+                override fun usingProxy() = false
+            }
+        })
+        fun manager() = SessionManager(SecureSessionStore(context),
+            SpotifyLogin5Client("synthetic-client", clientTokens), clientTokens, oauth)
+        val first = manager()
+        first.replaceSession(AuthSession("synthetic-user", "expired", null, 0, "original-refresh"))
+        val search = async(Dispatchers.Default) { first.accessToken() }
+        try {
+            assertTrue(started.await(5, TimeUnit.SECONDS))
+            search.cancel()
+        } finally { continueResponse.countDown() }
+        search.join()
+        assertTrue(search.isCancelled)
+        assertEquals("rotated-1", SecureSessionStore(context).loadSession()?.refreshToken)
+        // A new store/manager must use the rotated value, including after a caller is gone.
+        manager().accessToken(forceRefresh = true)
+        assertTrue(refreshInputs[1].contains("refresh_token=rotated-1"))
+        assertEquals("rotated-2", store.loadSession()?.refreshToken)
+    }
 }

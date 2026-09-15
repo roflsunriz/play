@@ -145,7 +145,8 @@ class BrowserAuthorizationClient(
                     runCatching { JSONObject(reader.readText()).optString("error") }
                         .getOrNull()?.takeIf { it.matches(Regex("[a-z_]{1,64}")) }
                 }
-                throw SpotifyAuthException("Login request failed ($status${error?.let { ": $it" }.orEmpty()})")
+                throw SpotifyAuthException("Login request failed ($status${error?.let { ": $it" }.orEmpty()})",
+                    requiresLogin = parameters["grant_type"] == "refresh_token" && error == "invalid_grant")
             }
             val json = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
             require(json.getString("token_type").equals("Bearer", ignoreCase = true))
