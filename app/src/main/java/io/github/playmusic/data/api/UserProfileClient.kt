@@ -2,6 +2,7 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.auth.ProtoWire
 import java.net.URLEncoder
+import java.net.URLDecoder
 
 /** Public profile name, distinct from the account identifier used for permissions. */
 internal class UserProfileClient(private val api: SpotifyApiClient) {
@@ -35,8 +36,17 @@ internal class UserProfileClient(private val api: SpotifyApiClient) {
                     else -> reader.skip(reader.wireType(tag))
                 }
             }
-            require(uri == "spotify:user:$username") { "Profile response belongs to a different user" }
+            require(uri?.let(::usernameFromUri) == username) { "Profile response belongs to a different user" }
             return Profile(name?.trim()?.takeIf(String::isNotEmpty))
+        }
+
+        /** User URI components are percent encoded, while API usernames are decoded identifiers. */
+        fun usernameFromUri(uri: String): String {
+            require(uri.startsWith("spotify:user:")) { "Unexpected user URI" }
+            val component = uri.removePrefix("spotify:user:")
+            require(component.isNotEmpty()) { "User URI is missing its identifier" }
+            // '+' in a URI is literal, unlike application/x-www-form-urlencoded input. Decode exactly once.
+            return URLDecoder.decode(component.replace("+", "%2B"), Charsets.UTF_8.name())
         }
     }
 }

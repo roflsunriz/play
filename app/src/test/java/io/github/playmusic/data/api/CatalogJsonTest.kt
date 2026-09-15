@@ -11,6 +11,31 @@ import org.junit.Test
 
 class CatalogJsonTest {
     @Test
+    fun genreSavedSongsCardKeepsItsLibraryDestinationAlongsideActualGenres() {
+        val card = JSONObject().put("__typename", "Genre").put("uri", "spotify:user:@:collection")
+            .put("name", "お気に入りの曲").put("image", JSONObject.NULL)
+        val genre = JSONObject().put("__typename", "Genre").put("uri", "spotify:genre:jazz").put("name", "Jazz")
+        val results = CatalogJson.search(search(ContentKind.GENRE, JSONArray().put(genre)
+            .put(JSONObject().put("__typename", "GenreResponseWrapper").put("data", card)).put(genre)), ContentKind.GENRE)
+        assertEquals(listOf("spotify:genre:jazz", SpotifyRepository.LIKED_SONGS_URI, "spotify:genre:jazz"), results.map { it.uri })
+        assertEquals(SpotifyRepository.likedSongsContent("お気に入りの曲"), results[1])
+        for (uri in listOf("spotify:user:other:collection", "spotify:unknown:one", "https://example.com")) {
+            assertTrue(runCatching { CatalogJson.content(JSONObject(card.toString()).put("uri", uri), ContentKind.GENRE) }.isFailure)
+        }
+        assertTrue(runCatching { CatalogJson.content(card, ContentKind.PLAYLIST) }.isFailure)
+    }
+
+    @Test
+    fun playlistOwnerUriIsDecodedOnceAndExplicitUsernameIsAlreadyDecoded() {
+        val owner = JSONObject().put("uri", "spotify:user:%E9%9F%B3%E6%A5%BD%2B%2520")
+        val playlist = JSONObject().put("uri", "spotify:playlist:one").put("name", "Playlist")
+            .put("ownerV2", JSONObject().put("data", owner))
+        assertEquals("音楽+%20", CatalogJson.content(playlist, ContentKind.PLAYLIST).ownerUsername)
+        owner.put("username", "raw%20+username")
+        assertEquals("raw%20+username", CatalogJson.content(playlist, ContentKind.PLAYLIST).ownerUsername)
+    }
+
+    @Test
     fun artistPodcastEpisodeAndGenreUseTheirObservedFields() {
         val avatar = JSONObject().put("sources", JSONArray().put(JSONObject().put("url", "https://images.example/avatar").put("width", 300)))
         val artist = JSONObject().put("uri", "spotify:artist:one").put("profile", JSONObject().put("name", "Artist"))

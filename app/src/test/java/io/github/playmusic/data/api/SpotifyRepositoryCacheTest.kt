@@ -24,6 +24,23 @@ import java.util.Collections
 
 class SpotifyRepositoryCacheTest {
     @Test
+    fun searchResolvesEncodedOwnerProfilesAndSavedSongsNavigationThroughTheRepository() = runBlocking {
+        val server = Server().apply { searchRegressions = true }
+        val playlists = server.repository.search("トリッカル", io.github.playmusic.data.model.SearchFilter.PLAYLISTS)
+        assertEquals("音楽+%20", playlists.single().ownerUsername)
+        assertEquals("Display", playlists.single().ownerName)
+        assertEquals(1, server.requests.count { it.url.path.startsWith("/user-profile-view/") })
+        val genres = server.repository.search("インターネット", io.github.playmusic.data.model.SearchFilter.GENRES)
+        val savedSongs = genres.single(SpotifyRepository::isLikedSongs)
+        val detail = server.repository.detail(savedSongs)
+        assertEquals(listOf("spotify:track:track"), detail.tracks.map { it.uri })
+        assertEquals(ContentKind.PLAYLIST, detail.content.kind)
+        server.repository.clearCache()
+        server.wrongProfile = true
+        assertTrue(runCatching { server.repository.search("トリッカル", io.github.playmusic.data.model.SearchFilter.PLAYLISTS) }.isFailure)
+    }
+
+    @Test
     fun ownerProfilesAreSharedWithDetailsAndExplicitRefreshUpdatesTheirNames() = runBlocking {
         val server = Server()
         val item = server.repository.library(ContentKind.PLAYLIST).single()
@@ -213,6 +230,8 @@ class SpotifyRepositoryCacheTest {
         @Volatile var hasCollection = true
         @Volatile var failReads = false
         @Volatile var failChanges = false
+        var searchRegressions = false
+        var wrongProfile = false
         val connection: (URI) -> HttpURLConnection = { uri -> Connection(uri, ::respond).also { requests += it } }
         val api = SpotifyApiClient(tokens, connection)
         val repository = SpotifyRepository(api, tokens, CatalogApiClient(tokens, connection), { tokens.account })
@@ -226,8 +245,13 @@ class SpotifyRepositoryCacheTest {
             if (failReads) return Reply(503, ByteArray(0))
             val body = when {
                 request.url.path.startsWith("/user-profile-view/v3/profile/") -> {
-                    val username = request.url.path.substringAfterLast('/')
-                    fieldString(1, "spotify:user:$username") + fieldString(2, "$profileLabel $username")
+                    if (searchRegressions) {
+                        assertEquals("/user-profile-view/v3/profile/%E9%9F%B3%E6%A5%BD%2B%2520", request.url.path)
+                        fieldString(1, if (wrongProfile) "spotify:user:other" else "spotify:user:%E9%9F%B3%E6%A5%BD%2B%2520") + fieldString(2, "Display")
+                    } else {
+                        val username = request.url.path.substringAfterLast('/')
+                        fieldString(1, "spotify:user:$username") + fieldString(2, "$profileLabel $username")
+                    }
                 }
                 request.url.path.endsWith("/rootlist") -> rootlist()
                 request.url.path.startsWith("/playlist/v2/playlist/") -> playlist()
@@ -269,6 +293,10 @@ class SpotifyRepositoryCacheTest {
                         "searchEpisodes" -> "episodes" to JSONObject().put("uri", "spotify:episode:episode").put("name", "Episode")
                         else -> "genres" to JSONObject().put("uri", "genre").put("name", "Genre")
                     }
+                    if (searchRegressions && operation == "searchPlaylists") entity.put("ownerV2",
+                        JSONObject().put("data", JSONObject().put("uri", "spotify:user:%E9%9F%B3%E6%A5%BD%2B%2520")))
+                    if (searchRegressions && operation == "searchGenres") entity.put("__typename", "Genre")
+                        .put("uri", "spotify:user:@:collection").put("name", "お気に入りの曲")
                     JSONObject().put("searchV2", JSONObject().put(key, JSONObject().put("items", JSONArray()
                         .put(JSONObject().put("data", JSONObject().put("__typename", "NotFound"))).put(entity))))
                 }

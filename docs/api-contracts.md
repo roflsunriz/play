@@ -167,6 +167,10 @@ python tools/import-search-capture.py captures/recovered/search-response-origina
 
 ## 検索分類とカタログ内の移動（2026-09-15）
 
+同日夕方の検索不具合は、実機のRepository経路で4条件を再現した。「トリッカル」の全件/プレイリストでは、所有者プロフィールのfield 1がpercent encodedなユーザーURIで、要求のusernameはdecodedだった。識別子部分を1回だけdecodeした値が要求と一致することを確認した（実IDや表示名はログ・検証データへ複製しない）。要求パスはdecoded usernameをpath componentとしてencodeし、応答照合とカタログowner URIの抽出では1回decodeする。`+`はURIのリテラルとして保持する。二重decode、違うユーザー、不正escapeを受け入れない合成回帰を置いた。
+
+「インターネット」の全件/ジャンルでは、`genres.items`中に`GenreResponseWrapper`→`Genre`、nameが「お気に入りの曲」、imageがnull、uriが`spotify:user:@:collection`というカードを実測した。この正確な型・URIだけを既存の`spotify:collection:tracks`のプレイリストへ対応させ、検索結果に保持して保存曲を開く。通常ジャンルと前後の有効項目を保持し、別ユーザーのcollection、未知のURI、別カテゴリの同URIは通常の型不一致として拒否する。検索カテゴリのGenreにはこのナビゲーションカードが例外的に含まれ、すべてがジャンル詳細へ進むとは限らない。
+
 検索は「すべて」「曲」「プレイリスト」「アルバム」「アーティスト」「ポッドキャスト＆番組」「ジャンル＆気分」の7分類へ接続した。「ポッドキャスト＆番組」は番組とエピソードの2種類を取得し、「すべて」は7種類の結果を含む。選択した分類だけを要求し、画面に取得済みの30件を絞るだけの処理にはしない。
 
 | 対象 | 確認した要求・応答 |

@@ -124,7 +124,8 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 
 - `SavedLibraryActionsTest`と`CatalogNavigationTest`は、コレクション書込、所属判定・削除の原本確認、7カテゴリ検索、ジャンルのプレビューと続きのページを検査する。
 - 分離AVDで`ContentActionsScreenTest`、`SleepTimerDialogTest`、`LibraryBrowsingTest`、`PlaylistStartupCacheTest`、`PlaylistViewModelTest`を実行する。お気に入りは画面用の項目として一つだけ追加し、ディスクの原本プレイリスト一覧へ混ぜないことを検査する。画面画像は`screenshotPrefix`を指定して保存できる。
-- 実アカウントの読み取りは`CatalogNavigationAccountTest`へ`liveCatalog=true`を渡す。「jazz」「lo-fi」「トリッカル」の7カテゴリ検索、曲詳細、アーティスト、ラジオ、番組、ジャンルの各導線を検査する。
+- 実アカウントの読み取りは`CatalogNavigationAccountTest`へ`liveCatalog=true`を渡す。「jazz」「lo-fi」「トリッカル」「インターネット」の7カテゴリ検索はRepository経由で所有者プロフィールの取得まで検査する。曲詳細、アーティスト、ラジオ、番組、ジャンルの各導線も検査する。
+- 検索画面の回帰は`SearchRegressionScreenTest`へ`liveCatalog=true`を渡し、実機だけを指定して実行する。「トリッカル」の全件/プレイリスト、「インターネット」の全件/ジャンルと、検索に含まれる「お気に入りの曲」の詳細を開く。保存・フォロー・再生の書き込み操作は含まない。
 - お気に入りの一時変更には別途明示許可を得てから、`SavedItemsAccountTest`へ`liveSavedItems=true`を渡す。未登録の曲・アルバム各1件だけを追加・削除し、原本全ページで既存内容を維持したことを確認する。途中失敗のジャーナルが残ると次の試験を停止するため、対象を確認し一時追加分だけを削除してから再開する。
 - `PlaylistAccountTest`の`livePlaylists=true`は、新しく作る非公開リスト内で曲・アルバムの所属チェックと追加・削除も検査する。既存のリストを検証対象として変更しない。
 - タイマーのOS権限、分離AVDでの実アラーム・停止・消灯の検証は[タイマー手順](docs/sleep-timer.md)を参照する。実機へ端末管理者権限を自動付与しない。

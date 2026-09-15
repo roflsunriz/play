@@ -2,6 +2,15 @@
 
 ## 2026-09-15の結果
 
+### 特定の検索語で全体の取得に失敗する問題
+
+- 実機SH-R80Pで「トリッカル」の全件/プレイリストが`Profile response belongs to a different user`、「インターネット」の全件/ジャンルが`Unexpected catalog entity`になる4条件を修正前に再現した。`build/qa/search-regression-before.log`。再ログインや保存データの変更は行わず、保存済み認証を使った。
+- 原因は所有者URIとusernameのエンコード差、およびGenre結果の「お気に入りの曲」ナビゲーションカードだった。IDの1回decodeと既存のお気に入り経路への変換で修正した。別ユーザー・二重decode・不正escape・未知の種類は拒否する。プロフィール取得まで通るRepositoryの合成回帰と、型・URIの個別回帰を追加した。
+- Repository経由の「jazz」「lo-fi」「トリッカル」「インターネット」×7分類、報告4条件とお気に入り詳細の読み取りが実機で成功。2件、48.831秒。`build/qa/search-regression-after.log`。前回のカタログ直呼びの試験では所有者名取得を通っておらず、この範囲を検査できていなかった。
+- 検索画面の初回検査では、返されたお気に入りカードを表示側の種類フィルターが落とす問題も検出した。GENRESの該当URIだけを保持するよう訂正し、4条件の画面表示からカード選択・保存曲詳細まで実機1件成功（14.168秒）。検索結果2画面と詳細の画像を閲覧した。`build/qa/search-regression-ui-final.log`。分離AVDの通常7分類と特殊カード表示は2件成功（7.652秒）、`search-regression-ui-avd.log`。
+- JVM223件が失敗0。`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease`成功、lintエラー0・既存警告5件。追加UIテストの必須callback引数漏れは修正して再実行した。最終ログは`build/qa/search-regression-verified-build.log`。依存追加なし、OSVの公開DBローカル照合は481依存・該当0件（`search-regression-osv.json`）。
+- 専用署名・デバッグ無効の`build/outputs/play-updated.apk`を実機へデータ保持更新し、起動後の「お気に入りの曲」表示とログイン案内0件を確認した。端末から取得したAPKとのSHA256一致も確認した（`fa7b2d97191ad13ce8965c93cb25c75f83f30145e324b9b42972f7101a56762b`）。テストAPKと今回の検証画像を端末から除いた。バージョン番号・公開タグは変更していない。
+
 ### 再生遷移・同期歌詞・アーティストページの追加
 
 - 保存済みログインを保持して実機SH-R80Pで検証した。同期歌詞は時刻付き55行の取得が成功し、本文は記録しなかった。アーティストの全作品、人気曲、関連アーティスト、ラジオ、参加作品・プレイリストの遷移が成功した。英字の名前一致で同名別アーティストを選んでいた旧検証を正規URIへ変更し、紹介文が提供される場合の完全保持と、提供元がnullの場合の一致を確認した。

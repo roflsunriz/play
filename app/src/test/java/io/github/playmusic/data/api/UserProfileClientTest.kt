@@ -12,6 +12,19 @@ import java.net.HttpURLConnection
 import java.net.URI
 
 class UserProfileClientTest {
+    @Test fun encodedProfileIdentitiesMatchWithoutAliasingDifferentUsers() {
+        for ((encoded, username) in listOf("%E9%9F%B3%E6%A5%BD" to "音楽", "name%20with%2Fslash" to "name with/slash",
+            "a+b" to "a+b", "a%2Bb" to "a+b", "a%2520b" to "a%20b", "a%3Ab" to "a:b")) {
+            val bytes = fieldString(1, "spotify:user:$encoded") + fieldString(2, "Display")
+            assertEquals("Display", UserProfileClient.parse(bytes, username).displayName)
+            assertTrue(runCatching { UserProfileClient.parse(bytes, "different-user") }.isFailure)
+        }
+        for ((encoded, wrongUsername) in listOf("a+b" to "a b", "a%2520b" to "a b", "a%20b" to "a%20b",
+            "broken%2" to "broken%2")) {
+            assertTrue(runCatching { UserProfileClient.parse(fieldString(1, "spotify:user:$encoded"), wrongUsername) }.isFailure)
+        }
+    }
+
     @Test fun displayNameIsReadSeparatelyFromTheAccountIdAndUnrelatedFieldsAreSkipped() {
         val bytes = fieldString(1, "spotify:user:random-id") + fieldBytes(7, byteArrayOf(1, 2, 3)) +
             fieldString(2, "音楽好き") + fieldString(27, "Unneeded biography")

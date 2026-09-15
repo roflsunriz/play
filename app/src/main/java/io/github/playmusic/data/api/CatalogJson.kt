@@ -12,6 +12,10 @@ internal object CatalogJson {
     fun content(value: JSONObject, kind: ContentKind, album: SpotifyContent? = null): SpotifyContent {
         val entity = unwrap(value)
         val rawUri = entity.getString("uri")
+        // The service includes this navigation card in Genre search results. Keep its existing library route.
+        if (kind == ContentKind.GENRE && entity.optString("__typename") == "Genre" && rawUri == "spotify:user:@:collection") {
+            return SpotifyRepository.likedSongsContent(entity.getString("name"))
+        }
         val uri = if (kind == ContentKind.GENRE && !rawUri.contains(':')) "spotify:genre:$rawUri" else rawUri
         require(uri.startsWith("spotify:${kind.name.lowercase()}:") || (kind == ContentKind.GENRE && uri.startsWith("spotify:page:"))) { "Unexpected catalog entity" }
         val title = if (kind == ContentKind.ARTIST) entity.getJSONObject("profile").getString("name") else entity.getString("name")
@@ -30,7 +34,7 @@ internal object CatalogJson {
         val owner = entity.optJSONObject("ownerV2")?.optJSONObject("data")
         val ownerName = owner?.text("displayName") ?: owner?.text("name")
         val ownerUsername = owner?.text("username") ?: owner?.text("uri")
-            ?.takeIf { it.startsWith("spotify:user:") }?.removePrefix("spotify:user:")
+            ?.takeIf { it.startsWith("spotify:user:") }?.let(UserProfileClient::usernameFromUri)
         return SpotifyContent(
             id = uri.substringAfterLast(':'),
             uri = uri,

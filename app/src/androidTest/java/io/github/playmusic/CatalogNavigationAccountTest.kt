@@ -3,6 +3,7 @@ package io.github.playmusic
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.api.CatalogApiClient
+import io.github.playmusic.data.api.SpotifyRepository
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SearchFilter
 import kotlinx.coroutines.runBlocking
@@ -16,15 +17,39 @@ import org.junit.Test
 class CatalogNavigationAccountTest {
     @Test
     fun reportedQueriesAndEveryCategoryReturnValidResults(): Unit = runBlocking {
-        for (query in listOf("jazz", "lo-fi", "トリッカル")) {
+        for (query in listOf("jazz", "lo-fi", "トリッカル", "インターネット")) {
             for (filter in SearchFilter.entries) {
-                val items = catalog.search(query, filter)
-                assertTrue("Category must match its results", items.all { it.kind in filter.kinds })
+                val items = app.repository.search(query, filter)
+                assertTrue("Category must match its results or the service's saved-songs navigation card",
+                    items.all { it.kind in filter.kinds || (ContentKind.GENRE in filter.kinds && SpotifyRepository.isLikedSongs(it)) })
                 assertTrue("Results must contain titles", items.all { it.kind == ContentKind.PLAYLIST || it.title.isNotBlank() })
                 if (filter == SearchFilter.ALL) assertTrue("Reported search must return results", items.isNotEmpty())
                 Log.i(TAG, "search category=$filter count=${items.size}")
             }
         }
+    }
+
+    @Test
+    fun reportedSearchRegressions(): Unit = runBlocking {
+        val failures = mutableListOf<String>()
+        for ((query, filters) in listOf("トリッカル" to listOf(SearchFilter.ALL, SearchFilter.PLAYLISTS),
+            "インターネット" to listOf(SearchFilter.ALL, SearchFilter.GENRES))) {
+            for (filter in filters) {
+                runCatching {
+                    val items = app.repository.search(query, filter)
+                    assertTrue(items.isNotEmpty())
+                    assertTrue(items.all { it.kind in filter.kinds || (ContentKind.GENRE in filter.kinds && SpotifyRepository.isLikedSongs(it)) })
+                    if (query == "インターネット" && filter == SearchFilter.GENRES) {
+                        val savedSongs = items.single(SpotifyRepository::isLikedSongs)
+                        val detail = app.repository.detail(savedSongs)
+                        assertEquals(savedSongs.uri, detail.content.uri)
+                        assertTrue(detail.tracks.all { it.kind == ContentKind.TRACK })
+                    }
+                    Log.i(TAG, "regression query=$query category=$filter count=${items.size}")
+                }.onFailure { failures += "$query/$filter: ${it.message}" }
+            }
+        }
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }
 
     @Test

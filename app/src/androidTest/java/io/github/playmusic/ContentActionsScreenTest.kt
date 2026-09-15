@@ -221,6 +221,17 @@ class ContentActionsScreenTest {
         composeRule.onNodeWithTag("expanded-player-screen").assertDoesNotExist()
     }
 
+    @Test fun genreFilterKeepsTheReturnedSavedSongsCardAndOtherKindsStayFiltered() {
+        val savedSongs = io.github.playmusic.data.api.SpotifyRepository.likedSongsContent("Saved songs")
+        val genre = item(ContentKind.GENRE, "jazz", "Jazz")
+        val state = PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,
+            searchQuery = "music", searchFilter = SearchFilter.GENRES, items = listOf(savedSongs, genre, track))
+        render { Home(state, onActions = {}) }
+        composeRule.onNodeWithTag("content-playlist-tracks").assertIsDisplayed()
+        composeRule.onNodeWithTag("content-genre-jazz").assertIsDisplayed()
+        composeRule.onNodeWithTag("content-track-${track.id}").assertDoesNotExist()
+    }
+
     @Test fun allSevenSearchFiltersDispatchAndShowOnlyTheirContentKinds() {
         val contents = ContentKind.entries.map { item(it, it.name.lowercase(), it.name) }
         var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,

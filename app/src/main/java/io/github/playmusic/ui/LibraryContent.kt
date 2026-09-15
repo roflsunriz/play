@@ -210,7 +210,12 @@ internal fun SearchContent(
         if (suggesting) Text(stringResource(R.string.suggested_content),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).testTag("suggested-heading"))
-        ContentList((if (suggesting) suggestions else items).filter { it.kind in searchFilter.kinds }, onPlay, onOpen, onViewportChanged,
+        // Genre search also returns the service's saved-songs navigation card, which opens a playlist.
+        val results = if (suggesting) suggestions.filter { it.kind in searchFilter.kinds } else items.filter {
+            it.kind in searchFilter.kinds || (searchFilter == SearchFilter.GENRES &&
+                io.github.playmusic.data.api.SpotifyRepository.isLikedSongs(it))
+        }
+        ContentList(results, onPlay, onOpen, onViewportChanged,
             suggestions = if (suggesting) emptyList() else matchingSuggestions.filter { it.kind in searchFilter.kinds },
             resultHeading = if (suggesting) null else stringResource(R.string.search_results),
             suggestionHeading = stringResource(R.string.matching_suggestions), presentationKey = "$searchFilter:$query",
