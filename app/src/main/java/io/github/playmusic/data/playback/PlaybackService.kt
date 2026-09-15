@@ -58,6 +58,7 @@ open class PlaybackService : MediaSessionService() {
         val launch = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         session = MediaSession.Builder(this, player).setId(javaClass.simpleName).setSessionActivity(launch).build()
+        (application as PlayApplication).container.sleepTimer.attach(player)
     }
 
     protected open val cacheDirectoryName = "music_stream_cache"
@@ -113,6 +114,7 @@ open class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        session?.player?.let { (application as PlayApplication).container.sleepTimer.detach(it) }
         session?.run { player.release(); release() }
         session = null
         cache?.release()

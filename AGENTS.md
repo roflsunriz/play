@@ -36,6 +36,12 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 
 ## 調査・検証で確認した注意点
 
+- 2026-09-15、検索入力キャンセルがOAuth更新の応答受け取りと保存の間へ入り、入れ替わった更新トークンを失う経路を確認した。更新開始後は`SessionManager`のmutex内で`NonCancellable + IO`により保存まで完了させ、アカウント世代照合を維持する。`SecureSessionStoreTest`でキャンセル後の新storeからの連続更新を検査する。サーバーで失効済みの値は復元できず、通常ログインの本人操作が必要。
+- 「お気に入りの曲」の専用URIは原本rootlist内の通常プレイリストではない。Repositoryの専用factoryとTRACKコレクションへ接続し、UIだけに一度追加する。所属・削除確認は装飾後の曲一覧ではなく全ページの原本URIを使う。コレクションWriteRequestとジャンルpreviewのページ構造は`docs/api-contracts.md`、保存回帰は`SavedLibraryActionsTest`。
+- 2026-09-15、ユーザーが実機で未登録の曲とアルバム各1件のお気に入り一時追加・削除を明示許可した。`SavedItemsAccountTest`へ`liveSavedItems=true`を指定し、ジャーナルを保存して既存コレクションの保持と追加分だけの削除を確認する。既存プレイリストは変更しない。
+- スリープタイマーの消灯はAndroidの`force-lock`端末管理者権限と正確なアラームを使う。実機への権限付与は本人操作とし、`SleepTimerIntegrationTest`の強制消灯は`ranchu/goldfish`の分離AVDと`sleepTimer=true`に限定する。権限取消・再起動で存在しない予約を表示しない。仕様と検証は`docs/sleep-timer.md`。
+- カタログのアーティスト名は`profile.name`、ジャンル画像は`image.sources`。ジャンル初回`sectionItems`は`items/totalCount`だけのプレビューであり、`pagingInfo`を要求しない。全件取得は`browseSection`をoffset=0からたどり、この経路のnextOffset=0は終端。公開型と実応答の照合結果は`CatalogNavigationTest`と`docs/api-contracts.md`。
+
 - 2026-09-15、setup-android v4.0.1の既定`tools platform-tools`は旧`tools`が見つからずCIで失敗した。`packages: platform-tools`を通常CI・リリースCIで明示する。sdkmanagerを含むcmdline-toolsの導入と、Platform/Build Toolsの別ステップは維持する。
 - 2026-09-15、一部の旧版曲の配信情報は、要求したURIと異なる再生可能版のURIをmediaのキーとして返す。`item.metadata.uri`とそのキーを照合し、`linked_from_uri`が要求URIと一致する唯一の候補を使う。先頭要素や曲名一致で代替しない。Queen Jewels全16曲で旧実装の失敗を確認。根拠と検証は`docs/api-contracts.md`、`StreamingApiClientTest`。
 - 音質設定は`AppContainer.audioEffects`で端末単位に保持する。音声スレッドはimmutableな`state.value.settings`だけを読み、保存・認証・UI更新を行わない。Media3のカスタムprocessorはfloat/圧縮passthrough/offloadで迂回され得るため、30バンドEQはPCM16経路へ接続し、計測用serviceも本番processorの後へmeterを置く。設計と根拠は`docs/audio-effects.md`。

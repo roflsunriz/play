@@ -106,6 +106,43 @@ class PlaylistApiClient(
         if (trackUris.isNotEmpty()) apply(content, PlaylistMutationProto.remove(trackUris))
     }
 
+    /** Reads original entries, including tracks whose catalog metadata is unavailable. */
+    suspend fun trackUris(content: SpotifyContent, requireEditable: Boolean = false): List<String> =
+        trackSnapshot(content, requireEditable).uris
+
+    internal data class TrackSnapshot(val uris: List<String>, val canEdit: Boolean)
+
+    internal suspend fun trackSnapshot(content: SpotifyContent, requireEditable: Boolean = false): TrackSnapshot {
+        val id = playlistId(content)
+        val uris = mutableListOf<String>()
+        var offset = 0
+        var revision: ByteArray? = null
+        var canEdit = false
+        do {
+            val page = SpClientProto.parsePlaylist(api.getProto("/playlist/v2/playlist/$id", mapOf(
+                "from" to offset.toString(), "length" to "120",
+                "decorate" to "revision,length,attributes,timestamp,owner,capabilities",
+            )).bodyBytes)
+            check(page.offset == offset) { "Playlist pagination returned a different position" }
+            check(page.revision?.isNotEmpty() == true) { "Playlist response is missing its revision" }
+            if (offset == 0) {
+                revision = page.revision
+                canEdit = metadata(page, content.uri).isOwned && !page.deletedByOwner && page.capabilities.canEditItems != false
+                if (requireEditable) check(canEdit) {
+                    "Playlist tracks cannot be edited by the current account"
+                }
+            } else check(revision.contentEquals(page.revision)) { "Playlist changed between pages" }
+            uris += page.items.map { it.uri }.filter { it.matches(TRACK_URI) }
+            if (!page.truncated) {
+                check(page.totalLength == null || offset + page.items.size >= page.totalLength) { "Playlist response is incomplete" }
+                return TrackSnapshot(uris, canEdit)
+            }
+            check(page.items.isNotEmpty()) { "Playlist pagination did not advance" }
+            offset += page.items.size
+            check(page.totalLength == null || offset < page.totalLength) { "Playlist pagination is inconsistent" }
+        } while (true)
+    }
+
     private suspend fun checkEditableItems(content: SpotifyContent, uris: List<String>) {
         require(uris.size <= 100 && uris.all { it.matches(TRACK_URI) }) { "Invalid playlist tracks" }
         val detail = read(content)

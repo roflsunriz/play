@@ -11,6 +11,37 @@ import org.junit.Test
 
 class CatalogJsonTest {
     @Test
+    fun artistPodcastEpisodeAndGenreUseTheirObservedFields() {
+        val avatar = JSONObject().put("sources", JSONArray().put(JSONObject().put("url", "https://images.example/avatar").put("width", 300)))
+        val artist = JSONObject().put("uri", "spotify:artist:one").put("profile", JSONObject().put("name", "Artist"))
+            .put("visuals", JSONObject().put("avatarImage", avatar))
+        val parsedArtist = CatalogJson.search(search(ContentKind.ARTIST, JSONArray().put(JSONObject().put("data", artist))), ContentKind.ARTIST).single()
+        assertEquals("Artist", parsedArtist.title)
+        assertEquals("https://images.example/avatar", parsedArtist.imageUrl)
+        val podcast = JSONObject().put("uri", "spotify:show:one").put("name", "Show")
+            .put("publisher", JSONObject().put("name", "Publisher"))
+        val book = JSONObject().put("uri", "spotify:show:book").put("name", "Book").put("__typename", "Audiobook")
+        assertEquals("Publisher", CatalogJson.search(search(ContentKind.SHOW, JSONArray().put(podcast).put(book)), ContentKind.SHOW).single().subtitle)
+        val genre = JSONObject().put("uri", "jazz").put("name", "Jazz").put("image", avatar)
+        val parsedGenre = CatalogJson.search(search(ContentKind.GENRE, JSONArray().put(genre)), ContentKind.GENRE).single()
+        assertEquals("spotify:genre:jazz", parsedGenre.uri)
+        assertEquals("https://images.example/avatar", parsedGenre.imageUrl)
+        val episode = JSONObject().put("uri", "spotify:episode:one").put("name", "Episode")
+            .put("duration", JSONObject().put("totalMilliseconds", 123000))
+        assertEquals(123000L, CatalogJson.search(search(ContentKind.EPISODE, JSONArray().put(episode)), ContentKind.EPISODE).single().durationMs)
+    }
+
+    @Test
+    fun trackArtistLinksPreserveAllContributorsAndDoNotInventIdsFromNames() {
+        val artists = JSONArray()
+            .put(JSONObject().put("uri", "spotify:artist:first").put("profile", JSONObject().put("name", "First")))
+            .put(JSONObject().put("data", JSONObject().put("uri", "spotify:artist:second").put("profile", JSONObject().put("name", "Second"))))
+            .put(JSONObject().put("profile", JSONObject().put("name", "Unlinked")))
+        val parsed = CatalogJson.content(track("one").put("artists", JSONObject().put("items", artists)), ContentKind.TRACK)
+        assertEquals("First, Second, Unlinked", parsed.subtitle)
+        assertEquals(listOf("spotify:artist:first", "spotify:artist:second"), parsed.artists.map { it.uri })
+    }
+    @Test
     fun unavailableSearchUnionsAndNullSlotsDoNotDiscardValidResults() {
         val available = track("available")
         val notPlayable = track("restricted-track").put("playability", JSONObject().put("playable", false))
@@ -109,7 +140,11 @@ class CatalogJsonTest {
         val key = when (kind) {
             ContentKind.ALBUM -> "albumsV2"
             ContentKind.PLAYLIST -> "playlists"
-            else -> "tracksV2"
+            ContentKind.TRACK -> "tracksV2"
+            ContentKind.ARTIST -> "artists"
+            ContentKind.SHOW -> "podcasts"
+            ContentKind.EPISODE -> "episodes"
+            ContentKind.GENRE -> "genres"
         }
         return JSONObject().put("searchV2", JSONObject().put(key, JSONObject().put("items", items)))
     }

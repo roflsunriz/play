@@ -177,8 +177,8 @@ class SpotifyRepositoryCacheTest {
     fun searchSkipsKnownUnavailableUnionsButStillReportsTransportFailures() = runBlocking {
         val server = Server()
         val items = server.repository.search("Synthetic query")
-        assertEquals(setOf(ContentKind.ALBUM, ContentKind.TRACK, ContentKind.PLAYLIST), items.map { it.kind }.toSet())
-        assertEquals(3, items.size)
+        assertEquals(ContentKind.entries.toSet(), items.map { it.kind }.toSet())
+        assertEquals(ContentKind.entries.size, items.size)
         server.failReads = true
         assertTrue(runCatching { server.repository.search("Synthetic query") }.exceptionOrNull() is SpotifyApiException)
     }
@@ -259,11 +259,15 @@ class SpotifyRepositoryCacheTest {
                 "getAlbum" -> JSONObject().put("albumUnion", album)
                 "decorateContextTracks" -> JSONObject().put("tracks", JSONArray().put(track))
                 "getTrack" -> JSONObject().put("trackUnion", track)
-                "searchAlbums", "searchTracks", "searchPlaylists" -> {
+                "searchAlbums", "searchTracks", "searchPlaylists", "searchArtists", "searchPodcasts", "searchEpisodes", "searchGenres" -> {
                     val (key, entity) = when (operation) {
                         "searchAlbums" -> "albumsV2" to album
                         "searchTracks" -> "tracksV2" to track
-                        else -> "playlists" to JSONObject().put("uri", PLAYLIST_URI).put("name", title)
+                        "searchPlaylists" -> "playlists" to JSONObject().put("uri", PLAYLIST_URI).put("name", title)
+                        "searchArtists" -> "artists" to JSONObject().put("uri", "spotify:artist:artist").put("profile", JSONObject().put("name", "Artist"))
+                        "searchPodcasts" -> "podcasts" to JSONObject().put("uri", "spotify:show:show").put("name", "Show")
+                        "searchEpisodes" -> "episodes" to JSONObject().put("uri", "spotify:episode:episode").put("name", "Episode")
+                        else -> "genres" to JSONObject().put("uri", "genre").put("name", "Genre")
                     }
                     JSONObject().put("searchV2", JSONObject().put(key, JSONObject().put("items", JSONArray()
                         .put(JSONObject().put("data", JSONObject().put("__typename", "NotFound"))).put(entity))))

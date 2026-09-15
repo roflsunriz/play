@@ -12,6 +12,7 @@ import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.SearchFilter
 import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.data.audio.EqualizerPreset
 import io.github.playmusic.data.audio.settings
@@ -54,6 +55,7 @@ data class PlayUiState(
     val playback: Playback = Playback(),
     val isLoading: Boolean = false,
     val searchQuery: String = "",
+    val searchFilter: SearchFilter = SearchFilter.ALL,
     val libraryQuery: String = "",
     val albumQuery: String = "",
     val trackQuery: String = "",
@@ -78,6 +80,8 @@ data class PlayUiState(
     val isDeletingPlaylist: Boolean = false,
     val playlistDeletionFailed: Boolean = false,
     val audioEffectsOpen: Boolean = false,
+    val contentActions: ContentActionsState? = null,
+    val artistChoices: List<SpotifyContent> = emptyList(),
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -92,6 +96,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     )
     val state: StateFlow<PlayUiState> = mutableState.asStateFlow()
     val audioEffectsState get() = container.audioEffects.state
+    val sleepTimer get() = container.sleepTimer
+    private var actionsJob: Job? = null
     private var contentRequestJob: Job? = null
     private val libraryJobs = mutableMapOf<LibrarySection, Job>()
     private val detailPrefetcher = DetailPrefetcher(viewModelScope,
@@ -276,7 +282,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             isLoading = cached == null && section != LibrarySection.SEARCH,
             error = null, selectedContent = null, detail = null)
         if (section != LibrarySection.SEARCH) loadLibrary(section)
-        else if (current.searchQuery.isNotBlank() && !searchCache.containsKey(current.searchQuery.trim())) search()
+        else if (current.searchQuery.isNotBlank() && !searchCache.containsKey(searchKey(current.searchQuery.trim()))) search()
     }
 
     fun updateLibraryQuery(query: String) {
@@ -305,7 +311,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
 
     fun updateSearchQuery(query: String) {
         contentRequestJob?.cancel()
-        val cached = searchCache[query.trim()].orEmpty()
+        val cached = searchCache[searchKey(query.trim())].orEmpty()
         mutableState.value = mutableState.value.copy(searchQuery = query, searchResults = cached,
             items = cached, isLoading = false, searchPreviewFailed = false, searchSuggestions = searchSuggestions(query))
         if (query.isNotBlank()) search(waitForTyping = true)
@@ -313,11 +319,23 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
 
     fun search() = search(waitForTyping = false)
 
+    private fun searchKey(query: String) = "${mutableState.value.searchFilter.name}:$query"
+
+    fun selectSearchFilter(filter: SearchFilter) {
+        if (mutableState.value.searchFilter == filter) return
+        contentRequestJob?.cancel()
+        mutableState.value = mutableState.value.copy(searchFilter = filter, items = emptyList(),
+            searchResults = emptyList(), searchPreviewFailed = false)
+        search()
+    }
+
     private fun search(waitForTyping: Boolean, forceRefresh: Boolean = false) {
         contentRequestJob?.cancel()
         val query = mutableState.value.searchQuery.trim()
         if (query.isBlank()) return
-        val cached = searchCache[query]
+        val filter = mutableState.value.searchFilter
+        val key = searchKey(query)
+        val cached = searchCache[key]
         if (cached != null && !forceRefresh) {
             mutableState.value = mutableState.value.copy(items = cached, searchResults = cached, isLoading = false)
             return
@@ -327,16 +345,17 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             if (waitForTyping) delay(350)
             mutableState.value = mutableState.value.copy(isLoading = true, error = null, searchPreviewFailed = false)
             try {
-                val items = container.repository.search(query)
+                val items = container.repository.search(query, filter)
                 if (generation == accountGeneration && mutableState.value.searchQuery.trim() == query &&
+                    mutableState.value.searchFilter == filter &&
                     mutableState.value.selectedSection == LibrarySection.SEARCH) {
-                    searchCache[query] = items
+                    searchCache[key] = items
                     mutableState.value = mutableState.value.copy(items = items, searchResults = items, isLoading = false)
                 }
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
                 // Typing previews keep local matches useful when the network is unavailable.
-                if (!waitForTyping) handleRequestFailure(exception)
+                if (!waitForTyping || exception is SpotifyAuthException && exception.requiresLogin) handleRequestFailure(exception)
                 else mutableState.value = mutableState.value.copy(isLoading = false, searchPreviewFailed = true)
             }
         }
@@ -353,6 +372,111 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     fun retryPlaylistSync() = loadLibrary(LibrarySection.PLAYLISTS, forceRefresh = true)
 
     fun openDetail(content: SpotifyContent) = loadDetail(content, rememberCurrent = true)
+
+    fun openContentActions(content: SpotifyContent) {
+        if (content.kind !in setOf(ContentKind.TRACK, ContentKind.ALBUM)) return
+        actionsJob?.cancel()
+        mutableState.value = mutableState.value.copy(contentActions = ContentActionsState(content))
+        actionsJob = viewModelScope.launch {
+            try {
+                val saved = container.repository.isSaved(content, forceRefresh = true)
+                mutableState.value = mutableState.value.copy(contentActions = ContentActionsState(content, saved, loading = false))
+            } catch (exception: Exception) { actionsFailed(exception) }
+        }
+    }
+
+    fun closeContentActions() {
+        if (mutableState.value.contentActions?.busy == true) return
+        actionsJob?.cancel()
+        mutableState.value = mutableState.value.copy(contentActions = null)
+    }
+
+    fun toggleFavorite() {
+        val action = mutableState.value.contentActions?.takeUnless { it.busy || it.loading || it.saved == null } ?: return
+        mutableState.value = mutableState.value.copy(contentActions = action.copy(busy = true, failure = false))
+        actionsJob = viewModelScope.launch {
+            try {
+                container.repository.setSaved(action.content, action.saved != true)
+                mutableState.value = mutableState.value.copy(contentActions = action.copy(saved = action.saved != true, busy = false))
+                val section = if (action.content.kind == ContentKind.TRACK) LibrarySection.TRACKS else LibrarySection.ALBUMS
+                loadLibrary(section, forceRefresh = true)
+                if (mutableState.value.selectedContent?.let(io.github.playmusic.data.api.SpotifyRepository::isLikedSongs) == true)
+                    loadDetail(checkNotNull(mutableState.value.selectedContent), rememberCurrent = false, forceRefresh = true)
+            } catch (exception: Exception) { actionsFailed(exception) }
+        }
+    }
+
+    fun choosePlaylists() {
+        val action = mutableState.value.contentActions?.takeUnless { it.busy || it.loading } ?: return
+        actionsJob?.cancel()
+        mutableState.value = mutableState.value.copy(contentActions = action.copy(choosingPlaylist = true, loading = true, failure = false))
+        actionsJob = viewModelScope.launch {
+            try {
+                val choices = container.repository.playlistMembership(action.content).map { PlaylistChoice(it.playlist, it.containsAll) }
+                mutableState.value = mutableState.value.copy(contentActions = action.copy(choosingPlaylist = true, loading = false, playlists = choices))
+            } catch (exception: Exception) { actionsFailed(exception) }
+        }
+    }
+
+    fun togglePlaylist(choice: PlaylistChoice) {
+        val action = mutableState.value.contentActions?.takeUnless { it.busy || it.loading } ?: return
+        mutableState.value = mutableState.value.copy(contentActions = action.copy(busy = true, failure = false))
+        actionsJob = viewModelScope.launch {
+            try {
+                container.repository.setPlaylistMembership(choice.playlist, action.content, !choice.containsAll)
+                val choices = container.repository.playlistMembership(action.content).map { PlaylistChoice(it.playlist, it.containsAll) }
+                mutableState.value = mutableState.value.copy(contentActions = action.copy(playlists = choices, busy = false))
+                loadLibrary(LibrarySection.PLAYLISTS, forceRefresh = true, refreshOwnerNames = false)
+                mutableState.value.selectedContent?.takeIf { it.uri == choice.playlist.uri }?.let {
+                    loadDetail(it, rememberCurrent = false, forceRefresh = true)
+                }
+            } catch (exception: Exception) { actionsFailed(exception) }
+        }
+    }
+
+    fun retryContentActions() {
+        val action = mutableState.value.contentActions ?: return
+        if (action.choosingPlaylist) choosePlaylists() else openContentActions(action.content)
+    }
+
+    fun openSongRadio() {
+        val action = mutableState.value.contentActions?.takeUnless { it.busy || it.loading } ?: return
+        actionsJob?.cancel()
+        mutableState.value = mutableState.value.copy(contentActions = action.copy(busy = true, failure = false))
+        actionsJob = viewModelScope.launch {
+            try {
+                val playlist = container.repository.radio(action.content)
+                mutableState.value = mutableState.value.copy(contentActions = null)
+                openDetail(playlist)
+            } catch (exception: Exception) { actionsFailed(exception) }
+        }
+    }
+
+    fun openArtists() {
+        val action = mutableState.value.contentActions?.takeUnless { it.busy || it.loading } ?: return
+        actionsJob?.cancel()
+        mutableState.value = mutableState.value.copy(contentActions = action.copy(busy = true, failure = false))
+        actionsJob = viewModelScope.launch {
+            try {
+                val content = container.repository.detail(action.content).content
+                val artists = content.artists.map { SpotifyContent(it.uri.substringAfterLast(':'), it.uri,
+                    it.name, "", null, ContentKind.ARTIST) }
+                check(artists.isNotEmpty()) { "Artist information is unavailable" }
+                mutableState.value = mutableState.value.copy(contentActions = null, artistChoices = if (artists.size > 1) artists else emptyList())
+                if (artists.size == 1) openDetail(artists.single())
+            } catch (exception: Exception) { actionsFailed(exception) }
+        }
+    }
+
+    fun closeArtistChoices() { mutableState.value = mutableState.value.copy(artistChoices = emptyList()) }
+
+    private fun actionsFailed(exception: Exception) {
+        if (exception is CancellationException) throw exception
+        val action = mutableState.value.contentActions ?: return
+        mutableState.value = mutableState.value.copy(contentActions = action.copy(loading = false, busy = false, failure = true))
+        if (exception is SpotifyAuthException && exception.requiresLogin || exception is BrowserAuthorizationRequiredException)
+            handleRequestFailure(exception, showLoading = false)
+    }
 
     private fun loadDetail(content: SpotifyContent, rememberCurrent: Boolean, forceRefresh: Boolean = false) {
         contentRequestJob?.cancel()
@@ -521,7 +645,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
                 ContentKind.TRACK -> mutableState.value.items.filter { it.kind == ContentKind.TRACK }.takeIf { list ->
                     list.any { it.uri == content.uri }
                 } ?: listOf(content)
-                ContentKind.ALBUM, ContentKind.PLAYLIST ->
+                ContentKind.ALBUM, ContentKind.PLAYLIST, ContentKind.ARTIST ->
                     (detail?.takeIf { it.content.uri == content.uri } ?: container.repository.detail(content)).tracks
                 else -> throw IllegalArgumentException("Unsupported playback item")
             }.filter { it.isPlayable != false }
@@ -619,8 +743,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     private fun updatePlaylistInLibrary(content: SpotifyContent) {
         val current = mutableState.value
         val old = current.libraries[LibrarySection.PLAYLISTS].orEmpty()
-        val updated = if (old.any { it.uri == content.uri }) old.map { if (it.uri == content.uri) content else it }
+        val entries = if (old.any { it.uri == content.uri }) old.map { if (it.uri == content.uri) content else it }
             else listOf(content) + old
+        val updated = entries.sortedBy { !io.github.playmusic.data.api.SpotifyRepository.isLikedSongs(it) }
         val libraries = current.libraries + (LibrarySection.PLAYLISTS to updated)
         mutableState.value = current.copy(libraries = libraries, suggestedItems = librarySuggestions(libraries),
             searchResults = current.searchResults.map { if (it.uri == content.uri) content else it })
@@ -673,7 +798,10 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    private fun publishLibrary(section: LibrarySection, items: List<SpotifyContent>) {
+    private fun publishLibrary(section: LibrarySection, source: List<SpotifyContent>) {
+        val items = if (section == LibrarySection.PLAYLISTS)
+            listOf(io.github.playmusic.data.api.SpotifyRepository.likedSongsContent(container.likedSongsTitle)) +
+                source.filterNot(io.github.playmusic.data.api.SpotifyRepository::isLikedSongs) else source
         val current = mutableState.value
         val libraries = current.libraries + (section to items)
         mutableState.value = current.copy(libraries = libraries, suggestedItems = librarySuggestions(libraries),
@@ -694,6 +822,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         libraryJobs.clear()
         detailPrefetcher.cancel()
         searchCache.clear()
+        actionsJob?.cancel()
     }
 
     private fun executePlaybackRequest(block: suspend () -> Unit): Job {
@@ -718,7 +847,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         }
 
     private fun handleRequestFailure(exception: Exception, showLoading: Boolean = true) {
-        if (exception is BrowserAuthorizationRequiredException) {
+        if (exception is BrowserAuthorizationRequiredException ||
+            exception is SpotifyAuthException && exception.requiresLogin) {
             mutableState.value = mutableState.value.copy(isLoading = false, error = UiError(ErrorKind.LOGIN_REQUIRED))
         } else if (exception is LoginVerificationRequiredException) {
             mutableState.value = mutableState.value.copy(isLoading = false, error = null,

@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".PlayApplication"
@@ -40,5 +41,13 @@
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>
         </service>
+        <receiver android:name=".data.playback.SleepTimerAlarmReceiver" android:exported="false" />
+        <receiver android:name=".data.playback.SleepTimerAdminReceiver"
+            android:label="@string/sleep_timer_title"
+            android:description="@string/sleep_timer_lock_explanation"
+            android:permission="android.permission.BIND_DEVICE_ADMIN" android:exported="true">
+            <meta-data android:name="android.app.device_admin" android:resource="@xml/sleep_timer_admin" />
+            <intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">Sleep timer</string>
+    <string name="sleep_timer_description">At the set time, fade out for 5 seconds, stop playback, then turn off and lock the screen. If playback has ended, only lock the screen.</string>
+    <string name="sleep_timer_duration">After</string>
+    <string name="sleep_timer_clock">At time</string>
+    <string name="sleep_timer_hours">Hours</string>
+    <string name="sleep_timer_hour_of_day">Hour (0–23)</string>
+    <string name="sleep_timer_minutes">Minutes</string>
+    <string name="sleep_timer_next_day">A time that has already passed means tomorrow. Timers are cleared when the device restarts.</string>
+    <string name="sleep_timer_scheduled">Scheduled: %1$s</string>
+    <string name="sleep_timer_fading">Fading out…</string>
+    <string name="sleep_timer_start">Set timer</string>
+    <string name="sleep_timer_cancel">Cancel timer</string>
+    <string name="sleep_timer_close">Close</string>
+    <string name="sleep_timer_lock_explanation">Allow Play to turn off and lock the screen when the timer ends. Only the screen lock permission is requested. Unlocking may require your PIN or password.</string>
+    <string name="sleep_timer_allow_lock">Allow screen lock</string>
+    <string name="sleep_timer_allow_alarm">Allow precise timers</string>
+    <string name="sleep_timer_lock_required">Allow screen lock before setting a timer.</string>
+    <string name="sleep_timer_alarm_required">Allow alarms and reminders to run the timer at the specified time.</string>
+    <string name="sleep_timer_lock_unsupported">This device does not support the screen lock permission.</string>
+    <string name="sleep_timer_settings_unavailable">The required Android settings screen is unavailable on this device.</string>
+    <string name="sleep_timer_invalid">Enter hours and minutes. The duration must be at least one minute.</string>
+    <string name="sleep_timer_storage_error">The timer could not be saved. Please try again.</string>
+    <string name="sleep_timer_completion_error">The timer could not finish. Check the screen lock permission and set the timer again.</string>
+</resources>

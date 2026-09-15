@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">पसंद किए गए गाने</string>
+    <string name="add_favorite">पसंदीदा में जोड़ें</string>
+    <string name="remove_favorite">पसंदीदा से हटाएँ</string>
+    <string name="add_to_playlist">प्लेलिस्ट में जोड़ें</string>
+    <string name="already_in_playlist">प्लेलिस्ट में पहले से है</string>
+    <string name="go_to_song_radio">गाने के रेडियो पर जाएँ</string>
+    <string name="go_to_artist">कलाकार पर जाएँ</string>
+    <string name="search_filter_all">सभी</string>
+    <string name="search_filter_artists">कलाकार</string>
+    <string name="search_filter_podcasts">पॉडकास्ट और शो</string>
+    <string name="search_filter_genres">शैलियाँ और मूड</string>
+    <string name="close">बंद करें</string>
+    <string name="search_filter_tracks">गाने</string>
+</resources>

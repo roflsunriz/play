@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">پسندیدہ گانے</string>
+    <string name="add_favorite">پسندیدہ میں شامل کریں</string>
+    <string name="remove_favorite">پسندیدہ سے ہٹائیں</string>
+    <string name="add_to_playlist">پلے لسٹ میں شامل کریں</string>
+    <string name="already_in_playlist">پلے لسٹ میں پہلے سے شامل</string>
+    <string name="go_to_song_radio">گانے کے ریڈیو پر جائیں</string>
+    <string name="go_to_artist">فنکار پر جائیں</string>
+    <string name="search_filter_all">سب</string>
+    <string name="search_filter_artists">فنکار</string>
+    <string name="search_filter_podcasts">پوڈکاسٹ اور پروگرام</string>
+    <string name="search_filter_genres">اصناف اور مزاج</string>
+    <string name="close">بند کریں</string>
+    <string name="search_filter_tracks">گانے</string>
+</resources>

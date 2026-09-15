@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">Liked Songs</string>
+    <string name="add_favorite">Add to favorites</string>
+    <string name="remove_favorite">Remove from favorites</string>
+    <string name="add_to_playlist">Add to playlist</string>
+    <string name="already_in_playlist">Already in playlist</string>
+    <string name="go_to_song_radio">Go to song radio</string>
+    <string name="go_to_artist">Go to artist</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_artists">Artists</string>
+    <string name="search_filter_podcasts">Podcasts &amp; Shows</string>
+    <string name="search_filter_genres">Genres &amp; Moods</string>
+    <string name="close">Close</string>
+    <string name="search_filter_tracks">Tracks</string>
+</resources>

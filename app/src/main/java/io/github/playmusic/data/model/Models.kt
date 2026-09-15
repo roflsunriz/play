@@ -7,7 +7,20 @@ enum class ContentKind {
     ARTIST,
     SHOW,
     EPISODE,
+    GENRE,
 }
+
+enum class SearchFilter(val kinds: List<ContentKind>) {
+    ALL(listOf(ContentKind.TRACK, ContentKind.PLAYLIST, ContentKind.ALBUM, ContentKind.ARTIST, ContentKind.SHOW, ContentKind.EPISODE, ContentKind.GENRE)),
+    TRACKS(listOf(ContentKind.TRACK)),
+    PLAYLISTS(listOf(ContentKind.PLAYLIST)),
+    ALBUMS(listOf(ContentKind.ALBUM)),
+    ARTISTS(listOf(ContentKind.ARTIST)),
+    PODCASTS(listOf(ContentKind.SHOW, ContentKind.EPISODE)),
+    GENRES(listOf(ContentKind.GENRE)),
+}
+
+data class ContentArtist(val uri: String, val name: String)
 
 data class SpotifyContent(
     val id: String,
@@ -25,6 +38,7 @@ data class SpotifyContent(
     val description: String? = null,
     val trackCount: Int? = null,
     val releaseDate: String? = null,
+    val artists: List<ContentArtist> = emptyList(),
 )
 
 data class ContentDetail(
@@ -33,6 +47,7 @@ data class ContentDetail(
     val totalTracks: Int = tracks.size,
     val releaseDate: String? = null,
     val playlistMetadata: PlaylistMetadata? = null,
+    val relatedContent: List<SpotifyContent> = emptyList(),
 )
 
 enum class RepeatMode(val apiValue: String) {

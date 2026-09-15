@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">睡眠定时器</string>
+    <string name="sleep_timer_description">到达指定时间后，用5秒淡出并停止播放，然后关闭并锁定屏幕。若播放已结束，则只关闭并锁定屏幕。</string>
+    <string name="sleep_timer_duration">经过时间</string>
+    <string name="sleep_timer_clock">指定时间</string>
+    <string name="sleep_timer_hours">小时</string>
+    <string name="sleep_timer_hour_of_day">时（0–23）</string>
+    <string name="sleep_timer_minutes">分钟</string>
+    <string name="sleep_timer_next_day">已过的时间指明天。重启设备会取消定时器。</string>
+    <string name="sleep_timer_scheduled">已设置：%1$s</string>
+    <string name="sleep_timer_fading">正在淡出…</string>
+    <string name="sleep_timer_start">设置定时器</string>
+    <string name="sleep_timer_cancel">取消定时器</string>
+    <string name="sleep_timer_close">关闭</string>
+    <string name="sleep_timer_lock_explanation">允许Play在定时结束时关闭并锁定屏幕。仅请求锁屏权限。解锁可能需要PIN码或密码。</string>
+    <string name="sleep_timer_allow_lock">允许锁屏</string>
+    <string name="sleep_timer_allow_alarm">允许精确定时</string>
+    <string name="sleep_timer_lock_required">设置定时器前，请允许锁屏。</string>
+    <string name="sleep_timer_alarm_required">请允许闹钟和提醒，以便在指定时间执行。</string>
+    <string name="sleep_timer_lock_unsupported">此设备不支持锁屏权限。</string>
+    <string name="sleep_timer_settings_unavailable">此设备无法打开所需的Android设置页面。</string>
+    <string name="sleep_timer_invalid">请输入小时和分钟。时长至少为1分钟。</string>
+    <string name="sleep_timer_storage_error">无法保存定时器，请重试。</string>
+    <string name="sleep_timer_completion_error">定时器未能完成。请检查锁屏权限并重新设置。</string>
+</resources>

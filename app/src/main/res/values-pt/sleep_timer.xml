@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">Temporizador de sono</string>
+    <string name="sleep_timer_description">Na hora indicada, reduz o volume por 5 segundos, para a reprodução e apaga e bloqueia a tela. Se a reprodução já terminou, apenas bloqueia a tela.</string>
+    <string name="sleep_timer_duration">Duração</string>
+    <string name="sleep_timer_clock">Horário</string>
+    <string name="sleep_timer_hours">Horas</string>
+    <string name="sleep_timer_hour_of_day">Hora (0–23)</string>
+    <string name="sleep_timer_minutes">Minutos</string>
+    <string name="sleep_timer_next_day">Um horário passado corresponde a amanhã. Reiniciar o dispositivo cancela o temporizador.</string>
+    <string name="sleep_timer_scheduled">Agendado: %1$s</string>
+    <string name="sleep_timer_fading">Reduzindo volume…</string>
+    <string name="sleep_timer_start">Definir temporizador</string>
+    <string name="sleep_timer_cancel">Cancelar temporizador</string>
+    <string name="sleep_timer_close">Fechar</string>
+    <string name="sleep_timer_lock_explanation">Permita que o Play apague e bloqueie a tela ao terminar. Apenas a permissão de bloqueio é solicitada. O desbloqueio pode exigir seu PIN ou senha.</string>
+    <string name="sleep_timer_allow_lock">Permitir bloqueio</string>
+    <string name="sleep_timer_allow_alarm">Permitir horário exato</string>
+    <string name="sleep_timer_lock_required">Permita o bloqueio de tela antes de definir o temporizador.</string>
+    <string name="sleep_timer_alarm_required">Permita alarmes e lembretes para executar no horário indicado.</string>
+    <string name="sleep_timer_lock_unsupported">Este dispositivo não oferece a permissão de bloqueio de tela.</string>
+    <string name="sleep_timer_settings_unavailable">A tela de configurações do Android necessária está indisponível.</string>
+    <string name="sleep_timer_invalid">Insira horas e minutos. A duração mínima é um minuto.</string>
+    <string name="sleep_timer_storage_error">Não foi possível salvar o temporizador. Tente novamente.</string>
+    <string name="sleep_timer_completion_error">O temporizador não pôde terminar. Verifique a permissão de bloqueio e configure novamente.</string>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">سلیپ ٹائمر</string>
+    <string name="sleep_timer_description">مقررہ وقت پر 5 سیکنڈ میں آواز آہستہ کرکے پلے بیک بند ہوگا، پھر اسکرین بند اور لاک ہوگی۔ پلے بیک ختم ہو چکا ہو تو صرف اسکرین لاک ہوگی۔</string>
+    <string name="sleep_timer_duration">دورانیہ</string>
+    <string name="sleep_timer_clock">مقررہ وقت</string>
+    <string name="sleep_timer_hours">گھنٹے</string>
+    <string name="sleep_timer_hour_of_day">گھنٹہ (0–23)</string>
+    <string name="sleep_timer_minutes">منٹ</string>
+    <string name="sleep_timer_next_day">گزر چکا وقت کل کے لیے ہوگا۔ ڈیوائس دوبارہ شروع کرنے سے ٹائمر منسوخ ہو جاتا ہے۔</string>
+    <string name="sleep_timer_scheduled">مقررہ: %1$s</string>
+    <string name="sleep_timer_fading">آواز کم ہو رہی ہے…</string>
+    <string name="sleep_timer_start">ٹائمر لگائیں</string>
+    <string name="sleep_timer_cancel">ٹائمر منسوخ کریں</string>
+    <string name="sleep_timer_close">بند کریں</string>
+    <string name="sleep_timer_lock_explanation">ٹائمر ختم ہونے پر Play کو اسکرین بند اور لاک کرنے دیں۔ صرف اسکرین لاک کی اجازت مانگی جاتی ہے۔ کھولنے کے لیے PIN یا پاس ورڈ درکار ہو سکتا ہے۔</string>
+    <string name="sleep_timer_allow_lock">اسکرین لاک کی اجازت دیں</string>
+    <string name="sleep_timer_allow_alarm">درست وقت کی اجازت دیں</string>
+    <string name="sleep_timer_lock_required">ٹائمر لگانے سے پہلے اسکرین لاک کی اجازت دیں۔</string>
+    <string name="sleep_timer_alarm_required">مقررہ وقت پر ٹائمر چلانے کے لیے الارم اور یاد دہانیوں کی اجازت دیں۔</string>
+    <string name="sleep_timer_lock_unsupported">یہ ڈیوائس اسکرین لاک کی اجازت کو سپورٹ نہیں کرتی۔</string>
+    <string name="sleep_timer_settings_unavailable">اس ڈیوائس پر مطلوبہ Android ترتیبات کا صفحہ دستیاب نہیں۔</string>
+    <string name="sleep_timer_invalid">گھنٹے اور منٹ درج کریں۔ دورانیہ کم از کم ایک منٹ ہونا چاہیے۔</string>
+    <string name="sleep_timer_storage_error">ٹائمر محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔</string>
+    <string name="sleep_timer_completion_error">ٹائمر مکمل نہیں ہو سکا۔ اسکرین لاک کی اجازت چیک کرکے دوبارہ لگائیں۔</string>
+</resources>

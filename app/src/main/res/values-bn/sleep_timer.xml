@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">স্লিপ টাইমার</string>
+    <string name="sleep_timer_description">নির্দিষ্ট সময়ে ৫ সেকেন্ড ধরে আওয়াজ কমিয়ে প্লেব্যাক বন্ধ করা হবে, তারপর স্ক্রিন বন্ধ ও লক হবে। প্লেব্যাক শেষ হলে শুধু স্ক্রিন লক হবে।</string>
+    <string name="sleep_timer_duration">সময়কাল</string>
+    <string name="sleep_timer_clock">নির্দিষ্ট সময়</string>
+    <string name="sleep_timer_hours">ঘণ্টা</string>
+    <string name="sleep_timer_hour_of_day">ঘণ্টা (0–23)</string>
+    <string name="sleep_timer_minutes">মিনিট</string>
+    <string name="sleep_timer_next_day">পেরিয়ে যাওয়া সময় মানে আগামীকাল। ডিভাইস পুনরায় চালু করলে টাইমার বাতিল হয়।</string>
+    <string name="sleep_timer_scheduled">নির্ধারিত: %1$s</string>
+    <string name="sleep_timer_fading">আওয়াজ কমছে…</string>
+    <string name="sleep_timer_start">টাইমার সেট করুন</string>
+    <string name="sleep_timer_cancel">টাইমার বাতিল করুন</string>
+    <string name="sleep_timer_close">বন্ধ করুন</string>
+    <string name="sleep_timer_lock_explanation">টাইমার শেষে Play-কে স্ক্রিন বন্ধ ও লক করতে দিন। শুধু স্ক্রিন লকের অনুমতি চাওয়া হচ্ছে। আনলক করতে PIN বা পাসওয়ার্ড লাগতে পারে।</string>
+    <string name="sleep_timer_allow_lock">স্ক্রিন লকের অনুমতি দিন</string>
+    <string name="sleep_timer_allow_alarm">সঠিক সময়ের অনুমতি দিন</string>
+    <string name="sleep_timer_lock_required">টাইমার সেট করার আগে স্ক্রিন লকের অনুমতি দিন।</string>
+    <string name="sleep_timer_alarm_required">নির্দিষ্ট সময়ে টাইমার চালাতে অ্যালার্ম ও রিমাইন্ডারের অনুমতি দিন।</string>
+    <string name="sleep_timer_lock_unsupported">এই ডিভাইস স্ক্রিন লকের অনুমতি সমর্থন করে না।</string>
+    <string name="sleep_timer_settings_unavailable">এই ডিভাইসে প্রয়োজনীয় Android সেটিংস পৃষ্ঠা নেই।</string>
+    <string name="sleep_timer_invalid">ঘণ্টা ও মিনিট লিখুন। সময়কাল অন্তত এক মিনিট হতে হবে।</string>
+    <string name="sleep_timer_storage_error">টাইমার সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="sleep_timer_completion_error">টাইমার সম্পন্ন করা যায়নি। স্ক্রিন লকের অনুমতি যাচাই করে আবার সেট করুন।</string>
+</resources>

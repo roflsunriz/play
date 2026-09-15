@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -94,6 +96,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val routeStates = rememberSaveableStateHolder()
     val context = LocalContext.current
+    var sleepTimerOpen by rememberSaveable { mutableStateOf(false) }
     val pickPlaylistImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) viewModel.loadPlaylistImage(context.contentResolver, uri)
     }
@@ -160,6 +163,9 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onViewportChanged = viewModel::prefetchDetails,
                 onPlaylistSyncRetry = viewModel::retryPlaylistSync,
                 onAudioEffects = viewModel::openAudioEffects,
+                onSleepTimer = { sleepTimerOpen = true },
+                onContentActions = viewModel::openContentActions,
+                onSearchFilter = viewModel::selectSearchFilter,
             )
         }
     }
@@ -167,6 +173,13 @@ fun PlayRoute(viewModel: PlayViewModel) {
         DeletePlaylistDialog(it, state.isDeletingPlaylist, state.playlistDeletionFailed,
             viewModel::deletePlaylist, viewModel::cancelPlaylistDeletion)
     }
+    if (sleepTimerOpen) SleepTimerDialog(viewModel.sleepTimer) { sleepTimerOpen = false }
+    state.contentActions?.let { action ->
+        ContentActionsDialog(action, viewModel::toggleFavorite, viewModel::choosePlaylists, viewModel::togglePlaylist,
+            viewModel::openSongRadio, viewModel::openArtists, viewModel::retryContentActions, viewModel::closeContentActions)
+    }
+    if (state.artistChoices.isNotEmpty()) ArtistPicker(state.artistChoices,
+        { viewModel.closeArtistChoices(); viewModel.openDetail(it) }, viewModel::closeArtistChoices)
     state.error?.let { ErrorDialog(it, viewModel::clearError, onLogin) }
 }
 
@@ -257,12 +270,17 @@ internal fun HomeScreen(
     onViewportChanged: (List<SpotifyContent>) -> Unit = {},
     onPlaylistSyncRetry: () -> Unit = onRefresh,
     onAudioEffects: () -> Unit = {},
+    onSleepTimer: () -> Unit = {},
+    onContentActions: (SpotifyContent) -> Unit = {},
+    onSearchFilter: (io.github.playmusic.data.model.SearchFilter) -> Unit = {},
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
+    val savedUris = remember(state.libraries) { listOf(LibrarySection.TRACKS, LibrarySection.ALBUMS)
+        .flatMap { state.libraries[it].orEmpty() }.map { it.uri }.toSet() }
     if (playerExpanded && state.playback.item != null) {
         ExpandedPlayerScreen(state.playback, onPlayPause, onNext, onPrevious, onSeek, onShuffle, onRepeat,
-            onBack = { playerExpanded = false })
+            onBack = { playerExpanded = false }, onContentActions = onContentActions, savedUris = savedUris)
         return
     }
     BackHandler(enabled = state.selectedContent != null, onBack = onBack)
@@ -315,9 +333,13 @@ internal fun HomeScreen(
                         Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                     }
                     IconButton(onClick = { menuExpanded = true }, modifier = Modifier.testTag("settings-button")) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.settings))
+                        Icon(Icons.Default.Menu, stringResource(R.string.settings))
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.sleep_timer_title)) },
+                            leadingIcon = { Icon(Icons.Default.Timer, null) },
+                            modifier = Modifier.testTag("sleep-timer-menu-item"),
+                            onClick = { menuExpanded = false; onSleepTimer() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.audio_effects_title)) },
                             leadingIcon = { Icon(Icons.Default.Equalizer, null) },
                             modifier = Modifier.testTag("audio-effects-menu-item"),
@@ -362,7 +384,7 @@ internal fun HomeScreen(
             if (state.selectedContent != null) {
                 listStates.SaveableStateProvider("detail:${state.selectedContent.uri}") {
                     ContentDetailScreen(state.selectedContent, state.detail, state.isLoading, onPlay, onOpenContent,
-                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist)
+                        onRefresh, onPlayDetailTrack, onEditPlaylist, onDeletePlaylist, onContentActions, savedUris)
                 }
             } else {
                 listStates.SaveableStateProvider(state.selectedSection.name) {
@@ -371,10 +393,13 @@ internal fun HomeScreen(
                         matchingSuggestions = state.searchSuggestions,
                         previewFailed = state.searchPreviewFailed,
                         onQueryChanged = onSearchChanged, onSearch = onSearch, onPlay = onPlay,
-                        onOpen = onOpenContent, onViewportChanged = onViewportChanged, showInput = !compactHeader)
+                        onOpen = onOpenContent, onViewportChanged = onViewportChanged, showInput = !compactHeader,
+                        searchFilter = state.searchFilter, onSearchFilter = onSearchFilter,
+                        onContentActions = onContentActions, savedUris = savedUris)
                     else LibraryContent(state.selectedSection, state.items,
                         state.queryFor(state.selectedSection), state.sortFor(state.selectedSection),
-                        onLibraryQueryChanged, onLibrarySortChanged, onPlay, onOpenContent, onViewportChanged, showControls = !compactHeader)
+                        onLibraryQueryChanged, onLibrarySortChanged, onPlay, onOpenContent, onViewportChanged, showControls = !compactHeader,
+                        onContentActions = onContentActions, savedUris = savedUris)
                 }
             }
             if (state.isLoading) {

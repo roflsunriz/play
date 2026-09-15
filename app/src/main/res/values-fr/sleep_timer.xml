@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">Minuteur de veille</string>
+    <string name="sleep_timer_description">À l’heure prévue, le volume diminue pendant 5 secondes, la lecture s’arrête, puis l’écran s’éteint et se verrouille. Si la lecture est terminée, seul l’écran est verrouillé.</string>
+    <string name="sleep_timer_duration">Durée</string>
+    <string name="sleep_timer_clock">Heure</string>
+    <string name="sleep_timer_hours">Heures</string>
+    <string name="sleep_timer_hour_of_day">Heure (0–23)</string>
+    <string name="sleep_timer_minutes">Minutes</string>
+    <string name="sleep_timer_next_day">Une heure déjà passée correspond à demain. Le redémarrage annule le minuteur.</string>
+    <string name="sleep_timer_scheduled">Programmé : %1$s</string>
+    <string name="sleep_timer_fading">Baisse du volume…</string>
+    <string name="sleep_timer_start">Programmer</string>
+    <string name="sleep_timer_cancel">Annuler le minuteur</string>
+    <string name="sleep_timer_close">Fermer</string>
+    <string name="sleep_timer_lock_explanation">Autorisez Play à éteindre et verrouiller l’écran à la fin du minuteur. Seul le verrouillage est demandé. Le déverrouillage peut nécessiter votre code ou mot de passe.</string>
+    <string name="sleep_timer_allow_lock">Autoriser le verrouillage</string>
+    <string name="sleep_timer_allow_alarm">Autoriser l’heure précise</string>
+    <string name="sleep_timer_lock_required">Autorisez le verrouillage avant de programmer le minuteur.</string>
+    <string name="sleep_timer_alarm_required">Autorisez les alarmes et rappels pour respecter l’heure prévue.</string>
+    <string name="sleep_timer_lock_unsupported">Cet appareil ne prend pas en charge cette autorisation de verrouillage.</string>
+    <string name="sleep_timer_settings_unavailable">La page des paramètres Android requise est indisponible.</string>
+    <string name="sleep_timer_invalid">Saisissez les heures et minutes. La durée minimale est d’une minute.</string>
+    <string name="sleep_timer_storage_error">Impossible d’enregistrer le minuteur. Réessayez.</string>
+    <string name="sleep_timer_completion_error">Le minuteur n’a pas pu se terminer. Vérifiez l’autorisation de verrouillage et reprogrammez-le.</string>
+</resources>

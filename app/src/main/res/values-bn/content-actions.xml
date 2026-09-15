@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">পছন্দের গান</string>
+    <string name="add_favorite">পছন্দে যোগ করুন</string>
+    <string name="remove_favorite">পছন্দ থেকে সরান</string>
+    <string name="add_to_playlist">প্লেলিস্টে যোগ করুন</string>
+    <string name="already_in_playlist">প্লেলিস্টে আগে থেকেই আছে</string>
+    <string name="go_to_song_radio">গানের রেডিওতে যান</string>
+    <string name="go_to_artist">শিল্পীর কাছে যান</string>
+    <string name="search_filter_all">সব</string>
+    <string name="search_filter_artists">শিল্পী</string>
+    <string name="search_filter_podcasts">পডকাস্ট ও অনুষ্ঠান</string>
+    <string name="search_filter_genres">ধরন ও মেজাজ</string>
+    <string name="close">বন্ধ করুন</string>
+    <string name="search_filter_tracks">গান</string>
+</resources>

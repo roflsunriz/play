@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
 import io.github.playmusic.data.auth.ProtoWire.fieldVarint
+import io.github.playmusic.data.api.SpotifyRepository
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.ui.LibrarySection
@@ -114,10 +115,13 @@ class LibraryBrowsingTest {
     @Test fun prefetchDoesNotReadCredentialsOnMainOrRewriteTheVisibleLibrary() {
         val model = createModel()
         await { model.state.value.libraries.size == 3 }
+        assertEquals(SpotifyRepository.LIKED_SONGS_URI, model.state.value.items.first().uri)
+        assertEquals(1, model.state.value.items.count(SpotifyRepository::isLikedSongs))
         val items = model.state.value.items
+        val playlist = items.first { !SpotifyRepository.isLikedSongs(it) }
         watchMainSessionReads = true
         instrumentation.runOnMainSync { model.prefetchDetails(items) }
-        await { app.repository.peekDetail(items.first()) != null }
+        await { app.repository.peekDetail(playlist) != null }
         instrumentation.runOnMainSync { model.prefetchDetails(items) }
         assertEquals(0, mainSessionReads.get())
         assertEquals(items, model.state.value.items)
@@ -134,7 +138,7 @@ class LibraryBrowsingTest {
     @Test fun openingAPrefetchedDetailDoesNotReadCredentialsOnMainOrRequestItAgain() {
         val model = createModel()
         await { model.state.value.libraries.size == 3 }
-        val item = model.state.value.items.first()
+        val item = model.state.value.items.first { !SpotifyRepository.isLikedSongs(it) }
         runBlocking { app.repository.detail(item) }
         val before = requests.get()
         watchMainSessionReads = true
@@ -154,19 +158,19 @@ class LibraryBrowsingTest {
             model.updateSearchQuery("Alpha")
             assertEquals(listOf("Alpha"), model.state.value.searchSuggestions.map { it.title })
         }
-        await { model.state.value.searchResults.size == 3 }
+        await { model.state.value.searchResults.size == 7 }
         assertEquals(null, searchRequests["Al"])
-        assertEquals(3, searchRequests["Alpha"]?.get())
+        assertEquals(7, searchRequests["Alpha"]?.get())
         instrumentation.runOnMainSync {
             model.selectSection(LibrarySection.ALBUMS)
             model.selectSection(LibrarySection.SEARCH)
-            assertEquals(3, model.state.value.items.size)
+            assertEquals(7, model.state.value.items.size)
             assertFalse(model.state.value.isLoading)
             model.updateSearchQuery("")
             assertTrue(model.state.value.items.isEmpty())
             assertTrue(model.state.value.searchSuggestions.isEmpty())
         }
-        assertEquals(3, searchRequests["Alpha"]?.get())
+        assertEquals(7, searchRequests["Alpha"]?.get())
     }
 
     @Test fun aSlowEarlierQueryCannotReplaceNewerSearchResults() {
@@ -175,7 +179,7 @@ class LibraryBrowsingTest {
         instrumentation.runOnMainSync { model.selectSection(LibrarySection.SEARCH); model.updateSearchQuery("old") }
         assertTrue(oldStarted.await(5, TimeUnit.SECONDS))
         instrumentation.runOnMainSync { model.updateSearchQuery("new") }
-        await { model.state.value.searchResults.size == 3 }
+        await { model.state.value.searchResults.size == 7 }
         assertTrue(model.state.value.searchResults.all { it.title == "new" })
         releaseOld.countDown()
         instrumentation.waitForIdleSync()
@@ -195,7 +199,7 @@ class LibraryBrowsingTest {
                         rows.fold(ByteArray(0)) { bytes, (id, _) -> bytes + fieldBytes(3, fieldString(1, "spotify:playlist:$id")) } +
                         rows.fold(ByteArray(0)) { bytes, (_, title) -> bytes + fieldBytes(4, fieldBytes(2, fieldString(1, title))) })
                 }
-                uri.path == "/collection/v2/paging" -> ByteArray(0)
+                uri.path == "/collection/v2/paging" -> fieldString(3, "synthetic-sync")
                 uri.path.startsWith("/playlist/v2/playlist/") -> fieldBytes(3, fieldString(1, "Prefetched detail title")) + fieldVarint(2, 0)
                 uri.path == "/pathfinder/v2/query" -> {
                     val json = JSONObject(body.toString(Charsets.UTF_8))
@@ -206,9 +210,14 @@ class LibraryBrowsingTest {
                         "searchAlbums" -> "albumsV2" to "album"
                         "searchTracks" -> "tracksV2" to "track"
                         "searchPlaylists" -> "playlists" to "playlist"
+                        "searchArtists" -> "artists" to "artist"
+                        "searchPodcasts" -> "podcasts" to "show"
+                        "searchEpisodes" -> "episodes" to "episode"
+                        "searchGenres" -> "genres" to "genre"
                         else -> error("Unexpected test request")
                     }
-                    """{"data":{"searchV2":{"$key":{"items":[{"item":{"data":{"uri":"spotify:$kind:$query","name":"$query"}}}]}}}}""".toByteArray()
+                    val title = if (kind == "artist") "\"profile\":{\"name\":\"$query\"}" else "\"name\":\"$query\""
+                    """{"data":{"searchV2":{"$key":{"items":[{"item":{"data":{"uri":"spotify:$kind:$query",$title}}}]}}}}""".toByteArray()
                 }
                 else -> error("Unexpected test request: ${uri.path}")
             }

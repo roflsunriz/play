@@ -81,6 +81,8 @@ internal fun ExpandedPlayerScreen(
     onRepeat: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onContentActions: (SpotifyContent) -> Unit = {},
+    savedUris: Set<String> = emptySet(),
 ) {
     BackHandler(onBack = onBack)
     val haptics = LocalHapticFeedback.current
@@ -98,6 +100,8 @@ internal fun ExpandedPlayerScreen(
                 }
                 Text(stringResource(R.string.player_now_playing), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(start = 8.dp).testTag("expanded-player-heading"))
+                Spacer(Modifier.weight(1f))
+                playback.item?.let { ContentAddButton(it, it.uri in savedUris, onContentActions) }
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 if (horizontal) {

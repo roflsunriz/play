@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">الأغاني المعجب بها</string>
+    <string name="add_favorite">إضافة إلى المفضلة</string>
+    <string name="remove_favorite">إزالة من المفضلة</string>
+    <string name="add_to_playlist">إضافة إلى قائمة تشغيل</string>
+    <string name="already_in_playlist">موجودة في قائمة التشغيل</string>
+    <string name="go_to_song_radio">الانتقال إلى راديو الأغنية</string>
+    <string name="go_to_artist">الانتقال إلى الفنان</string>
+    <string name="search_filter_all">الكل</string>
+    <string name="search_filter_artists">الفنانون</string>
+    <string name="search_filter_podcasts">البودكاست والبرامج</string>
+    <string name="search_filter_genres">الأنواع والحالات المزاجية</string>
+    <string name="close">إغلاق</string>
+    <string name="search_filter_tracks">الأغاني</string>
+</resources>

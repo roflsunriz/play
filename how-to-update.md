@@ -120,6 +120,16 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 
 ## 復旧
 
+### 保存操作・検索・タイマーの追加検証
+
+- `SavedLibraryActionsTest`と`CatalogNavigationTest`は、コレクション書込、所属判定・削除の原本確認、7カテゴリ検索、ジャンルのプレビューと続きのページを検査する。
+- 分離AVDで`ContentActionsScreenTest`、`SleepTimerDialogTest`、`LibraryBrowsingTest`、`PlaylistStartupCacheTest`、`PlaylistViewModelTest`を実行する。お気に入りは画面用の項目として一つだけ追加し、ディスクの原本プレイリスト一覧へ混ぜないことを検査する。画面画像は`screenshotPrefix`を指定して保存できる。
+- 実アカウントの読み取りは`CatalogNavigationAccountTest`へ`liveCatalog=true`を渡す。「jazz」「lo-fi」「トリッカル」の7カテゴリ検索、曲詳細、アーティスト、ラジオ、番組、ジャンルの各導線を検査する。
+- お気に入りの一時変更には別途明示許可を得てから、`SavedItemsAccountTest`へ`liveSavedItems=true`を渡す。未登録の曲・アルバム各1件だけを追加・削除し、原本全ページで既存内容を維持したことを確認する。途中失敗のジャーナルが残ると次の試験を停止するため、対象を確認し一時追加分だけを削除してから再開する。
+- `PlaylistAccountTest`の`livePlaylists=true`は、新しく作る非公開リスト内で曲・アルバムの所属チェックと追加・削除も検査する。既存のリストを検証対象として変更しない。
+- タイマーのOS権限、分離AVDでの実アラーム・停止・消灯の検証は[タイマー手順](docs/sleep-timer.md)を参照する。実機へ端末管理者権限を自動付与しない。
+- 認証キャンセル回帰は`SecureSessionStoreTest#cancellingSearchDuringRefreshStillPersistsRotatedCredentials`を分離環境で実行する。実際に失効した更新トークンは復元できないため一度通常ログインを行い、その後`LibraryAccountTest#consecutiveRefreshesUseTheSavedCredentials`で保存情報の連続更新を確認する。ログイン待機中の実機を再インストール・instrumentationで停止しない。
+
 不具合のある更新は対象コミットをrevertし、既存の認証情報を保ったまま以前のAPKへ戻す。暗号化セッションの形式を変更するときはスキーマ番号と移行・破損時の処理を同時に検証する。外部APIが変わった場合、失敗を空一覧へ置き換えて隠さず、利用者へ取得失敗を示す。
 
 セッション形式3は旧形式2を読み込んだ際に暗号化して移行する。形式3を未対応の古いAPKへ戻すと保存認証を読めないため、再ログインが必要になる。旧APKへの切り戻しで認証状態を保持できるとは扱わない。本人がブラウザー認証中の端末には再インストール・強制終了・instrumentationを実行せず、完了または期限切れを確認する。

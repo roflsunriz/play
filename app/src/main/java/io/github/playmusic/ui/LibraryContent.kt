@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -27,6 +29,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +64,7 @@ import coil3.compose.AsyncImage
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.SearchFilter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,6 +81,8 @@ internal fun LibraryContent(
     onOpen: (SpotifyContent) -> Unit,
     onViewportChanged: (List<SpotifyContent>) -> Unit,
     showControls: Boolean = true,
+    onContentActions: (SpotifyContent) -> Unit = {},
+    savedUris: Set<String> = emptySet(),
 ) {
     Column(Modifier.fillMaxSize()) {
         if (showControls) {
@@ -87,7 +93,7 @@ internal fun LibraryContent(
         }
         ContentList(items, onPlay, onOpen, onViewportChanged, emptyText = if (query.isNotBlank())
             stringResource(R.string.no_filter_results) else stringResource(R.string.empty_library),
-            presentationKey = "$query\u0000${sort.name}")
+            presentationKey = "$query\u0000${sort.name}", onContentActions = onContentActions, savedUris = savedUris)
     }
 }
 
@@ -167,6 +173,10 @@ internal fun SearchContent(
     onOpen: (SpotifyContent) -> Unit,
     onViewportChanged: (List<SpotifyContent>) -> Unit,
     showInput: Boolean = true,
+    searchFilter: SearchFilter = SearchFilter.ALL,
+    onSearchFilter: (SearchFilter) -> Unit = {},
+    onContentActions: (SpotifyContent) -> Unit = {},
+    savedUris: Set<String> = emptySet(),
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val submit = { keyboard?.hide(); onSearch() }
@@ -178,6 +188,20 @@ internal fun SearchContent(
                 Icon(Icons.Default.Search, stringResource(R.string.search_action))
             }
         }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SearchFilter.entries.forEach { filter -> FilterChip(selected = searchFilter == filter,
+                onClick = { onSearchFilter(filter) }, modifier = Modifier.testTag("search-filter-${filter.name.lowercase()}"),
+                label = { Text(stringResource(when (filter) {
+                    SearchFilter.ALL -> R.string.search_filter_all
+                    SearchFilter.TRACKS -> R.string.search_filter_tracks
+                    SearchFilter.PLAYLISTS -> R.string.playlists
+                    SearchFilter.ALBUMS -> R.string.albums
+                    SearchFilter.ARTISTS -> R.string.search_filter_artists
+                    SearchFilter.PODCASTS -> R.string.search_filter_podcasts
+                    SearchFilter.GENRES -> R.string.search_filter_genres
+                })) }) }
+        }
         val suggesting = query.isBlank()
         if (previewFailed) Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.request_failed), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
@@ -186,10 +210,11 @@ internal fun SearchContent(
         if (suggesting) Text(stringResource(R.string.suggested_content),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).testTag("suggested-heading"))
-        ContentList(if (suggesting) suggestions else items, onPlay, onOpen, onViewportChanged,
-            suggestions = if (suggesting) emptyList() else matchingSuggestions,
+        ContentList((if (suggesting) suggestions else items).filter { it.kind in searchFilter.kinds }, onPlay, onOpen, onViewportChanged,
+            suggestions = if (suggesting) emptyList() else matchingSuggestions.filter { it.kind in searchFilter.kinds },
             resultHeading = if (suggesting) null else stringResource(R.string.search_results),
-            suggestionHeading = stringResource(R.string.matching_suggestions), presentationKey = query)
+            suggestionHeading = stringResource(R.string.matching_suggestions), presentationKey = "$searchFilter:$query",
+            onContentActions = onContentActions, savedUris = savedUris)
     }
 }
 
@@ -205,6 +230,8 @@ internal fun ContentList(
     suggestionHeading: String? = null,
     presentationKey: String = "",
     listState: LazyListState = rememberLazyListState(),
+    onContentActions: (SpotifyContent) -> Unit = {},
+    savedUris: Set<String> = emptySet(),
 ) {
     var previousPresentation by rememberSaveable { mutableStateOf(presentationKey) }
     LaunchedEffect(presentationKey) {
@@ -242,18 +269,19 @@ internal fun ContentList(
                 Text(suggestionHeading, style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(4.dp).testTag("matching-suggestions-heading"))
             }
-            items(suggestions, key = { it.uri }) { item -> ContentCard(item, onPlay, onOpen) }
+            items(suggestions, key = { it.uri }) { item -> ContentCard(item, onPlay, onOpen, onContentActions, savedUris) }
         }
         if (resultItems.isNotEmpty() && resultHeading != null) item(key = "results-heading") {
             Text(resultHeading, style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(4.dp).testTag("search-results-heading"))
         }
-        items(resultItems, key = { it.uri }) { item -> ContentCard(item, onPlay, onOpen) }
+        items(resultItems, key = { it.uri }) { item -> ContentCard(item, onPlay, onOpen, onContentActions, savedUris) }
     }
 }
 
 @Composable
-private fun ContentCard(item: SpotifyContent, onPlay: (SpotifyContent) -> Unit, onOpen: (SpotifyContent) -> Unit) {
+private fun ContentCard(item: SpotifyContent, onPlay: (SpotifyContent) -> Unit, onOpen: (SpotifyContent) -> Unit,
+    onContentActions: (SpotifyContent) -> Unit, savedUris: Set<String>) {
     val haptics = LocalHapticFeedback.current
     Card(onClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); onOpen(item) },
         modifier = Modifier.fillMaxWidth().testTag("content-${item.kind.name.lowercase()}-${item.id}")) {
@@ -289,6 +317,8 @@ private fun ContentCard(item: SpotifyContent, onPlay: (SpotifyContent) -> Unit, 
                         style = MaterialTheme.typography.bodySmall)
                 }
             }
+            ContentAddButton(item, item.uri in savedUris, onContentActions)
+            if (item.kind in setOf(ContentKind.TRACK, ContentKind.ALBUM, ContentKind.PLAYLIST))
             IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); onPlay(item) },
                 enabled = item.isPlayable != false, modifier = Modifier.testTag("play-${item.kind.name.lowercase()}-${item.id}")) {
                 Icon(Icons.Default.PlayArrow, stringResource(R.string.play))

@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">Titres likés</string>
+    <string name="add_favorite">Ajouter aux favoris</string>
+    <string name="remove_favorite">Retirer des favoris</string>
+    <string name="add_to_playlist">Ajouter à une playlist</string>
+    <string name="already_in_playlist">Déjà dans la playlist</string>
+    <string name="go_to_song_radio">Accéder à la radio du titre</string>
+    <string name="go_to_artist">Accéder à l’artiste</string>
+    <string name="search_filter_all">Tout</string>
+    <string name="search_filter_artists">Artistes</string>
+    <string name="search_filter_podcasts">Podcasts et émissions</string>
+    <string name="search_filter_genres">Genres et ambiances</string>
+    <string name="close">Fermer</string>
+    <string name="search_filter_tracks">Titres</string>
+</resources>

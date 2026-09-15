@@ -27,6 +27,8 @@ class AppContainer(
     val sessionManager = SessionManager(sessionStore, login5Client, clientTokenClient, browserAuthorizationClient)
     val localPlayback = LocalPlayback(context)
     val audioEffects by lazy { io.github.playmusic.data.audio.AudioEffectsStore(context) }
+    val sleepTimer by lazy { io.github.playmusic.data.playback.SleepTimerManager(context) }
+    val likedSongsTitle get() = applicationContext.getString(R.string.liked_songs)
     val streamingApi = StreamingApiClient(sessionManager, apiConnection)
     val playbackAuthorization by lazy {
         io.github.playmusic.data.auth.PlaybackAuthorizationProvider.create(sessionManager,

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">スリープタイマー</string>
+    <string name="sleep_timer_description">指定時刻に5秒かけてフェードアウトして再生を停止し、画面を消灯・ロックします。再生終了済みの場合は画面の消灯・ロックだけを行います。</string>
+    <string name="sleep_timer_duration">経過時間</string>
+    <string name="sleep_timer_clock">時刻指定</string>
+    <string name="sleep_timer_hours">時間</string>
+    <string name="sleep_timer_hour_of_day">時（0〜23）</string>
+    <string name="sleep_timer_minutes">分</string>
+    <string name="sleep_timer_next_day">過ぎた時刻を指定すると翌日になります。端末の再起動時にタイマーは解除されます。</string>
+    <string name="sleep_timer_scheduled">設定中：%1$s</string>
+    <string name="sleep_timer_fading">フェードアウト中…</string>
+    <string name="sleep_timer_start">タイマーを設定</string>
+    <string name="sleep_timer_cancel">タイマーを解除</string>
+    <string name="sleep_timer_close">閉じる</string>
+    <string name="sleep_timer_lock_explanation">タイマー終了時に画面を消灯・ロックするため、Playに画面ロックだけを許可します。解除時にPINやパスワードが必要になる場合があります。</string>
+    <string name="sleep_timer_allow_lock">画面ロックを許可</string>
+    <string name="sleep_timer_allow_alarm">正確なタイマーを許可</string>
+    <string name="sleep_timer_lock_required">タイマーを設定するには画面ロックを許可してください。</string>
+    <string name="sleep_timer_alarm_required">指定時刻にタイマーを動かすため、「アラームとリマインダー」を許可してください。</string>
+    <string name="sleep_timer_lock_unsupported">この端末は画面ロックの許可に対応していません。</string>
+    <string name="sleep_timer_settings_unavailable">必要なAndroidの設定画面をこの端末で開けません。</string>
+    <string name="sleep_timer_invalid">時間と分を入力してください。経過時間は1分以上を指定してください。</string>
+    <string name="sleep_timer_storage_error">タイマーを保存できませんでした。もう一度お試しください。</string>
+    <string name="sleep_timer_completion_error">タイマーを完了できませんでした。画面ロックの許可を確認し、設定し直してください。</string>
+</resources>

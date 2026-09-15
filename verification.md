@@ -2,6 +2,18 @@
 
 ## 2026-09-15の結果
 
+### 保存操作・検索拡張・認証更新・スリープタイマー
+
+- 実機SH-R80Pで、変更前から保存されていた認証情報が`400 invalid_grant`として拒否されることを再現した。検索語に関係なく更新要求で停止していた。`SessionManager`の更新通信と保存をキャンセル不可の区間にし、分離AVDの`SecureSessionStoreTest`7件で、検索キャンセル後の保存・新しいstoreからの連続更新と、ログアウトしたアカウントを復活させないことを確認した。`build/auth-cancellation-avd.log`。
+- 失効済み認証を復元できたとは扱わず、ユーザーが通常ログインを一度実施した。その後、実機の指定3検索語×7カテゴリ、曲詳細・アーティスト・ソングラジオ、番組・エピソード・ジャンル詳細が成功。初回に見つかったジャンルpreviewの`pagingInfo`欠落は、公開ソースの`items/totalCount`と続きの`browseSection`を区別して修正した。`build/qa/features-live-roundtrip.log`のカタログ3件。
+- 明示許可後、未登録の曲・アルバム各1件を実アカウントのお気に入りへ一時追加し、原本再取得・ライブラリ表示・専用お気に入り一覧を確認して削除した。元のコレクションの全URI集合が一致し、検証ジャーナルも解除された。新規の非公開プレイリストで曲・アルバムの追加/削除と所属チェック、名前/説明/画像の保持・削除を検査し、検証リスト削除後の原本rootlist一致も確認した。実機5件すべて成功、106.006秒。既存のお気に入り・プレイリストは維持した。
+- 実機の`LibraryAccountTest`による期限切れからの自動更新と保存済み情報による連続更新は2件成功（3.335秒）。`build/qa/auth-live-refresh.log`。再ログインの待機中には実機の再インストール・instrumentationを行っていない。
+- 分離AVD（API36、emulator-5554）で`SleepTimerIntegrationTest`3件が成功（128.905秒）。実OSの1分アラームからMedia3の音量中間値・停止・元音量への復元・消灯を確認し、自然終端済みの場合は終端状態と位置を維持したまま消灯することも確認した。OS権限の自動付与と消灯はAVDだけに実施した。合成無音源による検査であり、実音源の耳によるフェード聴取とは区別する。`build/qa/timer-avd.log`。
+- 日本語縦画面の保存操作・7カテゴリ・タイマー・一覧キャッシュ・プレイリスト編集は27件成功（77.485秒）、アラビア語320×600dpは新画面13件成功（34.053秒）。古いテストAPKで発生した「通常プレイリスト削除後は一覧が空」という失敗は、新仕様の専用お気に入り1件とディスク原本の空を別々に検査する最新APKで再確認した。`build/qa/features-ui-ja.log`、`features-ui-rtl.log`。
+- 英語800×360dpは13件成功（28.718秒）。メニューの末尾へスクロールして完全に表示されたアーティスト操作を押す検査にし、低いタイマー画面では見出しを畳んで時刻入力と確定ボタンを表示した。日本語/RTLの選択画面、横画面のメニューとキーボード表示中のタイマーのPNGを実際に閲覧した。プレイリスト選択の検索欄は短いラベルと検索アイコンへ変更した。`build/qa/features-ui-landscape-final.log`と`features-*.png`。
+- JVM190件は失敗0。`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease`が成功した。lintはエラー0、従来の更新候補/KTX提案5件。依存変更なし。OSVは公式配布のSHA256照合済みv2.5.1で公開DBを取得してローカル照合し、481依存・該当0件。`build/features-final-build.log`、`build/qa/features-osv.json`。Windowsの共有Kotlin領域の拒否は昇格した同一検証で解決し、既存の一時Gradleレポートの衝突は生成HTML1件だけを除いて再生成した。
+- 画面調整後も`lintDebug assembleDebug assembleDebugAndroidTest assembleRelease`が成功（`build/features-artifacts.log`）。専用公開署名の`build/outputs/play-updated.apk`を実機へデータ保持更新した。debuggableでないこと、公開証明書の一致、端末から取得した最終APKと署名済みAPKのSHA256一致を確認し、通常起動時に「お気に入りの曲」が1件、再ログイン案内が0件であることを確認した。リリースタグやバージョンは今回変更せず、変更履歴はUnreleasedへ記録する。
+
 ### 旧版の曲・アルバムで再生開始に失敗する問題
 
 - 実機SH-R80Pの保存アルバムQueen Jewelsは全16曲が旧実装で`Audio manifest is missing`になった。ユーザー指定の保存プレイリスト内Fearless Pt. IIも同じ失敗で、`AudioOutputTest`から`ERROR_CODE_IO_UNSPECIFIED`を再現した。検索の同名曲は別URIで正常に再生できた。ログは`build/qa/streaming-library-jewels-before.log`、`streaming-daily-before.log`、`streaming-daily-audio-before.log`。

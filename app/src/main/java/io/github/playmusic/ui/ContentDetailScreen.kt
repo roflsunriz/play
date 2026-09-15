@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -56,6 +57,8 @@ internal fun ContentDetailScreen(
     onPlayTrack: (Int) -> Unit,
     onEditPlaylist: () -> Unit = {},
     onDeletePlaylist: () -> Unit = {},
+    onContentActions: (SpotifyContent) -> Unit = {},
+    savedUris: Set<String> = emptySet(),
 ) {
     val haptics = LocalHapticFeedback.current
     val content = detail?.content ?: selected
@@ -101,7 +104,7 @@ internal fun ContentDetailScreen(
         releaseDate?.let {
             item(key = "release-date") { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("detail-release-date")) }
         }
-        if (trackCount != null && content.kind != ContentKind.TRACK) {
+        if (trackCount != null && content.kind in setOf(ContentKind.ALBUM, ContentKind.PLAYLIST, ContentKind.ARTIST)) {
             item(key = "track-count") {
                 Text(pluralStringResource(R.plurals.track_count, trackCount, trackCount), modifier = Modifier.testTag("detail-track-count"))
             }
@@ -127,6 +130,7 @@ internal fun ContentDetailScreen(
                             Text(stringResource(R.string.play), modifier = Modifier.weight(1f, fill = false))
                         }
                     }
+                    ContentAddButton(content, content.uri in savedUris, onContentActions)
                     if (playlistMetadata?.canEdit == true) {
                         IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onEditPlaylist() },
                             modifier = Modifier.size(48.dp).testTag("edit-playlist-button")) {
@@ -178,6 +182,19 @@ internal fun ContentDetailScreen(
                         if (track.subtitle.isNotBlank()) Text(track.subtitle, style = MaterialTheme.typography.bodySmall)
                     }
                     if (track.durationMs > 0) Text(durationLabel(track.durationMs), style = MaterialTheme.typography.labelMedium)
+                    ContentAddButton(track, track.uri in savedUris, onContentActions)
+                }
+            }
+        }
+        items(detail?.relatedContent.orEmpty(), key = { "related:${it.uri}" }) { related ->
+            Card(onClick = { onOpen(related) }, modifier = Modifier.fillMaxWidth().testTag("related-${related.id}")) {
+                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    related.imageUrl?.let { AsyncImage(it, null, modifier = Modifier.size(48.dp), contentScale = ContentScale.Crop) }
+                    Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                        Text(related.title, fontWeight = FontWeight.Medium)
+                        if (related.subtitle.isNotBlank()) Text(related.subtitle, style = MaterialTheme.typography.bodySmall)
+                    }
+                    ContentAddButton(related, related.uri in savedUris, onContentActions)
                 }
             }
         }

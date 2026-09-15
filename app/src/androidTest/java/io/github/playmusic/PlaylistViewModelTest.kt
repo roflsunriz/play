@@ -17,6 +17,7 @@ import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
 import io.github.playmusic.data.auth.ProtoWire.fieldVarint
+import io.github.playmusic.data.api.SpotifyRepository
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SpotifyContent
@@ -36,6 +37,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -102,7 +104,17 @@ class PlaylistViewModelTest {
         composeRule.onNodeWithTag("delete-playlist-button").performScrollTo().performClick()
         composeRule.onNodeWithTag("playlist-delete-confirm").performClick()
         composeRule.waitUntil(5_000) { model.state.value.playlistToDelete == null && model.state.value.selectedContent == null }
-        composeRule.runOnIdle { assertEquals(1, server.removals.get()); assertTrue(model.state.value.items.isEmpty()) }
+        composeRule.waitUntil(5_000) {
+            model.state.value.items.size == 1 && SpotifyRepository.isLikedSongs(model.state.value.items.single())
+        }
+        composeRule.runOnIdle {
+            assertEquals(1, server.removals.get())
+            assertEquals(SpotifyRepository.LIKED_SONGS_URI, model.state.value.items.single().uri)
+        }
+        composeRule.onNodeWithTag("content-playlist-tracks").assertIsDisplayed()
+        val cached = checkNotNull(runBlocking { checkNotNull(container).repository.cachedPlaylists() })
+        assertTrue(cached.isEmpty())
+        assertFalse(cached.any(SpotifyRepository::isLikedSongs))
     }
 
     @Test fun failedEditKeepsDraftAndRetryUpdatesTheExistingDetail() {
@@ -165,6 +177,7 @@ class PlaylistViewModelTest {
             return when {
                 path == "/user-profile-view/v3/profile/$USER" -> Reply(bytes =
                     fieldString(1, "spotify:user:$USER") + fieldString(2, "Test creator"))
+                path == "/collection/v2/paging" -> Reply(bytes = fieldString(3, "synthetic-sync"))
                 path == "/playlist/v2/playlist" -> {
                     creates.incrementAndGet()
                     created = true
@@ -189,7 +202,7 @@ class PlaylistViewModelTest {
                 }
                 path.endsWith("/rootlist") -> Reply(bytes = fieldBytes(1, byteArrayOf(1)) + fieldBytes(5, fieldVarint(1, 0) + fieldVarint(2, 0) +
                     if (inLibrary) fieldBytes(3, fieldString(1, PLAYLIST.uri)) +
-                        fieldBytes(4, fieldBytes(2, fieldString(1, title)) + fieldVarint(9, 200)) else byteArrayOf()))
+                        fieldBytes(4, fieldBytes(2, fieldString(1, title)) + fieldVarint(9, 400)) else byteArrayOf()))
                 path.endsWith("/changes") -> {
                     if (failChanges) return Reply(503)
                     applyMetadata(fields(fields(request.body).bytes(2)).bytes(2))

@@ -1,0 +1,15 @@
+<resources>
+    <string name="liked_songs">お気に入りの曲</string>
+    <string name="add_favorite">お気に入り追加</string>
+    <string name="remove_favorite">お気に入りから削除</string>
+    <string name="add_to_playlist">プレイリストに追加</string>
+    <string name="already_in_playlist">追加済み</string>
+    <string name="go_to_song_radio">ソングラジオに移動</string>
+    <string name="go_to_artist">アーティストに移動</string>
+    <string name="search_filter_all">すべて</string>
+    <string name="search_filter_artists">アーティスト</string>
+    <string name="search_filter_podcasts">ポッドキャスト＆番組</string>
+    <string name="search_filter_genres">ジャンル＆気分</string>
+    <string name="close">閉じる</string>
+    <string name="search_filter_tracks">曲</string>
+</resources>

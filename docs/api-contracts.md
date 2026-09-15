@@ -10,7 +10,7 @@ Windows参照版の要求と実応答を基準に認証・カタログ・音声�
 | 認証更新 | refresh tokenで`/api/token`を呼ぶ。更新値が省略された場合は従来値を維持する | Windowsの通常更新を観測。合成応答で更新・期限切れ・キャンセル・PKCE対応を検証 |
 | 正規ユーザー名 | OAuth応答にはユーザー名がないため、署名検証したAPとの鍵交換後、OAuth資格情報で認証したwelcomeを読む | Windows上で参照版の正規ユーザー名との一致を確認。資格情報をログ・fixtureへ保存しない |
 | 保存一覧 | コレクション・rootlistの既存protobuf契約を継続し、ブラウザー認証では専用の共通要求ヘッダーを使う | Windowsの同一OAuth認証で両APIのHTTP 200を確認。端末SDKトークンは混在させない |
-| カタログ | Windows版のGraphQL永続化クエリでアルバム詳細・曲詳細・50曲単位のメタデータ・3種類の検索を取得する | 実応答を取得。公開作品だけを匿名化したfixtureで画像・タイトル・アーティスト・長さ・利用可否を検証 |
+| カタログ | 公開クライアントのGraphQL永続化クエリで作品詳細・50曲単位の曲メタデータ・7分類の検索を取得する | 実応答を取得。公開作品だけを匿名化したfixtureで画像・タイトル・アーティスト・長さ・利用可否を検証 |
 | 作品詳細 | アルバムはページ送り、プレイリストはネイティブの収録URIをページ取得して曲メタデータを対応させる | 画面へ接続し、重複曲の位置、再試行、アルバムへの移動を検証 |
 | 音声配信情報 | `/track-playback/v1/media/{track-uri}?manifestFileFormat=file_ids_mp4`から形式10を選択し、`/storage-resolve/v2/files/audio/interactive/10/{file-id}`で配信先を解決する | Windowsの認証で配信情報とCDNのHTTP 206を確認。取得したMP4にDRM初期化情報があることを確認 |
 | 端末内再生 | 保存済みログインから派生させた再生用認証と対応する端末認証を、Media3・Android標準DRM・`/widevine-license/v1/audio/license`へ渡す。保存する音声は暗号化された配信データのみ | 2曲の10秒以降の音声、約5分の背景再生の終端・中盤・終盤、再生操作を実機で確認 |
@@ -164,3 +164,29 @@ python tools/import-search-capture.py captures/recovered/search-response-origina
 ```
 
 新しい通信記録が得られた場合は、同じスクリプトの入力へ`.flow`を指定できる。この形式のみPython環境にmitmproxyが必要。`--response-index`で検索応答の番号を選ぶ。原本は`captures/`に保管し、抽出後も内容を確認してからGitへ追加する。ライブラリ・認証の生データをそのままテストへ貼り付けない。
+
+## 検索分類とカタログ内の移動（2026-09-15）
+
+検索は「すべて」「曲」「プレイリスト」「アルバム」「アーティスト」「ポッドキャスト＆番組」「ジャンル＆気分」の7分類へ接続した。「ポッドキャスト＆番組」は番組とエピソードの2種類を取得し、「すべて」は7種類の結果を含む。選択した分類だけを要求し、画面に取得済みの30件を絞るだけの処理にはしない。
+
+| 対象 | 確認した要求・応答 |
+| --- | --- |
+| 検索 | 公開検索画面の永続化クエリを使う。結果キーは既存3種類に加え `artists`、`podcasts`、`episodes`、`genres`。要求は検索語、offset、limit、公開画面で使用する機能フラグ |
+| アーティストの表示 | 名前は `profile.name`、画像は `visuals.avatarImage.sources`。曲・アルバムのアーティストは名前とURIを分けて保持し、複数の参加者を残す |
+| アーティスト詳細 | `queryArtistOverview`のプロフィール・画像と、`getArtistNameAndTracks`の `discography.topTracks.items[].track.uri` を取得。後者の `pagingInfo.nextOffset` をたどり、既存の曲メタデータ一括取得へ渡す |
+| 曲のラジオ | `GET /inspiredby-mix/v2/seed_to_playlist/{track-uri}?response-format=json` の `mediaItems[0].uri` をプレイリストとして検証し、その通常詳細を開く。作品名で別リストを検索して代用しない |
+| 番組詳細 | `queryShowMetadataV2` の `podcastUnionV2` と `queryPodcastEpisodes` の `episodesV2` を利用。各項目は `items[].entity.data`。ページ送りで取得したエピソードを詳細へのリンクとして表示する |
+| エピソード詳細 | `getEpisodeOrChapter` の `episodeUnionV2` から名前・画像・説明・時間を取得する。楽曲用の再生処理に流用しない |
+| ジャンル詳細 | `browsePage` の `sections` と各 `sectionItems`、続きは `browseSection` を利用する。公開画面と同じく22文字の不透明IDはpage URIへ解決し、名前付きgenre URIは維持する |
+
+検索のジャンル画像は `image.sources` を使う。ジャンルのURIが生のIDで返る場合は、公開検索画面と同じ名前空間を付ける。アーティスト名からIDを作ったり、先頭の無関係な作品を採用したりしない。`getArtistNameAndTracks` の消費側にはアーティストURIを読む契約が無いため、その応答が必ずURIを含むとは仮定しない。概要のURIと、各曲URIの種別は確認する。
+
+番組とジャンルの収録項目は `ContentDetail.relatedContent` へ接続する。ジャンル内の曲・アルバム・プレイリスト・アーティスト・番組・エピソード・下位ジャンルはアプリ内の対応する詳細を開く。ラジオはサービスが返す既存プレイリストを読み取る操作で、リストの新規作成やユーザーライブラリの書き換えではない。
+
+ページ送りはnextOffsetが前進していることを確認し、空ページのまま続けない。`browseSection` の0終端は公開画面の分岐で確認したため、この経路のみ0も終端として認める。通信失敗・未知の型・不正なURIは空の成功結果へ変換しない。
+
+一次資料は既存の公開main bundleと、そのchunk mapが指定する公開検索・アーティスト・ジャンル画面の配信コード。Git管理外の `build/qa/playlist-source/` にmain bundle、`search.js`、`artist.js`、`browse.js`の控えを置いた。クエリのhash、URI、要求ヘッダーの具体値は `CatalogApiClient` を正本とする。アーティスト概要だけに必要な版ヘッダーも公開コードの要求から確認した。
+
+自動テストは `CatalogJsonTest` と `CatalogNavigationTest`。これらの追加データは確認した型から組み立てた合成応答であり、実アカウントの生データではない。読み取り専用の実アカウント検証は `CatalogNavigationAccountTest` へ `liveCatalog=true` を明示し、報告された検索語と全分類、曲からアーティスト・ラジオ、番組からエピソード、ジャンルの詳細を確認する。実行結果と認証条件は [検証記録](../verification.md) を参照する。
+
+実機の初回ジャンル詳細で、`browsePage`に含まれる`sectionItems`には`pagingInfo`が無いことを確認した。公開画面もここでは`items`と`totalCount`だけを使い、全件表示で`browseSection`を別途開く。初回の件数が総件数に満たない場合は`browseSection`のoffset=0から全ページを読み、プレビューとの重複をURIで除いて統合する。`pagingInfo`の欠落を終端とみなして残りの作品を落とさない。再現ケースを`CatalogNavigationTest`へ追加した。

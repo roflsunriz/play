@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_timer_title">स्लीप टाइमर</string>
+    <string name="sleep_timer_description">निर्धारित समय पर 5 सेकंड में आवाज़ धीमी करके प्लेबैक रोकें, फिर स्क्रीन बंद और लॉक करें। प्लेबैक समाप्त होने पर केवल स्क्रीन लॉक होगी।</string>
+    <string name="sleep_timer_duration">अवधि</string>
+    <string name="sleep_timer_clock">समय</string>
+    <string name="sleep_timer_hours">घंटे</string>
+    <string name="sleep_timer_hour_of_day">घंटा (0–23)</string>
+    <string name="sleep_timer_minutes">मिनट</string>
+    <string name="sleep_timer_next_day">बीत चुका समय चुनने पर कल का समय माना जाएगा। डिवाइस रीस्टार्ट करने पर टाइमर हट जाएगा।</string>
+    <string name="sleep_timer_scheduled">निर्धारित: %1$s</string>
+    <string name="sleep_timer_fading">आवाज़ धीमी हो रही है…</string>
+    <string name="sleep_timer_start">टाइमर सेट करें</string>
+    <string name="sleep_timer_cancel">टाइमर रद्द करें</string>
+    <string name="sleep_timer_close">बंद करें</string>
+    <string name="sleep_timer_lock_explanation">टाइमर समाप्त होने पर Play को स्क्रीन बंद और लॉक करने दें। केवल स्क्रीन लॉक की अनुमति माँगी जाती है। अनलॉक करने के लिए PIN या पासवर्ड लग सकता है।</string>
+    <string name="sleep_timer_allow_lock">स्क्रीन लॉक की अनुमति दें</string>
+    <string name="sleep_timer_allow_alarm">सटीक टाइमर की अनुमति दें</string>
+    <string name="sleep_timer_lock_required">टाइमर सेट करने से पहले स्क्रीन लॉक की अनुमति दें।</string>
+    <string name="sleep_timer_alarm_required">निर्धारित समय पर टाइमर चलाने के लिए अलार्म और रिमाइंडर की अनुमति दें।</string>
+    <string name="sleep_timer_lock_unsupported">यह डिवाइस स्क्रीन लॉक की अनुमति का समर्थन नहीं करता।</string>
+    <string name="sleep_timer_settings_unavailable">इस डिवाइस पर आवश्यक Android सेटिंग पेज उपलब्ध नहीं है।</string>
+    <string name="sleep_timer_invalid">घंटे और मिनट दर्ज करें। अवधि कम से कम एक मिनट होनी चाहिए।</string>
+    <string name="sleep_timer_storage_error">टाइमर सहेजा नहीं जा सका। फिर से कोशिश करें।</string>
+    <string name="sleep_timer_completion_error">टाइमर पूरा नहीं हो सका। स्क्रीन लॉक की अनुमति जाँचकर फिर से सेट करें।</string>
+</resources>

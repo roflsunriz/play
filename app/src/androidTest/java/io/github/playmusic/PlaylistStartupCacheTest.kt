@@ -18,6 +18,7 @@ import io.github.playmusic.data.auth.ProtoWire.fieldVarint
 import io.github.playmusic.data.cache.PlaylistCacheEntry
 import io.github.playmusic.data.cache.PlaylistCacheSnapshot
 import io.github.playmusic.data.cache.PlaylistDiskCache
+import io.github.playmusic.data.api.SpotifyRepository
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SpotifyContent
@@ -84,7 +85,9 @@ class PlaylistStartupCacheTest {
 
     @Test fun aNewProcessShowsDiskItemsBeforeNetworkingAndReusesTheirOwnerNames() {
         start()
-        composeRule.waitUntil(5_000) { model.state.value.items == initial && rootCalls.get() > 0 }
+        composeRule.waitUntil(5_000) { model.state.value.items == displayed(initial) && rootCalls.get() > 0 }
+        assertLikedSongsFirstAndUnique(model.state.value.items)
+        composeRule.onNodeWithTag("content-playlist-tracks").assertIsDisplayed()
         composeRule.onNodeWithTag("content-playlist-${keep.id}").assertIsDisplayed()
         composeRule.onNodeWithTag("loading-indicator").assertDoesNotExist()
         assertTrue(sawSavedItemsBeforeResponse)
@@ -93,13 +96,16 @@ class PlaylistStartupCacheTest {
         gate.countDown()
         composeRule.waitUntil(5_000) { runBlocking { app.playlistDiskCache.read(USER).snapshot?.entries?.first()?.fingerprint != "seed" } }
         assertEquals(0, profileCalls.get())
-        assertEquals(initial, model.state.value.items)
+        assertEquals(displayed(initial), model.state.value.items)
+        assertLikedSongsFirstAndUnique(model.state.value.items)
+        assertEquals(initial, runBlocking { app.repository.cachedPlaylists() })
+        assertRootlistDiskExcludesLikedSongs(initial)
     }
 
     @Test fun failedSyncKeepsDiskAndUiThenRetryAppliesAdditionDeletionAndMetadataChanges() {
         failed = true
         start()
-        composeRule.waitUntil(5_000) { model.state.value.items == initial }
+        composeRule.waitUntil(5_000) { model.state.value.items == displayed(initial) }
         gate.countDown()
         composeRule.waitUntil(5_000) { model.state.value.playlistSyncFailed }
         assertNull(model.state.value.error)
@@ -110,10 +116,12 @@ class PlaylistStartupCacheTest {
         source = listOf(keep.copy(title = "Updated title"), item("new", "Added playlist"))
         failed = false
         composeRule.runOnIdle { model.selectSection(LibrarySection.ALBUMS); model.retryPlaylistSync() }
-        composeRule.waitUntil(5_000) { model.state.value.libraries[LibrarySection.PLAYLISTS] == source && !model.state.value.playlistSyncFailed }
+        composeRule.waitUntil(5_000) { model.state.value.libraries[LibrarySection.PLAYLISTS] == displayed(source) && !model.state.value.playlistSyncFailed }
         assertEquals(LibrarySection.ALBUMS, model.state.value.selectedSection)
         composeRule.runOnIdle { model.selectSection(LibrarySection.PLAYLISTS) }
         assertEquals(source, runBlocking { app.repository.cachedPlaylists() })
+        assertLikedSongsFirstAndUnique(model.state.value.items)
+        assertRootlistDiskExcludesLikedSongs(source)
         composeRule.onNodeWithTag("content-playlist-${gone.id}").assertDoesNotExist()
         composeRule.onNodeWithTag("content-playlist-${source.last().id}").assertIsDisplayed()
         captureScreen(composeRule.onRoot(), "playlist-disk-updated")
@@ -121,7 +129,7 @@ class PlaylistStartupCacheTest {
 
     @Test fun logoutClearsTheSavedListAndAnOlderResponseCannotRestoreIt() {
         start()
-        composeRule.waitUntil(5_000) { model.state.value.items == initial && rootCalls.get() > 0 }
+        composeRule.waitUntil(5_000) { model.state.value.items == displayed(initial) && rootCalls.get() > 0 }
         composeRule.runOnIdle { model.logout() }
         gate.countDown()
         composeRule.waitUntil(5_000) { runBlocking { app.playlistDiskCache.read(USER).snapshot == null } }
@@ -142,7 +150,7 @@ class PlaylistStartupCacheTest {
         composeRule.runOnIdle { model.retryPlaylistSync() }
         composeRule.waitUntil(5_000) { rootCalls.get() >= 2 && model.state.value.playlistSyncFailed }
         assertEquals(initial, runBlocking { app.repository.cachedPlaylists() })
-        assertEquals(initial, model.state.value.items)
+        assertEquals(displayed(initial), model.state.value.items)
     }
 
     @Test fun aMissingOwnerTimestampRequiresARealProfileCheck() {
@@ -157,6 +165,37 @@ class PlaylistStartupCacheTest {
         assertEquals("Updated creator", refreshed.single().ownerName)
         assertEquals(1, profileCalls.get())
         assertTrue(runBlocking { app.playlistDiskCache.read(USER).snapshot!!.entries.single().ownerCheckedAtMs > 0 })
+    }
+
+    @Test fun repeatedSynchronizationKeepsOneLikedSongsEntryOutsideTheRootlistDiskCache() {
+        start()
+        composeRule.waitUntil(5_000) { model.state.value.items == displayed(initial) && rootCalls.get() > 0 }
+        assertLikedSongsFirstAndUnique(model.state.value.items)
+        gate.countDown()
+        composeRule.waitUntil(5_000) {
+            runBlocking { app.playlistDiskCache.read(USER).snapshot?.entries?.first()?.fingerprint != "seed" }
+        }
+        repeat(2) { pass ->
+            source = listOf(keep.copy(title = "Synchronized $pass"))
+            composeRule.runOnIdle { model.retryPlaylistSync() }
+            composeRule.waitUntil(5_000) { model.state.value.items == displayed(source) }
+            assertLikedSongsFirstAndUnique(model.state.value.items)
+            assertLikedSongsFirstAndUnique(checkNotNull(model.state.value.libraries[LibrarySection.PLAYLISTS]))
+            assertRootlistDiskExcludesLikedSongs(source)
+        }
+    }
+
+    private fun displayed(rows: List<SpotifyContent>) = listOf(SpotifyRepository.likedSongsContent(base.getString(R.string.liked_songs))) + rows
+
+    private fun assertLikedSongsFirstAndUnique(rows: List<SpotifyContent>) {
+        assertEquals(SpotifyRepository.LIKED_SONGS_URI, rows.first().uri)
+        assertEquals(1, rows.count(SpotifyRepository::isLikedSongs))
+    }
+
+    private fun assertRootlistDiskExcludesLikedSongs(expected: List<SpotifyContent>) {
+        val rows = runBlocking { app.playlistDiskCache.read(USER).snapshot!!.entries.map { it.content } }
+        assertEquals(expected, rows)
+        assertFalse(rows.any(SpotifyRepository::isLikedSongs))
     }
 
     private fun start() {
@@ -177,11 +216,11 @@ class PlaylistStartupCacheTest {
     private fun reply(uri: URI): Pair<Int, ByteArray> = when {
         uri.path.endsWith("/rootlist") -> {
             rootCalls.incrementAndGet()
-            sawSavedItemsBeforeResponse = model.state.value.items == initial
+            sawSavedItemsBeforeResponse = model.state.value.items == displayed(initial)
             check(gate.await(20, TimeUnit.SECONDS))
             if (failed) 503 to ByteArray(0) else if (emptyResponse) 200 to ByteArray(0) else 200 to rootlist(source)
         }
-        uri.path == "/collection/v2/paging" -> 200 to ByteArray(0)
+        uri.path == "/collection/v2/paging" -> 200 to fieldString(3, "synthetic-sync")
         uri.path.startsWith("/user-profile-view/") -> {
             profileCalls.incrementAndGet()
             200 to (fieldString(1, "spotify:user:$USER") + fieldString(2, profileName))
