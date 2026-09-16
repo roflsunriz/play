@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.ui.semantics.scrollToIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.playmusic.R
+import io.github.playmusic.data.api.LrclibApiClient
 import io.github.playmusic.data.api.LyricsSource
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.SpotifyContent
@@ -66,23 +69,65 @@ internal fun LyricsRoute(
     modifier: Modifier = Modifier,
 ) {
     key(content.uri, client) {
-        var attempt by remember { mutableIntStateOf(0) }
-        var state by remember { mutableStateOf<LyricsState>(LyricsState.Loading) }
-        LaunchedEffect(content.uri, client, attempt) {
-            state = LyricsState.Loading
-            state = try {
-                val lyrics = client.lyrics(content.uri)
-                require(lyrics == null || lyrics.trackUri == content.uri)
-                lyrics?.let { LyricsState.Loaded(it) } ?: LyricsState.Unavailable
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                LyricsState.Failed
+        LyricsFetcher(content, playback, { client.lyrics(content.uri) }, onSeek, modifier)
+    }
+}
+
+private enum class LyricsTab { OFFICIAL, LRCLIB }
+
+/** Shows the delivered lyrics with the community source on switchable tabs. */
+@Composable
+internal fun LyricsTabbedRoute(
+    content: SpotifyContent,
+    playback: Playback,
+    official: LyricsSource,
+    lrclib: LrclibApiClient,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var tab by rememberSaveable(content.uri) { mutableStateOf(LyricsTab.OFFICIAL) }
+    Column(modifier) {
+        TabRow(selectedTabIndex = tab.ordinal, modifier = Modifier.testTag("lyrics-tabs")) {
+            Tab(selected = tab == LyricsTab.OFFICIAL, onClick = { tab = LyricsTab.OFFICIAL },
+                text = { Text(stringResource(R.string.lyrics_source_official)) },
+                modifier = Modifier.testTag("lyrics-tab-official"))
+            Tab(selected = tab == LyricsTab.LRCLIB, onClick = { tab = LyricsTab.LRCLIB },
+                text = { Text("LRCLIB") },
+                modifier = Modifier.testTag("lyrics-tab-lrclib"))
+        }
+        when (tab) {
+            LyricsTab.OFFICIAL -> LyricsRoute(content, playback, official, onSeek)
+            LyricsTab.LRCLIB -> key(content.uri) {
+                LyricsFetcher(content, playback, { lrclib.lyrics(content) }, onSeek)
             }
         }
-        LyricsPanel(content.uri, state, playback.item?.uri, playback.progressMs, onSeek,
-            onRetry = { attempt++ }, modifier = modifier)
     }
+}
+
+@Composable
+private fun LyricsFetcher(
+    content: SpotifyContent,
+    playback: Playback,
+    fetch: suspend () -> TrackLyrics?,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var attempt by remember { mutableIntStateOf(0) }
+    var state by remember { mutableStateOf<LyricsState>(LyricsState.Loading) }
+    LaunchedEffect(content.uri, attempt) {
+        state = LyricsState.Loading
+        state = try {
+            val lyrics = fetch()
+            require(lyrics == null || lyrics.trackUri == content.uri)
+            lyrics?.let { LyricsState.Loaded(it) } ?: LyricsState.Unavailable
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            LyricsState.Failed
+        }
+    }
+    LyricsPanel(content.uri, state, playback.item?.uri, playback.progressMs, onSeek,
+        onRetry = { attempt++ }, modifier = modifier)
 }
 
 @Composable

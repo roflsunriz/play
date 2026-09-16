@@ -9,4 +9,5 @@
     <string name="lyrics_sync">Sincronizar</string>
     <string name="lyrics_provider">Letra fornecida por %1$s</string>
     <string name="lyrics_limited">O serviço limita a letra disponível para esta música.</string>
+    <string name="lyrics_source_official">Oficial</string>
 </resources>

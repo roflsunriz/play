@@ -109,6 +109,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     val audioEffectsState get() = container.audioEffects.state
     val sleepTimer get() = container.sleepTimer
     val lyricsApi get() = container.lyricsApi
+    val lrclibApi get() = container.lrclibApi
     val playbackTransitionsState get() = container.playbackTransitions.state
     private var actionsJob: Job? = null
     private var contentRequestJob: Job? = null

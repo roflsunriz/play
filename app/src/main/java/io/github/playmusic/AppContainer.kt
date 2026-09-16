@@ -30,6 +30,7 @@ class AppContainer(
     val playbackTransitions by lazy { io.github.playmusic.data.playback.PlaybackTransitionStore(context) }
     val detailSorts by lazy { io.github.playmusic.data.playback.DetailSortStore(context) }
     val lyricsApi by lazy { io.github.playmusic.data.api.LyricsApiClient(sessionManager) }
+    val lrclibApi by lazy { io.github.playmusic.data.api.LrclibApiClient() }
     val sleepTimer by lazy { io.github.playmusic.data.playback.SleepTimerManager(context) }
     val likedSongsTitle get() = applicationContext.getString(R.string.liked_songs)
     val streamingApi = StreamingApiClient(sessionManager, apiConnection)

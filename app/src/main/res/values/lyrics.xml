@@ -9,4 +9,5 @@
     <string name="lyrics_sync">Sync</string>
     <string name="lyrics_provider">Lyrics provided by %1$s</string>
     <string name="lyrics_limited">The service limits the lyrics available for this track.</string>
+    <string name="lyrics_source_official">Official</string>
 </resources>

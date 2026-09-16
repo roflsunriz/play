@@ -9,4 +9,5 @@
     <string name="lyrics_sync">সিঙ্ক করুন</string>
     <string name="lyrics_provider">গানের কথা প্রদানকারী: %1$s</string>
     <string name="lyrics_limited">পরিষেবাটি এই গানের উপলব্ধ কথা সীমিত করেছে।</string>
+    <string name="lyrics_source_official">অফিসিয়াল</string>
 </resources>

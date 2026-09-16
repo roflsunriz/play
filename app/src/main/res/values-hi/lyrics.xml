@@ -9,4 +9,5 @@
     <string name="lyrics_sync">सिंक करें</string>
     <string name="lyrics_provider">बोल प्रदाता: %1$s</string>
     <string name="lyrics_limited">सेवा ने इस गाने के उपलब्ध बोल सीमित किए हैं।</string>
+    <string name="lyrics_source_official">आधिकारिक</string>
 </resources>

@@ -9,4 +9,5 @@
     <string name="lyrics_sync">ہم وقت کریں</string>
     <string name="lyrics_provider">بول فراہم کرنے والا: %1$s</string>
     <string name="lyrics_limited">سروس نے اس گانے کے دستیاب بول محدود کیے ہیں۔</string>
+    <string name="lyrics_source_official">آفیشل</string>
 </resources>

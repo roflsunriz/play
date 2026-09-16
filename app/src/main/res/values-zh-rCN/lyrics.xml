@@ -9,4 +9,5 @@
     <string name="lyrics_sync">同步</string>
     <string name="lyrics_provider">歌词提供方：%1$s</string>
     <string name="lyrics_limited">服务方限制了这首歌曲可显示的歌词。</string>
+    <string name="lyrics_source_official">官方</string>
 </resources>

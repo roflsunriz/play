@@ -9,4 +9,5 @@
     <string name="lyrics_sync">同期する</string>
     <string name="lyrics_provider">歌詞提供：%1$s</string>
     <string name="lyrics_limited">配信元により、この曲に表示できる歌詞が制限されています。</string>
+    <string name="lyrics_source_official">公式</string>
 </resources>
