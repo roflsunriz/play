@@ -3,7 +3,7 @@ name = "org.apache.commons:commons-lang3"
 version = "3.16.0"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "AGP requests 3.16.0 metadata, but the build classpath resolves and executes 3.18.0."
+reason = "AGP requests 3.16.0 metadata, but the build classpath resolves and executes 3.20.0."
 
 [[PackageOverrides]]
 name = "org.apache.httpcomponents:httpclient"
@@ -17,14 +17,14 @@ name = "org.bouncycastle:bcpkix-jdk18on"
 version = "1.80.2"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "AGP requests 1.80.2 metadata, but the build classpath resolves and executes 1.84."
+reason = "AGP requests 1.80.2 metadata, but the build classpath resolves and executes 1.86."
 
 [[PackageOverrides]]
 name = "org.bouncycastle:bcprov-jdk18on"
 version = "1.80.2"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "AGP requests 1.80.2 metadata, but the build classpath resolves and executes 1.84."
+reason = "AGP requests 1.80.2 metadata, but the build classpath resolves and executes 1.86."
 
 [[PackageOverrides]]
 name = "org.jetbrains.kotlin:kotlin-gradle-plugin"
