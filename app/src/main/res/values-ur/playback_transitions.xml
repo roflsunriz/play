@@ -12,4 +12,7 @@
     <string name="playback_stop">روکیں</string>
     <string name="playback_automix_failed">خودکار منتقلی کا ڈیٹا لوڈ نہیں ہوا۔ معمول کی منتقلی استعمال ہوگی۔</string>
     <string name="playback_switch_busy">لائسنس سرور مصروف ہے، اس لیے گانا تبدیل نہیں ہوا۔ موجودہ گانا بجتا رہے گا۔</string>
+    <string name="playback_music_cache">میوزک کیش کی حد</string>
+    <string name="playback_music_cache_gb">%1$d GB</string>
+    <string name="playback_music_cache_hint">دوبارہ شروع کرنے کے بعد لاگو ہوگا۔ صرف انکرپٹڈ آڈیو محفوظ ہوتا ہے۔</string>
 </resources>

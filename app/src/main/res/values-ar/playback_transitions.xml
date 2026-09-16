@@ -12,4 +12,7 @@
     <string name="playback_stop">إيقاف</string>
     <string name="playback_automix_failed">تعذر تحميل الانتقال التلقائي. سيُستخدم الانتقال المعتاد.</string>
     <string name="playback_switch_busy">خادم التراخيص مشغول، تعذر تغيير الأغنية. يستمر تشغيل الأغنية الحالية.</string>
+    <string name="playback_music_cache">حد ذاكرة التخزين المؤقت للموسيقى</string>
+    <string name="playback_music_cache_gb">%1$d غيغابايت</string>
+    <string name="playback_music_cache_hint">يُطبق بعد إعادة التشغيل. يُحفظ الصوت المشفر فقط.</string>
 </resources>

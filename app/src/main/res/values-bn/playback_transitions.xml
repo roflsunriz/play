@@ -12,4 +12,7 @@
     <string name="playback_stop">বন্ধ করুন</string>
     <string name="playback_automix_failed">স্বয়ংক্রিয় ট্রানজিশন লোড হয়নি। সাধারণ ট্রানজিশন ব্যবহার হবে।</string>
     <string name="playback_switch_busy">লাইসেন্স সার্ভার ব্যস্ত থাকায় গান বদলানো যায়নি। বর্তমান গান বাজতে থাকবে।</string>
+    <string name="playback_music_cache">মিউজিক ক্যাশ সীমা</string>
+    <string name="playback_music_cache_gb">%1$d GB</string>
+    <string name="playback_music_cache_hint">পুনরায় চালু করার পর কার্যকর হবে। শুধু এনক্রিপ্ট করা অডিও সংরক্ষণ করা হয়।</string>
 </resources>

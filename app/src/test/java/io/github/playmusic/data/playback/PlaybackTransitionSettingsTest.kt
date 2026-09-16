@@ -6,13 +6,14 @@ import org.junit.Test
 
 class PlaybackTransitionSettingsTest {
     @Test fun settingsRoundTripPreservesEachIndependentDurationAndToggle() {
-        val settings = PlaybackTransitionSettings(false, 1, true, 12, false, 7, true, false, true, 4)
+        val settings = PlaybackTransitionSettings(false, 1, true, 12, false, 7, true, false, true, 4, musicCacheGb = 10)
         assertEquals(settings, PlaybackTransitionStore.decode(PlaybackTransitionStore.encode(settings)))
         assertEquals(0L, settings.fadeInMs)
         assertEquals(12_000L, settings.fadeOutMs)
         assertEquals(0L, settings.crossfadeMs)
         assertEquals(4_000L, settings.seekCrossfadeMs)
-        assertEquals(0L, PlaybackTransitionSettings().seekCrossfadeMs)
+        assertEquals(10L * 1_024 * 1_024 * 1_024, settings.musicCacheBytes)
+        assertEquals(20, PlaybackTransitionSettings().musicCacheGb)
     }
     @Test fun settingsSavedBeforeSeekCrossfadeDecodeWithItsDefaults() {
         val legacy = "{\"schemaVersion\":1,\"fadeInEnabled\":true,\"fadeInSeconds\":3," +
@@ -20,12 +21,15 @@ class PlaybackTransitionSettingsTest {
             "\"peakNormalizationEnabled\":false,\"automixEnabled\":true}"
         assertEquals(PlaybackTransitionSettings(), PlaybackTransitionStore.decode(legacy))
     }
-    @Test fun invalidDurationAndFutureSchemaAreRejected() {
+    @Test fun invalidDurationCacheSizeAndFutureSchemaAreRejected() {
         for (seconds in listOf(-1, 0, 13, Int.MAX_VALUE)) {
             assertTrue(runCatching { PlaybackTransitionSettings(fadeInSeconds = seconds) }.isFailure)
             assertTrue(runCatching { PlaybackTransitionSettings(fadeOutSeconds = seconds) }.isFailure)
             assertTrue(runCatching { PlaybackTransitionSettings(crossfadeSeconds = seconds) }.isFailure)
             assertTrue(runCatching { PlaybackTransitionSettings(seekCrossfadeSeconds = seconds) }.isFailure)
+        }
+        for (gigabytes in listOf(-1, 0, 65, Int.MAX_VALUE)) {
+            assertTrue(runCatching { PlaybackTransitionSettings(musicCacheGb = gigabytes) }.isFailure)
         }
         assertTrue(runCatching { PlaybackTransitionStore.decode("{\"schemaVersion\":2}") }.isFailure)
     }

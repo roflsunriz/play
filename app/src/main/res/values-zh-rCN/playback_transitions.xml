@@ -12,4 +12,7 @@
     <string name="playback_stop">停止</string>
     <string name="playback_automix_failed">无法加载自动过渡数据，将使用常规歌曲过渡。</string>
     <string name="playback_switch_busy">许可证服务器繁忙，未能切换歌曲。将继续播放当前歌曲。</string>
+    <string name="playback_music_cache">音乐缓存上限</string>
+    <string name="playback_music_cache_gb">%1$d GB</string>
+    <string name="playback_music_cache_hint">重启后生效。仅保存加密音频。</string>
 </resources>

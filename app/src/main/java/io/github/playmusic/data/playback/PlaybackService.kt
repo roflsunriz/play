@@ -54,7 +54,8 @@ open class PlaybackService : MediaSessionService() {
         super.onCreate()
         val database = StandaloneDatabaseProvider(this).also { this.database = it }
         val mediaCache = SimpleCache(cacheDir.resolve(cacheDirectoryName),
-            LeastRecentlyUsedCacheEvictor(MUSIC_CACHE_BYTES), database).also { cache = it }
+            LeastRecentlyUsedCacheEvictor((application as PlayApplication).container.playbackTransitions.state.value.settings.musicCacheBytes),
+            database).also { cache = it }
         val player = TransitionPlayer(this, createEngine(mediaCache), createEngine(mediaCache),
             { (application as PlayApplication).container.playbackTransitions.state.value.settings }, createAutomixResolver(),
             beforeAudioFocus = ::awaitPlaybackForeground,
@@ -172,6 +173,4 @@ open class PlaybackService : MediaSessionService() {
         database?.close()
         super.onDestroy()
     }
-
-    companion object { const val MUSIC_CACHE_BYTES = 512L * 1024 * 1024 }
 }

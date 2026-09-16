@@ -12,4 +12,7 @@
     <string name="playback_stop">Parar</string>
     <string name="playback_automix_failed">Não foi possível carregar as transições automáticas. A transição normal será usada.</string>
     <string name="playback_switch_busy">O servidor de licenças está ocupado e a música não foi trocada. A música atual continua tocando.</string>
+    <string name="playback_music_cache">Limite do cache de música</string>
+    <string name="playback_music_cache_gb">%1$d GB</string>
+    <string name="playback_music_cache_hint">Aplicado após reiniciar. Apenas áudio criptografado é salvo.</string>
 </resources>

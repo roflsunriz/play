@@ -80,8 +80,7 @@ class PlaybackSettingsScreenTest {
         compose.runOnIdle { assertEquals(1, retries) }
     }
 
-    @Test fun seekCrossfadeToggleAndSliderStayIndependentFromTrackCrossfade() {
-        var state by mutableStateOf(PlaybackTransitionState(isReady = true))
+    @Test fun seekCrossfadeToggleAndSliderStayIndependentFromTrackCrossfade() {        var state by mutableStateOf(PlaybackTransitionState(isReady = true))
         var changed: PlaybackTransitionSettings? = null
         compose.setContent { PlayTheme {
             PlaybackSettingsScreen(state, { changed = it; state = state.copy(settings = it) }, {}, {})
@@ -117,5 +116,26 @@ class PlaybackSettingsScreenTest {
         } } }
         compose.onNodeWithTag("synthetic-lyrics").performScrollTo().assertIsDisplayed()
         compose.runOnIdle { assertEquals(track.uri, supplied?.uri) }
+    }
+
+    @Test fun musicCacheSliderReportsGigabytesAndKeepsOtherSettings() {
+        var state by mutableStateOf(PlaybackTransitionState(isReady = true))
+        var changed: PlaybackTransitionSettings? = null
+        compose.setContent { PlayTheme {
+            PlaybackSettingsScreen(state, { changed = it; state = state.copy(settings = it) }, {}, {})
+        } }
+        compose.onNodeWithTag("playback-settings-list").performScrollToKey("music-cache")
+        compose.onNodeWithTag("music-cache-gb")
+            .assertTextEquals(compose.activity.getString(R.string.playback_music_cache_gb, 20))
+        compose.onNodeWithTag("music-cache-slider").performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(10f) }
+        compose.onNodeWithTag("music-cache-gb")
+            .assertTextEquals(compose.activity.getString(R.string.playback_music_cache_gb, 10))
+        compose.runOnIdle {
+            assertEquals(10, changed?.musicCacheGb)
+            assertEquals(10L * 1_024 * 1_024 * 1_024, changed?.musicCacheBytes)
+            assertTrue(changed?.crossfadeEnabled == true)
+            assertEquals(5, changed?.crossfadeSeconds)
+        }
     }
 }

@@ -12,4 +12,7 @@
     <string name="playback_stop">Arrêter</string>
     <string name="playback_automix_failed">Impossible de charger les transitions automatiques. La transition habituelle sera utilisée.</string>
     <string name="playback_switch_busy">Le serveur de licences est occupé, le titre n\'a pas pu être changé. Lecture du titre actuel maintenue.</string>
+    <string name="playback_music_cache">Limite du cache musical</string>
+    <string name="playback_music_cache_gb">%1$d Go</string>
+    <string name="playback_music_cache_hint">Appliqué après redémarrage. Seul l\'audio chiffré est stocké.</string>
 </resources>

@@ -63,6 +63,11 @@ internal fun PlaybackSettingsScreen(state: PlaybackTransitionState,
                     state.isReady, "seek-crossfade", { onChange(current.copy(seekCrossfadeEnabled = it)) },
                     { onChange(current.copy(seekCrossfadeSeconds = it)) })
             }
+            item("music-cache") {
+                CacheSetting(stringResource(R.string.playback_music_cache), current.musicCacheGb,
+                    state.isReady, "music-cache", { onChange(current.copy(musicCacheGb = it)) })
+                Text(stringResource(R.string.playback_music_cache_hint), style = MaterialTheme.typography.bodySmall)
+            }
             item("normalizer") {
                 PlaybackSettingSwitch(stringResource(R.string.playback_peak_normalizer), current.peakNormalizationEnabled,
                     state.isReady, "peak-normalizer") { onChange(current.copy(peakNormalizationEnabled = it)) }
@@ -93,8 +98,22 @@ private fun FadeSetting(label: String, checked: Boolean, seconds: Int, ready: Bo
 }
 
 @Composable
-private fun PlaybackSettingSwitch(label: String, checked: Boolean, ready: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+private fun CacheSetting(label: String, gigabytes: Int, ready: Boolean, tag: String, onGigabytes: (Int) -> Unit) {
     val haptics = LocalHapticFeedback.current
+    Column {
+        Text(label, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.playback_music_cache_gb, gigabytes), modifier = Modifier.testTag("$tag-gb"))
+            Slider(value = gigabytes.toFloat(), onValueChange = { if (it.isFinite()) onGigabytes(it.roundToInt().coerceIn(1, 64)) },
+                onValueChangeFinished = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
+                valueRange = 1f..64f, steps = 62, enabled = ready,
+                modifier = Modifier.weight(1f).padding(start = 16.dp).testTag("$tag-slider").semantics { contentDescription = label })
+        }
+    }
+}
+
+@Composable
+private fun PlaybackSettingSwitch(label: String, checked: Boolean, ready: Boolean, tag: String, onChange: (Boolean) -> Unit) {    val haptics = LocalHapticFeedback.current
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
         Switch(checked = checked, onCheckedChange = {

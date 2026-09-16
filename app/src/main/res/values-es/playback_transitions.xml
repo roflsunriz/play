@@ -12,4 +12,7 @@
     <string name="playback_stop">Detener</string>
     <string name="playback_automix_failed">No se pudieron cargar las transiciones automáticas. Se usará la transición habitual.</string>
     <string name="playback_switch_busy">El servidor de licencias está ocupado y no se pudo cambiar de canción. Se sigue reproduciendo la canción actual.</string>
+    <string name="playback_music_cache">Límite de caché de música</string>
+    <string name="playback_music_cache_gb">%1$d GB</string>
+    <string name="playback_music_cache_hint">Se aplica tras reiniciar. Solo se guarda audio cifrado.</string>
 </resources>

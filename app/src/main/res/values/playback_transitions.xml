@@ -12,4 +12,7 @@
     <string name="playback_settings_save_failed">Playback settings could not be saved. Retry to keep these changes.</string>
     <string name="playback_automix_failed">Automatic transition data could not be loaded. Playback will use the usual transition.</string>
     <string name="playback_switch_busy">The license server is busy, so the song was not switched. Still playing the current song.</string>
+    <string name="playback_music_cache">Music cache limit</string>
+    <string name="playback_music_cache_gb">%1$d GB</string>
+    <string name="playback_music_cache_hint">Takes effect after restart. Only encrypted audio is stored.</string>
 </resources>
