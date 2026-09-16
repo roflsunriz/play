@@ -203,8 +203,14 @@ class ContentDetailScreenTest {
                 {}, {}, {}, {}, sort = sort, sortOptions = DetailSort.options(ContentKind.PLAYLIST),
                 onSortChanged = { selected = it; sort = it })
         }
-        scrollToItem("sort", "detail-sort-button").performClick()
-        for (tag in listOf("added_newest", "title", "artist", "album")) {
+        scrollToItem("actions", "detail-sort-button")
+        composeRule.waitForIdle()
+        val playCenter = composeRule.onNodeWithTag("detail-play-button").fetchSemanticsNode().boundsInRoot.center.y
+        val sortCenter = composeRule.onNodeWithTag("detail-sort-button").fetchSemanticsNode().boundsInRoot.center.y
+        assertEquals(playCenter, sortCenter, 0.5f)
+        composeRule.onNodeWithTag("detail-sort-button").performClick()
+        for (tag in listOf("added_newest", "added_oldest", "title", "title_descending",
+            "artist", "artist_descending", "album", "album_descending")) {
             composeRule.onNodeWithTag("detail-sort-$tag").assertExists()
         }
         composeRule.onNodeWithTag("detail-sort-title").performClick()

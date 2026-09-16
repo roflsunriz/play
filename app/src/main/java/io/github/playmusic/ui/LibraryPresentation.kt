@@ -62,20 +62,30 @@ private fun normalizeLibraryText(text: String): String =
 
 internal fun presentDetailTracks(tracks: List<SpotifyContent>, sort: DetailSort): List<SpotifyContent> {
     val byTitle = compareBy<SpotifyContent> { normalizeLibraryText(it.title) }
+    val byArtist = compareBy<SpotifyContent> {
+        normalizeLibraryText(it.artists.firstOrNull()?.name ?: it.subtitle)
+    }.then(byTitle)
+    val byAlbum = compareBy<SpotifyContent> {
+        normalizeLibraryText(it.albumTitle.orEmpty())
+    }.then(compareBy<SpotifyContent> { it.discNumber ?: Int.MAX_VALUE }
+        .then(compareBy<SpotifyContent> { it.trackNumber ?: Int.MAX_VALUE })).then(byTitle)
     return when (sort) {
         DetailSort.TRACK_ORDER -> tracks
+        DetailSort.TRACK_REVERSE -> tracks.reversed()
         DetailSort.TITLE -> tracks.sortedWith(byTitle)
-        DetailSort.ARTIST -> tracks.sortedWith(compareBy<SpotifyContent> {
-            normalizeLibraryText(it.artists.firstOrNull()?.name ?: it.subtitle)
-        }.then(byTitle))
-        DetailSort.ALBUM -> tracks.sortedWith(compareBy<SpotifyContent> {
-            normalizeLibraryText(it.albumTitle.orEmpty())
-        }.then(compareBy<SpotifyContent> { it.discNumber ?: Int.MAX_VALUE }
-            .then(compareBy<SpotifyContent> { it.trackNumber ?: Int.MAX_VALUE })).then(byTitle))
+        DetailSort.TITLE_DESCENDING -> tracks.sortedWith(byTitle.reversed())
+        DetailSort.ARTIST -> tracks.sortedWith(byArtist)
+        DetailSort.ARTIST_DESCENDING -> tracks.sortedWith(byArtist.reversed())
+        DetailSort.ALBUM -> tracks.sortedWith(byAlbum)
+        DetailSort.ALBUM_DESCENDING -> tracks.sortedWith(byAlbum.reversed())
         DetailSort.ADDED_NEWEST -> tracks.sortedWith(
             compareByDescending<SpotifyContent> { it.addedAtMs ?: Long.MIN_VALUE })
+        DetailSort.ADDED_OLDEST -> tracks.sortedWith(
+            compareBy<SpotifyContent> { it.addedAtMs ?: Long.MAX_VALUE })
         DetailSort.PLAYCOUNT -> tracks.sortedWith(
             compareByDescending<SpotifyContent> { it.playcount ?: Long.MIN_VALUE }.then(byTitle))
+        DetailSort.PLAYCOUNT_ASCENDING -> tracks.sortedWith(
+            compareBy<SpotifyContent> { it.playcount ?: Long.MAX_VALUE }.then(byTitle))
     }
 }
 

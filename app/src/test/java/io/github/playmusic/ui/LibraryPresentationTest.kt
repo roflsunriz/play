@@ -48,9 +48,12 @@ class LibraryPresentationTest {
     }
 
     @Test fun detailSortOptionsDifferByContainerKind() {
-        assertEquals(listOf(DetailSort.ADDED_NEWEST, DetailSort.TITLE, DetailSort.ARTIST, DetailSort.ALBUM),
+        assertEquals(listOf(DetailSort.ADDED_NEWEST, DetailSort.ADDED_OLDEST, DetailSort.TITLE,
+            DetailSort.TITLE_DESCENDING, DetailSort.ARTIST, DetailSort.ARTIST_DESCENDING,
+            DetailSort.ALBUM, DetailSort.ALBUM_DESCENDING),
             DetailSort.options(ContentKind.PLAYLIST))
-        assertEquals(listOf(DetailSort.TRACK_ORDER, DetailSort.TITLE, DetailSort.PLAYCOUNT),
+        assertEquals(listOf(DetailSort.TRACK_ORDER, DetailSort.TRACK_REVERSE, DetailSort.TITLE,
+            DetailSort.TITLE_DESCENDING, DetailSort.PLAYCOUNT, DetailSort.PLAYCOUNT_ASCENDING),
             DetailSort.options(ContentKind.ALBUM))
         assertEquals(listOf(DetailSort.TRACK_ORDER), DetailSort.options(ContentKind.TRACK))
         assertEquals(listOf(DetailSort.TRACK_ORDER), DetailSort.options(ContentKind.ARTIST))
@@ -68,11 +71,17 @@ class LibraryPresentationTest {
             addedAtMs = null, playcount = null, discNumber = 2, trackNumber = 1)
         val source = listOf(old, undated, recent)
         assertEquals(source, presentDetailTracks(source, DetailSort.TRACK_ORDER))
+        assertEquals(listOf(recent, undated, old), presentDetailTracks(source, DetailSort.TRACK_REVERSE))
         assertEquals(listOf(recent, undated, old), presentDetailTracks(source, DetailSort.TITLE))
+        assertEquals(listOf(old, undated, recent), presentDetailTracks(source, DetailSort.TITLE_DESCENDING))
         assertEquals(listOf(undated, old, recent), presentDetailTracks(source, DetailSort.ARTIST))
+        assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.ARTIST_DESCENDING))
         assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.ALBUM))
+        assertEquals(listOf(undated, old, recent), presentDetailTracks(source, DetailSort.ALBUM_DESCENDING))
         assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.ADDED_NEWEST))
+        assertEquals(listOf(old, recent, undated), presentDetailTracks(source, DetailSort.ADDED_OLDEST))
         assertEquals(listOf(recent, old, undated), presentDetailTracks(source, DetailSort.PLAYCOUNT))
+        assertEquals(listOf(old, recent, undated), presentDetailTracks(source, DetailSort.PLAYCOUNT_ASCENDING))
     }
 
     @Test fun viewportPrefetchIsBoundedAndPrioritizesVisibleContent() {

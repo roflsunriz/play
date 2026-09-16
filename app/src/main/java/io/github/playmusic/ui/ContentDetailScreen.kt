@@ -127,11 +127,12 @@ internal fun ContentDetailScreen(
         item(key = "actions") {
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val compact = maxWidth < 240.dp && (playlistMetadata?.canEdit == true || playlistMetadata?.canDelete == true)
+                val iconSize = if (compact) 40.dp else 48.dp
                 Row(Modifier.fillMaxWidth().testTag("detail-actions"), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(if (maxWidth < 176.dp) 0.dp else 8.dp)) {
+                    horizontalArrangement = Arrangement.spacedBy(if (maxWidth < 240.dp) 4.dp else 8.dp)) {
                     if (compact) {
                         FilledIconButton(onClick = play, enabled = playable,
-                            modifier = Modifier.size(48.dp).testTag("detail-play-button")) {
+                            modifier = Modifier.size(iconSize).testTag("detail-play-button")) {
                             Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.play))
                         }
                     } else {
@@ -143,15 +144,18 @@ internal fun ContentDetailScreen(
                         }
                     }
                     ContentAddButton(content, content.uri in savedUris, onContentActions)
+                    if (sortOptions.size > 1) {
+                        DetailSortMenu(sort, sortOptions, onSortChanged, iconSize)
+                    }
                     if (playlistMetadata?.canEdit == true) {
                         IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onEditPlaylist() },
-                            modifier = Modifier.size(48.dp).testTag("edit-playlist-button")) {
+                            modifier = Modifier.size(iconSize).testTag("edit-playlist-button")) {
                             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_playlist))
                         }
                     }
                     if (playlistMetadata?.canDelete == true) {
                         IconButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onDeletePlaylist() },
-                            modifier = Modifier.size(48.dp).testTag("delete-playlist-button")) {
+                            modifier = Modifier.size(iconSize).testTag("delete-playlist-button")) {
                             Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.delete_playlist),
                                 tint = MaterialTheme.colorScheme.error)
                         }
@@ -179,13 +183,6 @@ internal fun ContentDetailScreen(
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("detail-retry-button")) {
                         Text(stringResource(R.string.refresh))
                     }
-                }
-            }
-        }
-        if (sortOptions.size > 1) {
-            item(key = "sort") {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    DetailSortMenu(sort, sortOptions, onSortChanged)
                 }
             }
         }
@@ -224,10 +221,11 @@ private fun durationLabel(milliseconds: Long): String =
     String.format(Locale.getDefault(), "%d:%02d", milliseconds / 60_000, milliseconds / 1_000 % 60)
 
 @Composable
-internal fun DetailSortMenu(sort: DetailSort, options: List<DetailSort>, onSelected: (DetailSort) -> Unit) {
+internal fun DetailSortMenu(sort: DetailSort, options: List<DetailSort>, onSelected: (DetailSort) -> Unit,
+    iconSize: androidx.compose.ui.unit.Dp = 48.dp) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("detail-sort-button")) {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(iconSize).testTag("detail-sort-button")) {
             Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort_by))
         }
         DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
@@ -243,9 +241,15 @@ internal fun DetailSortMenu(sort: DetailSort, options: List<DetailSort>, onSelec
 
 private fun DetailSort.label(): Int = when (this) {
     DetailSort.TRACK_ORDER -> R.string.sort_album_order
+    DetailSort.TRACK_REVERSE -> R.string.sort_album_order_reversed
     DetailSort.TITLE -> R.string.sort_title
+    DetailSort.TITLE_DESCENDING -> R.string.sort_title_descending
     DetailSort.ARTIST -> R.string.sort_artist
+    DetailSort.ARTIST_DESCENDING -> R.string.sort_artist_descending
     DetailSort.ALBUM -> R.string.sort_album
+    DetailSort.ALBUM_DESCENDING -> R.string.sort_album_descending
     DetailSort.ADDED_NEWEST -> R.string.sort_date_added
+    DetailSort.ADDED_OLDEST -> R.string.sort_date_added_oldest
     DetailSort.PLAYCOUNT -> R.string.sort_plays
+    DetailSort.PLAYCOUNT_ASCENDING -> R.string.sort_plays_ascending
 }

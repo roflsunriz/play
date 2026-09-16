@@ -1,5 +1,13 @@
 # 検証手順と結果
 
+## 2026-09-16の結果（21:10 JST）
+
+### v0.6.0の詳細内並び替え拡充と横並び化
+
+- プレイリスト詳細の並び替えを8種（追加日が新しい順・古い順、名前の昇順・降順、アーティスト昇順・降順、アルバム昇順・降順）、アルバム詳細の曲並び替えを6種（アルバム順・逆順、名前の昇順・降順、再生数が多い順・少ない順）へ拡充した。並び替えボタンを再生ボタンやお気に入りと同じ操作行へ移動し、狭幅でも同じ行に収まるよう調整した。
+- `testDebugUnitTest` 成功（`LibraryPresentationTest` 8件失敗0を含む）、`lintDebug` エラー0、`assembleDebug`・`assembleDebugAndroidTest`・`assembleRelease` 成功。分離AVD（emulator-5554、実機に触れず）で `ContentDetailScreenTest` 7件、`DetailSortStoreTest` 1件が成功。
+- OSV-Scannerは実行環境に用意がなく未実施。依存関係の変更はない。実機の表示確認と実音声確認は未実行。
+
 ## 2026-09-16の結果
 
 ### v0.5.0の公開

@@ -23,12 +23,15 @@ enum class SearchFilter(val kinds: List<ContentKind>) {
 data class ContentArtist(val uri: String, val name: String)
 
 enum class DetailSort {
-    TRACK_ORDER, TITLE, ARTIST, ALBUM, ADDED_NEWEST, PLAYCOUNT;
+    TRACK_ORDER, TRACK_REVERSE, TITLE, TITLE_DESCENDING, ARTIST, ARTIST_DESCENDING,
+    ALBUM, ALBUM_DESCENDING, ADDED_NEWEST, ADDED_OLDEST, PLAYCOUNT, PLAYCOUNT_ASCENDING;
 
     companion object {
         fun options(kind: ContentKind): List<DetailSort> = when (kind) {
-            ContentKind.PLAYLIST -> listOf(ADDED_NEWEST, TITLE, ARTIST, ALBUM)
-            ContentKind.ALBUM -> listOf(TRACK_ORDER, TITLE, PLAYCOUNT)
+            ContentKind.PLAYLIST -> listOf(ADDED_NEWEST, ADDED_OLDEST, TITLE, TITLE_DESCENDING,
+                ARTIST, ARTIST_DESCENDING, ALBUM, ALBUM_DESCENDING)
+            ContentKind.ALBUM -> listOf(TRACK_ORDER, TRACK_REVERSE, TITLE, TITLE_DESCENDING,
+                PLAYCOUNT, PLAYCOUNT_ASCENDING)
             else -> listOf(TRACK_ORDER)
         }
     }
