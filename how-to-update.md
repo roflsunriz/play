@@ -107,9 +107,9 @@ pwsh -File tools/capture-library-traffic.ps1 -Device $captureDevice -Seconds 60
 ローカル署名にはBuild Tools 37.0.0とJDK 17を使う。`PLAY_STORE_PASSWORD`と`PLAY_KEY_PASSWORD`は実行プロセスの環境変数に設定し、コマンド引数やログへ展開しない。鍵は`.signing/play-release.p12`、aliasは`play-release`。このWindows環境のパスワードは`.signing/release-password.dpapi`に暗号化して保持している。復号するときはファイル末尾の改行を`Trim()`で除き、同じWindowsユーザーの`ConvertTo-SecureString`を使う。`.signing/`はGit管理外とし、鍵と復旧可能なパスワードを安全に保管する。
 
 ```powershell
-.\tools\sign-release.ps1 -Apk <CIから取得したunsigned APK> -Version 0.3.0 `
+.\tools\sign-release.ps1 -Apk <CIから取得したunsigned APK> -Version 0.4.0 `
   -KeyStore .signing/play-release.p12 -KeyAlias play-release `
-  -Output build/outputs/play-0.3.0.apk -AndroidSdk $env:ANDROID_HOME
+  -Output build/outputs/play-0.4.0.apk -AndroidSdk $env:ANDROID_HOME
 ```
 
 パスとバージョンは対象リリースに合わせる。署名証明書SHA-256を`SECURITY.md`と照合し、`apksigner verify --verbose --print-certs`の成功も確認する。配布は署名済みAPKと隣の`.sha256`だけとする。公開処理だけを手動で復旧する場合も、検証済みrunのhead SHAとタグを確認し、`gh release create`の`--verify-tag`と`--notes-file`で同じ変更履歴を使用する。公開後はGitHubからAPKを取得してハッシュと署名をもう一度照合し、実機へ入っている最終APKも一致確認する。GitHubへプッシュする前に依存関係の脆弱性監査を再実行する。
