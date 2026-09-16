@@ -45,6 +45,7 @@
     <string name="browser_login_complete">Returning to Play…</string>
     <string name="login_required">Sign in to access music details and playback.</string>
     <string name="browser_unavailable">No browser is available. Enable a browser and try again.</string>
+    <string name="github_download">Download from GitHub</string>
     <string name="create_playlist">Create playlist</string>
     <string name="edit_playlist">Edit playlist</string>
     <string name="delete_playlist">Delete playlist</string>

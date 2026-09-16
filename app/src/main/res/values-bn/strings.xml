@@ -45,6 +45,7 @@
     <string name="browser_login_complete">Play-তে ফিরে যাওয়া হচ্ছে…</string>
     <string name="login_required">গানের বিবরণ দেখতে ও গান চালাতে সাইন ইন করুন।</string>
     <string name="browser_unavailable">কোনো ব্রাউজার উপলভ্য নেই। একটি ব্রাউজার চালু করে আবার চেষ্টা করুন।</string>
+    <string name="github_download">GitHub থেকে ডাউনলোড</string>
     <string name="create_playlist">প্লেলিস্ট তৈরি করুন</string>
     <string name="edit_playlist">প্লেলিস্ট সম্পাদনা করুন</string>
     <string name="delete_playlist">প্লেলিস্ট মুছুন</string>

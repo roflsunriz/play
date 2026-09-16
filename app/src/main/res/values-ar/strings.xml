@@ -49,6 +49,7 @@
     <string name="browser_login_complete">جارٍ العودة إلى Play…</string>
     <string name="login_required">سجّل الدخول للوصول إلى تفاصيل الموسيقى وتشغيلها.</string>
     <string name="browser_unavailable">لا يتوفر متصفح. فعّل متصفحًا ثم حاول مرة أخرى.</string>
+    <string name="github_download">التنزيل من GitHub</string>
     <string name="create_playlist">إنشاء قائمة تشغيل</string>
     <string name="edit_playlist">تعديل قائمة التشغيل</string>
     <string name="delete_playlist">حذف قائمة التشغيل</string>

@@ -44,6 +44,7 @@
     <string name="browser_login_complete">正在返回 Play…</string>
     <string name="login_required">请登录以查看音乐详情和播放音乐。</string>
     <string name="browser_unavailable">没有可用的浏览器。请启用浏览器后重试。</string>
+    <string name="github_download">从 GitHub 下载</string>
     <string name="create_playlist">创建歌单</string>
     <string name="edit_playlist">编辑歌单</string>
     <string name="delete_playlist">删除歌单</string>

@@ -46,6 +46,7 @@
     <string name="browser_login_complete">Voltando ao Play…</string>
     <string name="login_required">Entre para acessar os detalhes e ouvir música.</string>
     <string name="browser_unavailable">Nenhum navegador disponível. Ative um navegador e tente novamente.</string>
+    <string name="github_download">Baixar do GitHub</string>
     <string name="create_playlist">Criar playlist</string>
     <string name="edit_playlist">Editar playlist</string>
     <string name="delete_playlist">Excluir playlist</string>

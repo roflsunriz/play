@@ -44,6 +44,7 @@
     <string name="browser_login_complete">Playに戻ります…</string>
     <string name="login_required">楽曲の詳細と再生を利用するにはログインが必要です。</string>
     <string name="browser_unavailable">ブラウザーを利用できません。端末のブラウザーを有効にして再試行してください。</string>
+    <string name="github_download">GitHubからダウンロード</string>
     <string name="create_playlist">プレイリストを作成</string>
     <string name="edit_playlist">プレイリストを編集</string>
     <string name="delete_playlist">プレイリストを削除</string>

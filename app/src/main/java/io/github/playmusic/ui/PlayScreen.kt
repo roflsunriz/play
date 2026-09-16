@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Menu
@@ -69,6 +70,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -86,6 +88,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentDetail
@@ -93,6 +96,9 @@ import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.model.SpotifyContent
+import kotlinx.coroutines.launch
+
+internal const val GITHUB_RELEASES_URL = "https://github.com/roflsunriz/play/releases"
 
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
@@ -317,6 +323,9 @@ internal fun HomeScreen(
     val compactHeader = with(LocalDensity.current) { window.height.toDp() < 480.dp && window.width.toDp() >= 600.dp }
     var menuExpanded by remember { mutableStateOf(false) }
     val snackbarHost = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val menuScope = rememberCoroutineScope()
+    val browserUnavailableMessage = stringResource(R.string.browser_unavailable)
     val syncFailureMessage = stringResource(R.string.playlist_sync_failed)
     val retryLabel = stringResource(R.string.refresh)
     LaunchedEffect(state.playlistSyncFailed) {
@@ -374,6 +383,20 @@ internal fun HomeScreen(
                             leadingIcon = { Icon(Icons.Default.Equalizer, null) },
                             modifier = Modifier.testTag("audio-effects-menu-item"),
                             onClick = { menuExpanded = false; onAudioEffects() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.github_download)) },
+                            leadingIcon = { Icon(Icons.Default.Download, null) },
+                            modifier = Modifier.testTag("github-download-menu-item"),
+                            onClick = {
+                                menuExpanded = false
+                                try {
+                                    androidx.browser.customtabs.CustomTabsIntent.Builder().build()
+                                        .launchUrl(context, GITHUB_RELEASES_URL.toUri())
+                                } catch (_: android.content.ActivityNotFoundException) {
+                                    menuScope.launch { snackbarHost.showSnackbar(browserUnavailableMessage) }
+                                } catch (_: SecurityException) {
+                                    menuScope.launch { snackbarHost.showSnackbar(browserUnavailableMessage) }
+                                }
+                            })
                         if (!state.isLoggedIn) DropdownMenuItem(
                             modifier = Modifier.testTag("account-login-button"),
                             text = { Text(stringResource(R.string.browser_login)) },

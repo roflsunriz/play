@@ -47,6 +47,7 @@
     <string name="browser_login_complete">Возврат в Play…</string>
     <string name="login_required">Войдите, чтобы открыть сведения о музыке и начать воспроизведение.</string>
     <string name="browser_unavailable">Браузер недоступен. Включите браузер и повторите попытку.</string>
+    <string name="github_download">Скачать с GitHub</string>
     <string name="create_playlist">Создать плейлист</string>
     <string name="edit_playlist">Изменить плейлист</string>
     <string name="delete_playlist">Удалить плейлист</string>

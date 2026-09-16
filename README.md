@@ -8,6 +8,8 @@ Android 7.0以降で利用できます。
 
 [リリース](https://github.com/roflsunriz/play/releases)
 
+アプリ内のハンバーガーメニュー「GitHubからダウンロード」からも最新のリリースを開けます。
+
 ## 使い方
 
 1. Playを起動し、「ログイン」を押す。
