@@ -101,7 +101,7 @@ class PlaybackTransitionsTest {
         }
     }
 
-    @Test fun seekingMidSongWithSeekCrossfadeOverlapsBothDecoders(): Unit = runBlocking {
+    @Test fun seekingMidSongSeeksAtOnceWithoutStartingASecondDecoder(): Unit = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val store = (context.applicationContext as PlayApplication).container.playbackTransitions
         val original = store.state.first { it.isReady }.settings
@@ -119,14 +119,12 @@ class PlaybackTransitionsTest {
             playback.play(tracks)
             await { read { audioEngines().any { it.isPlaying && it.volume > .99f } } }
             playback.seek(8_000)
-            await { read { audioEngines().count { it.isPlaying && it.volume in 0.05f..0.95f } == 2 } }
-            read {
-                val audible = audioEngines().filter { it.isPlaying }
-                assertEquals(1f, audible.sumOf { it.volume.toDouble() }.toFloat(), .02f)
-                assertEquals(tracks.single().uri, currentMediaItem?.mediaId)
-            }
-            await { read { audioEngines().count { it.isPlaying } == 1 && audioEngines().any { it.isPlaying && it.volume > .99f } } }
-            read { assertTrue("Seek must land near its target, was ${currentPosition}", currentPosition in 8_000..10_500) }
+            // The position jumps at once without waiting for another decoder or license.
+            await { read { currentPosition in 7_500..11_000 } }
+            delay(500)
+            read { assertEquals(1, audioEngines().count { it.isPlaying }) }
+            await { read { audioEngines().any { it.isPlaying && it.volume > .99f } } }
+            read { assertEquals(tracks.single().uri, currentMediaItem?.mediaId) }
             playback.stop()
             await { read { playbackState == Player.STATE_IDLE && audioEngines().none { it.isPlaying || it.playWhenReady } } }
         } finally {
