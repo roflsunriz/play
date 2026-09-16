@@ -140,6 +140,7 @@ open class PlaybackService : MediaSessionService() {
         val dataSources = DataSource.Factory { CachedAudioDataSource(api, cacheFactory) }
         val drm = DefaultDrmSessionManager.Builder().setUuidAndExoMediaDrmProvider(C.WIDEVINE_UUID,
             FrameworkMediaDrm.DEFAULT_PROVIDER).setMultiSession(true).setSessionKeepaliveMs(C.TIME_UNSET)
+            .setLoadErrorHandlingPolicy(DrmRetryPolicy)
             .build(AuthenticatedDrmCallback(container.playbackAuthorization))
         return ProgressiveMediaSource.Factory(dataSources).setDrmSessionManagerProvider { drm }
     }

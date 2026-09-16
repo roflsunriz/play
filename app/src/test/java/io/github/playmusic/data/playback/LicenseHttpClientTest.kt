@@ -167,6 +167,29 @@ class LicenseHttpClientTest {
     }
 
     @Test
+    fun transientTransportFailuresReplayOnce() {
+        LicensePacer.resetForTests()
+        val connections = mutableListOf<Connection>()
+        val attempts = mutableListOf<Boolean>()
+        val sleeps = mutableListOf<Long>()
+        var calls = 0
+        val client = LicenseHttpClient({ uri ->
+            if (calls++ == 0) throw java.io.IOException("synthetic transport cut")
+            Connection(uri, 200, RESPONSE, false).also { connections += it }
+        }, { sleeps.add(it) }, { })
+        val response = client.post(LICENSE, REQUEST) { refresh -> attempts += refresh; headers(refresh) }
+        assertArrayEquals(RESPONSE, response)
+        assertEquals(listOf(false, false), attempts)
+        assertTrue(sleeps.isEmpty())
+        assertEquals(1, connections.size)
+        val failing = LicenseHttpClient({ throw java.io.IOException("synthetic outage") }, { sleeps.add(it) }, { })
+        val error = runCatching { failing.post(LICENSE, REQUEST, ::headers) }.exceptionOrNull()
+            as LicenseHttpClient.LicenseHttpException
+        assertEquals(LicenseHttpClient.Failure.NETWORK, error.failure)
+        assertNoSecrets(error)
+    }
+
+    @Test
     fun compressedResponsesAreDecodedAndBothMessageDirectionsHaveBounds() {
         val compressed = gzip(RESPONSE)
         assertArrayEquals(RESPONSE, client(mutableListOf(), reply = compressed, gzip = true)

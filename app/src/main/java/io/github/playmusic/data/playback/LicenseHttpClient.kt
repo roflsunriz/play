@@ -54,7 +54,11 @@ internal class LicenseHttpClient(
         return try {
             send(uri, request, headers, false)
         } catch (error: LicenseHttpException) {
-            if (error.responseCode == 401) send(uri, request, headers, true) else throw error
+            if (error.responseCode == 401) send(uri, request, headers, true)
+            // A single transport blip is worth one immediate replay; anything persistent must
+            // surface instead of feeding a retry storm.
+            else if (error.failure == Failure.NETWORK) send(uri, request, headers, false)
+            else throw error
         }
     }
 
