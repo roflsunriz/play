@@ -19,6 +19,7 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.AudioOffloadSupport
@@ -80,7 +81,14 @@ open class PlaybackService : MediaSessionService() {
         }
 
     private fun createEngine(mediaCache: SimpleCache): ExoPlayer =
-        ExoPlayer.Builder(this, createRenderers()).setMediaSourceFactory(createMediaSources(mediaCache)).build().apply {
+        ExoPlayer.Builder(this, createRenderers()).setMediaSourceFactory(createMediaSources(mediaCache))
+            .setLoadControl(DefaultLoadControl.Builder()
+                // Keep whole tracks buffered (≈10 MB at the streaming rate) so seeks within the
+                // playing song never reload. Startup and rebuffer thresholds stay at defaults.
+                .setBufferDurationsMs(DefaultLoadControl.DEFAULT_MIN_BUFFER_MS, MAX_BUFFER_MS,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS).build())
+            .build().apply {
             trackSelectionParameters = trackSelectionParameters.buildUpon().setAudioOffloadPreferences(
                 AudioOffloadPreferences.Builder().setAudioOffloadMode(AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED).build(),
             ).build()
@@ -90,6 +98,8 @@ open class PlaybackService : MediaSessionService() {
         }
 
     protected open val cacheDirectoryName = "music_stream_cache"
+
+    companion object { const val MAX_BUFFER_MS = 600_000 }
 
     protected open fun createAudioProcessors(): Array<AudioProcessor> {
         val effects = (application as PlayApplication).container.audioEffects
