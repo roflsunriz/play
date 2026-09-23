@@ -102,3 +102,17 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
+
+// OkHttp 5 splits artifacts: okhttp-android (AAR, reads the public suffix list from app assets)
+// for devices and okhttp-jvm (JAR, reads it from classpath resources) for plain JVM use. Local
+// unit tests run on the JVM without assets, so they must resolve the JVM variant; using the AAR
+// there fails with "Unable to load PublicSuffixDatabase.list resource" (square/okhttp#8927).
+// Production and instrumentation tests keep the AAR.
+configurations.matching {
+    it.name.endsWith("UnitTestCompileClasspath") || it.name.endsWith("UnitTestRuntimeClasspath")
+}.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("com.squareup.okhttp3:okhttp-android"))
+            .using(module("com.squareup.okhttp3:okhttp-jvm:${libs.versions.okhttp.get()}"))
+    }
+}

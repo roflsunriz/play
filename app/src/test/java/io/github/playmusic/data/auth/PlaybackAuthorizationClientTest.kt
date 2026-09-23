@@ -3,6 +3,7 @@ package io.github.playmusic.data.auth
 import kotlinx.coroutines.runBlocking
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.EventListener
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
@@ -10,6 +11,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import okio.Timeout
+import kotlin.reflect.KClass
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -212,6 +214,11 @@ class PlaybackAuthorizationClientTest {
         override fun isCanceled() = cancelled
         override fun timeout() = Timeout()
         override fun clone(): Call = FakeCall(source, response)
+        override fun <T : Any> tag(type: KClass<T>): T? = null
+        override fun <T> tag(type: Class<out T>): T? = null
+        override fun <T : Any> tag(type: KClass<T>, computeIfAbsent: () -> T): T = computeIfAbsent()
+        override fun <T : Any> tag(type: Class<T>, computeIfAbsent: () -> T): T = computeIfAbsent()
+        override fun addEventListener(eventListener: EventListener) = Unit
     }
 
     companion object {
