@@ -2,6 +2,12 @@
 
 このプロジェクトの重要な変更は、[Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に従って記録します。
 
+## [Unreleased]
+
+### Changed
+
+- 依存更新を安全に省力化するため、Dependabot の patch／minor PR を既存 CI の全チェック成功後に自動取り込みし、失敗ジョブを一度再実行する設定を追加した。
+
 ## [0.6.0] - 2026-09-17
 
 ### Changed

@@ -413,3 +413,9 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 - 端末OS全体の再起動、他機種・他アカウント・異なる契約や地域での実楽曲確認は未実施。
 - 触覚はOSのAPIへ接続しているが、端末設定を変えた際の体感確認は未実施。
 - 監査後に公開される脆弱性、新しいホスト側CI、署名済みリリースの配布は未検証。リリース時に再確認する。
+
+## Dependabot 自動処理（2026-09-23）
+
+`.github/workflows/dependabot-automation.yml` を actionlint で検査し、PR 用 workflow 名（CI）と一致することを確認する。Dependabot の patch／minor かつ全 PR チェック成功の場合だけ取り込み、major・古い SHA・再失敗は残す。
+
+実際の Dependabot PR がまだない場合、動作経路は未検証として扱う。実 PR 発生後に自動化ジョブ、CI の再試行、マージ結果を確認する。
