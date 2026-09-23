@@ -11,6 +11,7 @@
 ### Changed
 
 - 依存更新を安全に省力化するため、Dependabot の patch／minor PR を既存 CI の全チェック成功後に自動取り込みし、失敗ジョブを一度再実行する設定を追加した。
+- 依存関係を更新した（AGP 9.4.0→9.4.1、coil 3.6.2→3.6.3、jose4j 0.9.6→0.9.7、okhttp 4.12.0→5.5.0）。okhttp 5 の分割アーティファクトに合わせ、JVM 単体テストだけ okhttp-jvm を解決し、テストの Call 実装に tag・addEventListener を追加した。
 
 ## [0.6.0] - 2026-09-17
 

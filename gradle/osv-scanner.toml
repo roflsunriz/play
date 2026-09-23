@@ -27,6 +27,13 @@ vulnerability.ignore = true
 reason = "AGP requests 1.80.2 metadata, but the build classpath resolves and executes 1.86."
 
 [[PackageOverrides]]
+name = "org.bouncycastle:bcprov-jdk18on"
+version = "1.84"
+ecosystem = "Maven"
+vulnerability.ignore = true
+reason = "Verification metadata retains 1.84 from past builds, but no current configuration resolves it; the build classpath resolves and executes 1.86."
+
+[[PackageOverrides]]
 name = "org.jetbrains.kotlin:kotlin-gradle-plugin"
 version = "2.2.10"
 ecosystem = "Maven"
