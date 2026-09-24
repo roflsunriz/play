@@ -2,7 +2,7 @@ package io.github.playmusic.ui
 
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.DetailSort
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import java.text.Normalizer
 import java.util.Locale
 
@@ -32,7 +32,7 @@ internal fun PlayUiState.sortFor(section: LibrarySection): LibrarySort = when (s
     LibrarySection.SEARCH -> LibrarySort.LIBRARY_ORDER
 }
 
-internal fun presentLibrary(items: List<SpotifyContent>, query: String, sort: LibrarySort): List<SpotifyContent> {
+internal fun presentLibrary(items: List<MusicContent>, query: String, sort: LibrarySort): List<MusicContent> {
     val words = normalizeLibraryText(query).split(Regex("\\s+")).filter(String::isNotBlank)
     val filtered = if (words.isEmpty()) items else items.filter { item ->
         val text = normalizeLibraryText(listOfNotNull(item.title, item.ownerName, item.description,
@@ -41,34 +41,34 @@ internal fun presentLibrary(items: List<SpotifyContent>, query: String, sort: Li
             .joinToString(" "))
         words.all(text::contains)
     }
-    val byTitle = compareBy<SpotifyContent> { normalizeLibraryText(it.title) }
+    val byTitle = compareBy<MusicContent> { normalizeLibraryText(it.title) }
     return when (sort) {
         LibrarySort.LIBRARY_ORDER -> filtered
         LibrarySort.TITLE -> filtered.sortedWith(byTitle)
         LibrarySort.TITLE_DESCENDING -> filtered.sortedWith(byTitle.reversed())
-        LibrarySort.CREATOR -> filtered.sortedWith(compareBy<SpotifyContent> {
+        LibrarySort.CREATOR -> filtered.sortedWith(compareBy<MusicContent> {
             normalizeLibraryText(it.ownerName ?: it.subtitle)
         }.then(byTitle))
-        LibrarySort.TRACK_COUNT -> filtered.sortedWith(compareByDescending<SpotifyContent> { it.trackCount ?: -1 }.then(byTitle))
-        LibrarySort.DURATION -> filtered.sortedWith(compareBy<SpotifyContent> {
+        LibrarySort.TRACK_COUNT -> filtered.sortedWith(compareByDescending<MusicContent> { it.trackCount ?: -1 }.then(byTitle))
+        LibrarySort.DURATION -> filtered.sortedWith(compareBy<MusicContent> {
             it.durationMs.takeIf { duration -> duration > 0 } ?: Long.MAX_VALUE
         }.then(byTitle))
-        LibrarySort.DURATION_DESCENDING -> filtered.sortedWith(compareByDescending<SpotifyContent> { it.durationMs }.then(byTitle))
+        LibrarySort.DURATION_DESCENDING -> filtered.sortedWith(compareByDescending<MusicContent> { it.durationMs }.then(byTitle))
     }
 }
 
 private fun normalizeLibraryText(text: String): String =
     Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
 
-internal fun presentDetailTracks(tracks: List<SpotifyContent>, sort: DetailSort): List<SpotifyContent> {
-    val byTitle = compareBy<SpotifyContent> { normalizeLibraryText(it.title) }
-    val byArtist = compareBy<SpotifyContent> {
+internal fun presentDetailTracks(tracks: List<MusicContent>, sort: DetailSort): List<MusicContent> {
+    val byTitle = compareBy<MusicContent> { normalizeLibraryText(it.title) }
+    val byArtist = compareBy<MusicContent> {
         normalizeLibraryText(it.artists.firstOrNull()?.name ?: it.subtitle)
     }.then(byTitle)
-    val byAlbum = compareBy<SpotifyContent> {
+    val byAlbum = compareBy<MusicContent> {
         normalizeLibraryText(it.albumTitle.orEmpty())
-    }.then(compareBy<SpotifyContent> { it.discNumber ?: Int.MAX_VALUE }
-        .then(compareBy<SpotifyContent> { it.trackNumber ?: Int.MAX_VALUE })).then(byTitle)
+    }.then(compareBy<MusicContent> { it.discNumber ?: Int.MAX_VALUE }
+        .then(compareBy<MusicContent> { it.trackNumber ?: Int.MAX_VALUE })).then(byTitle)
     return when (sort) {
         DetailSort.TRACK_ORDER -> tracks
         DetailSort.TRACK_REVERSE -> tracks.reversed()
@@ -79,18 +79,18 @@ internal fun presentDetailTracks(tracks: List<SpotifyContent>, sort: DetailSort)
         DetailSort.ALBUM -> tracks.sortedWith(byAlbum)
         DetailSort.ALBUM_DESCENDING -> tracks.sortedWith(byAlbum.reversed())
         DetailSort.ADDED_NEWEST -> tracks.sortedWith(
-            compareByDescending<SpotifyContent> { it.addedAtMs ?: Long.MIN_VALUE })
+            compareByDescending<MusicContent> { it.addedAtMs ?: Long.MIN_VALUE })
         DetailSort.ADDED_OLDEST -> tracks.sortedWith(
-            compareBy<SpotifyContent> { it.addedAtMs ?: Long.MAX_VALUE })
+            compareBy<MusicContent> { it.addedAtMs ?: Long.MAX_VALUE })
         DetailSort.PLAYCOUNT -> tracks.sortedWith(
-            compareByDescending<SpotifyContent> { it.playcount ?: Long.MIN_VALUE }.then(byTitle))
+            compareByDescending<MusicContent> { it.playcount ?: Long.MIN_VALUE }.then(byTitle))
         DetailSort.PLAYCOUNT_ASCENDING -> tracks.sortedWith(
-            compareBy<SpotifyContent> { it.playcount ?: Long.MAX_VALUE }.then(byTitle))
+            compareBy<MusicContent> { it.playcount ?: Long.MAX_VALUE }.then(byTitle))
     }
 }
 
 /** Two visible items and at most two upcoming items keep background work small. */
-internal fun viewportPrefetchItems(items: List<SpotifyContent>, visibleIndices: List<Int>): List<SpotifyContent> {
+internal fun viewportPrefetchItems(items: List<MusicContent>, visibleIndices: List<Int>): List<MusicContent> {
     val visible = visibleIndices.filter { it in items.indices }
     if (visible.isEmpty()) return emptyList()
     val end = visible.max()
@@ -99,7 +99,7 @@ internal fun viewportPrefetchItems(items: List<SpotifyContent>, visibleIndices: 
         .filter { it.kind == ContentKind.PLAYLIST || it.kind == ContentKind.ALBUM }.take(DetailPrefetcher.MAX_ITEMS)
 }
 
-internal fun librarySuggestions(libraries: Map<LibrarySection, List<SpotifyContent>>): List<SpotifyContent> {
+internal fun librarySuggestions(libraries: Map<LibrarySection, List<MusicContent>>): List<MusicContent> {
     val sources = listOf(LibrarySection.PLAYLISTS, LibrarySection.ALBUMS, LibrarySection.TRACKS)
         .map { libraries[it].orEmpty() }
     return (0 until 4).flatMap { index -> sources.mapNotNull { it.getOrNull(index) } }.distinctBy { it.uri }

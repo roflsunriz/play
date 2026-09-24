@@ -19,12 +19,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 
-data class PlaylistChoice(val playlist: SpotifyContent, val containsAll: Boolean)
+data class PlaylistChoice(val playlist: MusicContent, val containsAll: Boolean)
 
 data class ContentActionsState(
-    val content: SpotifyContent,
+    val content: MusicContent,
     val saved: Boolean? = null,
     val loading: Boolean = true,
     val busy: Boolean = false,
@@ -34,7 +34,7 @@ data class ContentActionsState(
 )
 
 @Composable
-internal fun ContentAddButton(content: SpotifyContent, saved: Boolean, onActions: (SpotifyContent) -> Unit) {
+internal fun ContentAddButton(content: MusicContent, saved: Boolean, onActions: (MusicContent) -> Unit) {
     if (content.kind !in setOf(ContentKind.TRACK, ContentKind.ALBUM)) return
     IconButton(onClick = { onActions(content) }, modifier = Modifier.testTag("add-${content.kind.name.lowercase()}-${content.id}")) {
         Icon(if (saved) Icons.Default.Check else Icons.Default.AddCircleOutline,
@@ -97,7 +97,7 @@ internal fun ContentActionsDialog(state: ContentActionsState, onFavorite: () -> 
 }
 
 @Composable
-internal fun ArtistPicker(artists: List<SpotifyContent>, onOpen: (SpotifyContent) -> Unit, onDismiss: () -> Unit) {
+internal fun ArtistPicker(artists: List<MusicContent>, onOpen: (MusicContent) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.go_to_artist)) },
         text = { Column(Modifier.verticalScroll(rememberScrollState())) {
             artists.forEach { artist -> TextButton(onClick = { onOpen(artist) },

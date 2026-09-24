@@ -2,7 +2,7 @@ package io.github.playmusic.data.playback
 
 import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.api.SessionTokens
-import io.github.playmusic.data.api.SpotifyApiException
+import io.github.playmusic.data.api.ServiceApiException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -88,7 +88,7 @@ class StreamingApiClientTest {
                 calls++
                 Connection(uri, status, "{}")
             })
-            val error = assertThrows(SpotifyApiException::class.java) { runBlocking { api.resolve(TRACK) } }
+            val error = assertThrows(ServiceApiException::class.java) { runBlocking { api.resolve(TRACK) } }
             assertEquals(status, error.status)
             assertEquals(if (status == 401) 2 else 1, calls)
             assertEquals(if (status == 401) 1 else 0, tokens.refreshes)

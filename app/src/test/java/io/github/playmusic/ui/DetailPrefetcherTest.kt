@@ -1,7 +1,7 @@
 package io.github.playmusic.ui
 
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -94,5 +94,5 @@ class DetailPrefetcherTest {
         assertEquals(listOf(0, 1, 2), calls)
     }
 
-    private fun item(id: Int) = SpotifyContent(id.toString(), "spotify:playlist:$id", "Item $id", "", null, ContentKind.PLAYLIST)
+    private fun item(id: Int) = MusicContent(id.toString(), "spotify:playlist:$id", "Item $id", "", null, ContentKind.PLAYLIST)
 }

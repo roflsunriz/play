@@ -9,7 +9,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SearchFilter
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.playback.AutomixApiClient
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.data.playback.PlaybackTransitionSettings
@@ -84,7 +84,7 @@ class LivePlaybackTransitionsTest {
         assumeTrue(arguments.getString("liveTransitions") == "true" && arguments.getString("automixPlaylistUri") != null)
         withProbe(automix = true) {
             val contextUri = requireNotNull(arguments.getString("automixPlaylistUri"))
-            val playlist = SpotifyContent(contextUri.substringAfterLast(':'), contextUri, "", "", null, ContentKind.PLAYLIST)
+            val playlist = MusicContent(contextUri.substringAfterLast(':'), contextUri, "", "", null, ContentKind.PLAYLIST)
             val playlistTracks = app.repository.detail(playlist).tracks
             val fromUri = arguments.getString("automixFromUri")
             val toUri = arguments.getString("automixToUri")
@@ -157,7 +157,7 @@ class LivePlaybackTransitionsTest {
 
     private class Probe(val app: AppContainer, val playback: LocalPlayback) {
         var failure: String? = null
-        suspend fun track(uri: String): SpotifyContent = app.repository.detail(SpotifyContent(uri.substringAfterLast(':'),
+        suspend fun track(uri: String): MusicContent = app.repository.detail(MusicContent(uri.substringAfterLast(':'),
             uri, "", "", null, ContentKind.TRACK)).content
 
         suspend fun snapshot(): Snapshot = withContext(Dispatchers.Main) {

@@ -83,7 +83,7 @@ class LyricsApiClientTest {
         for (status in listOf(401, 403, 429, 500, 302)) {
             val backend = Backend { Reply(status, "private account details") }
             val error = runCatching { backend.client.lyrics(TRACK_URI) }.exceptionOrNull()
-            assertTrue(error is SpotifyApiException)
+            assertTrue(error is ServiceApiException)
             assertFalse(error?.message.orEmpty().contains("private"))
             assertEquals(if (status == 401) 2 else 1, backend.requests.size)
         }

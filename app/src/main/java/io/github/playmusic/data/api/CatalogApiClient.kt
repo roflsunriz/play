@@ -2,7 +2,7 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.SearchFilter
 import io.github.playmusic.data.model.ArtistRelease
 import io.github.playmusic.data.api.CatalogJson.objects
@@ -23,7 +23,7 @@ class CatalogApiClient(
     private val session: SessionTokens,
     private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
 ) {
-    suspend fun search(searchTerm: String, filter: SearchFilter = SearchFilter.ALL): List<SpotifyContent> = coroutineScope {
+    suspend fun search(searchTerm: String, filter: SearchFilter = SearchFilter.ALL): List<MusicContent> = coroutineScope {
         if (searchTerm.isBlank()) return@coroutineScope emptyList()
         filter.kinds.chunked(PARALLEL_REQUESTS).flatMap { kinds -> kinds.map { kind -> async {
             val operation = when (kind) {
@@ -41,13 +41,13 @@ class CatalogApiClient(
         } }.awaitAll().flatten() }
     }
 
-    suspend fun albums(uris: List<String>): List<SpotifyContent> = coroutineScope {
+    suspend fun albums(uris: List<String>): List<MusicContent> = coroutineScope {
         uris.chunked(PARALLEL_REQUESTS).flatMap { batch ->
             batch.map { uri -> async { CatalogJson.content(albumPage(uri, 0, 1), ContentKind.ALBUM) } }.awaitAll()
         }
     }
 
-    suspend fun tracks(uris: List<String>): List<SpotifyContent> = coroutineScope {
+    suspend fun tracks(uris: List<String>): List<MusicContent> = coroutineScope {
         val unique = uris.distinct()
         val metadata = unique.chunked(TRACK_BATCH_SIZE).chunked(PARALLEL_REQUESTS).flatMap { batches ->
             batches.map { batch -> async {
@@ -57,7 +57,7 @@ class CatalogApiClient(
         uris.map { uri -> metadata[uri] ?: error("Catalog response omitted a requested track") }
     }
 
-    suspend fun detail(content: SpotifyContent): ContentDetail {
+    suspend fun detail(content: MusicContent): ContentDetail {
         if (content.kind == ContentKind.ARTIST) return artistDetail(content.uri)
         if (content.kind == ContentKind.SHOW) return showDetail(content.uri)
         if (content.kind == ContentKind.GENRE) return genreDetail(content)
@@ -73,8 +73,8 @@ class CatalogApiClient(
         require(content.kind == ContentKind.ALBUM)
         var offset = 0
         var first: JSONObject? = null
-        var album: SpotifyContent? = null
-        val tracks = mutableListOf<SpotifyContent>()
+        var album: MusicContent? = null
+        val tracks = mutableListOf<MusicContent>()
         var total: Int
         do {
             val page = albumPage(content.uri, offset, ALBUM_PAGE_SIZE)
@@ -88,19 +88,19 @@ class CatalogApiClient(
         return ContentDetail(checkNotNull(album), tracks, total, CatalogJson.releaseDate(checkNotNull(first)))
     }
 
-    suspend fun radio(track: SpotifyContent): SpotifyContent {
+    suspend fun radio(track: MusicContent): MusicContent {
         require(track.kind == ContentKind.TRACK && track.uri.matches(TRACK_URI)) { "Radio requires a track" }
         if (!session.usesBrowserAuthorization()) throw BrowserAuthorizationRequiredException()
         val uri = URI("$RADIO_ENDPOINT/${track.uri}?response-format=json")
         var response = execute(null, null, session.accessToken(), uri)
         if (response.first == 401) response = execute(null, null, session.accessToken(forceRefresh = true), uri)
-        if (response.first !in 200..299) throw SpotifyApiException(response.first, "Radio request failed")
+        if (response.first !in 200..299) throw ServiceApiException(response.first, "Radio request failed")
         val items = JSONObject(response.second).getJSONArray("mediaItems")
         require(items.length() > 0) { "Radio playlist is unavailable" }
         val playlistUri = items.getJSONObject(0).getString("uri")
         require(playlistUri.matches(PLAYLIST_URI)) { "Unexpected radio result" }
         // The resolver supplies the context URI; the repository loads its canonical title and artwork.
-        return SpotifyContent(playlistUri.substringAfterLast(':'), playlistUri, track.title, "", track.imageUrl, ContentKind.PLAYLIST)
+        return MusicContent(playlistUri.substringAfterLast(':'), playlistUri, track.title, "", track.imageUrl, ContentKind.PLAYLIST)
     }
 
     private suspend fun artistDetail(uri: String): ContentDetail = coroutineScope {
@@ -172,7 +172,7 @@ class CatalogApiClient(
             CatalogJson.content(query(Operation.SHOW, JSONObject().put("uri", uri).put("includeContentCapabilityTrait", false)
                 .put("includeEpisodeContentRatingsV2", true)).getJSONObject("podcastUnionV2"), ContentKind.SHOW)
         }
-        val episodes = mutableListOf<SpotifyContent>()
+        val episodes = mutableListOf<MusicContent>()
         var offset = 0
         do {
             val show = query(Operation.SHOW_EPISODES, JSONObject().put("uri", uri).put("offset", offset).put("limit", 100)
@@ -186,13 +186,13 @@ class CatalogApiClient(
         ContentDetail(metadata.await().also { require(it.uri == uri) { "Unexpected show result" } }, relatedContent = episodes)
     }
 
-    private suspend fun genreDetail(content: SpotifyContent): ContentDetail {
+    private suspend fun genreDetail(content: MusicContent): ContentDetail {
         require(content.uri.startsWith("spotify:genre:") || content.uri.startsWith("spotify:page:")) { "Invalid genre URI" }
         // The public route resolves opaque 22-character genre IDs to page URIs and keeps named genres as genres.
         val uri = if (content.id.matches(Regex("[0-9A-Za-z_-]{22}"))) "spotify:page:${content.id}" else content.uri
         var offset = 0
         var header = content
-        val results = mutableListOf<SpotifyContent>()
+        val results = mutableListOf<MusicContent>()
         do {
             val page = query(Operation.BROWSE, browseVariables(uri)
                 .put("pagePagination", pagination(offset, 10)).put("sectionPagination", pagination(0, 20))).getJSONObject("browse")
@@ -246,10 +246,10 @@ class CatalogApiClient(
             .put("extensions", JSONObject().put("persistedQuery", JSONObject().put("version", 1).put("sha256Hash", operation.hash)))
         var response = execute(operation, body, session.accessToken())
         if (response.first == 401) response = execute(operation, body, session.accessToken(forceRefresh = true))
-        if (response.first !in 200..299) throw SpotifyApiException(response.first, "Catalog request failed")
+        if (response.first !in 200..299) throw ServiceApiException(response.first, "Catalog request failed")
         val json = JSONObject(response.second)
         if (json.optJSONArray("errors")?.length()?.let { it > 0 } == true) {
-            throw SpotifyApiException(response.first, "Catalog returned an incomplete result")
+            throw ServiceApiException(response.first, "Catalog returned an incomplete result")
         }
         return json.getJSONObject("data")
     }

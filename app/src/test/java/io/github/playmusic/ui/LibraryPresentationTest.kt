@@ -3,7 +3,7 @@ package io.github.playmusic.ui
 import io.github.playmusic.data.model.ContentArtist
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.DetailSort
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,7 +18,7 @@ class LibraryPresentationTest {
     }
 
     private fun item(id: String, title: String = id, kind: ContentKind = ContentKind.PLAYLIST) =
-        SpotifyContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
+        MusicContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
 
     @Test fun filterMatchesWordsAcrossMetadataAndNormalizesWidthAndCase() {
         val match = item("one", "Evening JAZZ").copy(ownerName = "Alice", description = "静かな夜に", trackCount = 24)

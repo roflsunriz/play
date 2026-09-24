@@ -63,7 +63,7 @@ class WebClientTokenClientTest {
             grant().also { it.getJSONObject("granted_token").put("domains", org.json.JSONArray("""[{"domain":"example.test/path"}]""")) },
         )
         for (response in invalid) {
-            assertTrue(runCatching { WebClientTokenClient.parseGrant(response) }.exceptionOrNull() is SpotifyAuthException)
+            assertTrue(runCatching { WebClientTokenClient.parseGrant(response) }.exceptionOrNull() is AuthException)
         }
     }
 
@@ -77,7 +77,7 @@ class WebClientTokenClientTest {
         val client = WebClientTokenClient(device, clientId, clientVersion,
             openConnection = { uri -> Connection(uri, response, 400).also { sent = it } })
         val failure = runCatching { client.acquire() }.exceptionOrNull()
-        assertTrue(failure is SpotifyAuthException)
+        assertTrue(failure is AuthException)
         val description = failure?.message.orEmpty()
         assertEquals("Client token request failed (400)", description)
         assertEquals(0, checkNotNull(sent).errorReads)
@@ -108,11 +108,11 @@ class WebClientTokenClientTest {
         assertTrue(token.allows(URI("https://license.example.test/audio")))
         assertFalse(token.allows(URI("https://evilexample.test/audio")))
         val unsafe = grant().also { it.getJSONObject("granted_token").put("token", "synthetic\r\nheader") }
-        assertTrue(runCatching { WebClientTokenClient.parseGrant(unsafe) }.exceptionOrNull() is SpotifyAuthException)
+        assertTrue(runCatching { WebClientTokenClient.parseGrant(unsafe) }.exceptionOrNull() is AuthException)
     }
 
     private fun assertSanitizedFailure(failure: Throwable?, vararg sensitiveValues: String) {
-        assertTrue(failure is SpotifyAuthException)
+        assertTrue(failure is AuthException)
         val root = checkNotNull(failure)
         val rendered = root.stackTraceToString()
         for (value in sensitiveValues) assertFalse(rendered.contains(value))

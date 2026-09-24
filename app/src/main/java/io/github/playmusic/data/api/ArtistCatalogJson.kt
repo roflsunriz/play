@@ -5,12 +5,12 @@ import io.github.playmusic.data.model.ArtistPage
 import io.github.playmusic.data.model.ArtistRelease
 import io.github.playmusic.data.model.ArtistReleaseType
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import org.json.JSONObject
 
 /** The public artist route uses release groups, playlist unions and direct artist entities. */
 internal object ArtistCatalogJson {
-    fun overview(artist: JSONObject, releases: List<ArtistRelease>, tracks: List<SpotifyContent>): ArtistPage {
+    fun overview(artist: JSONObject, releases: List<ArtistRelease>, tracks: List<MusicContent>): ArtistPage {
         val stats = artist.getJSONObject("stats")
         val biography = artist.getJSONObject("profile").optJSONObject("biography")
         val related = artist.getJSONObject("relatedContent")
@@ -44,7 +44,7 @@ internal object ArtistCatalogJson {
             ArtistReleaseType.entries.firstOrNull { it.name == type } ?: error("Unknown artist release type"))
     }
 
-    private data class RelatedPlaylists(val items: List<SpotifyContent>, val unavailable: Int)
+    private data class RelatedPlaylists(val items: List<MusicContent>, val unavailable: Int)
 
     private fun playlists(page: JSONObject): RelatedPlaylists {
         var unavailable = 0

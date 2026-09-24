@@ -9,7 +9,7 @@ import io.github.playmusic.data.cache.PlaylistCacheSnapshot
 import io.github.playmusic.data.cache.PlaylistDiskCache
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.security.SecureSessionStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -39,7 +39,7 @@ class ReleaseUpgradeFixtureTest {
         } finally { effects.close() }
         val cache = PlaylistDiskCache(context)
         try {
-            val item = SpotifyContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",
+            val item = MusicContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",
                 "Upgrade library preserved", "", null, ContentKind.PLAYLIST, description = "Local upgrade fixture", trackCount = 0)
             val previous = cache.read(account)
             assertTrue(cache.reconcile(account, previous.generation, PlaylistCacheSnapshot(

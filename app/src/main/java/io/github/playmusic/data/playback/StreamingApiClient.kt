@@ -2,7 +2,7 @@ package io.github.playmusic.data.playback
 
 import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.api.SessionTokens
-import io.github.playmusic.data.api.SpotifyApiException
+import io.github.playmusic.data.api.ServiceApiException
 import io.github.playmusic.data.auth.DesktopClientProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -67,7 +67,7 @@ class StreamingApiClient(
         val endpoint = URI("$BASE$path?$encoded")
         var response = execute(endpoint, session.accessToken())
         if (response.first == 401) response = execute(endpoint, session.accessToken(forceRefresh = true))
-        if (response.first !in 200..299) throw SpotifyApiException(response.first, "Audio information request failed")
+        if (response.first !in 200..299) throw ServiceApiException(response.first, "Audio information request failed")
         return JSONObject(response.second)
     }
 

@@ -3,7 +3,7 @@ package io.github.playmusic.data.api
 import io.github.playmusic.data.auth.ProtoWire
 
 /** Native collection writes; field numbers follow collection2v2.proto WriteRequest/CollectionItem. */
-internal class CollectionApiClient(private val api: SpotifyApiClient) {
+internal class CollectionApiClient(private val api: ServiceApiClient) {
     suspend fun setSaved(username: String, uri: String, saved: Boolean) {
         require(uri.matches(SAVED_URI)) { "Invalid saved item identifier" }
         val item = ProtoWire.fieldString(1, uri) +

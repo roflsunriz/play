@@ -4,7 +4,7 @@ import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
 import io.github.playmusic.data.auth.ProtoWire.fieldVarint
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -22,7 +22,7 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.util.Collections
 
-class SpotifyRepositoryCacheTest {
+class MusicRepositoryCacheTest {
     @Test
     fun searchResolvesEncodedOwnerProfilesAndSavedSongsNavigationThroughTheRepository() = runBlocking {
         val server = Server().apply { searchRegressions = true }
@@ -31,7 +31,7 @@ class SpotifyRepositoryCacheTest {
         assertEquals("Display", playlists.single().ownerName)
         assertEquals(1, server.requests.count { it.url.path.startsWith("/user-profile-view/") })
         val genres = server.repository.search("インターネット", io.github.playmusic.data.model.SearchFilter.GENRES)
-        val savedSongs = genres.single(SpotifyRepository::isLikedSongs)
+        val savedSongs = genres.single(MusicRepository::isLikedSongs)
         val detail = server.repository.detail(savedSongs)
         assertEquals(listOf("spotify:track:track"), detail.tracks.map { it.uri })
         assertEquals(ContentKind.PLAYLIST, detail.content.kind)
@@ -87,7 +87,7 @@ class SpotifyRepositoryCacheTest {
         for (kind in listOf(ContentKind.PLAYLIST, ContentKind.ALBUM, ContentKind.TRACK)) {
             assertNull(server.repository.peekLibrary(kind))
             assertTrue(server.repository.library(kind).isEmpty())
-            assertEquals(emptyList<SpotifyContent>(), server.repository.peekLibrary(kind))
+            assertEquals(emptyList<MusicContent>(), server.repository.peekLibrary(kind))
         }
         assertEquals(1, server.requests.count { it.url.path == "/collection/v2/paging" })
         server.hasCollection = true
@@ -124,7 +124,7 @@ class SpotifyRepositoryCacheTest {
         server.title = "External change"
         server.failReads = true
         val error = runCatching { server.repository.detail(item, forceRefresh = true) }.exceptionOrNull()
-        assertTrue(error is SpotifyApiException)
+        assertTrue(error is ServiceApiException)
         assertEquals(old, server.repository.peekDetail(item))
         server.failReads = false
         assertEquals("External change", server.repository.detail(item, forceRefresh = true).content.title)
@@ -209,13 +209,13 @@ class SpotifyRepositoryCacheTest {
         assertEquals(ContentKind.entries.toSet(), items.map { it.kind }.toSet())
         assertEquals(ContentKind.entries.size, items.size)
         server.failReads = true
-        assertTrue(runCatching { server.repository.search("Synthetic query") }.exceptionOrNull() is SpotifyApiException)
+        assertTrue(runCatching { server.repository.search("Synthetic query") }.exceptionOrNull() is ServiceApiException)
     }
 
     @Test
     fun peekWithoutAnAccountReaderIsConservativeAndDoesNotReturnPrivateState() = runBlocking {
         val server = Server()
-        val repository = SpotifyRepository(server.api, server.tokens, CatalogApiClient(server.tokens, server.connection))
+        val repository = MusicRepository(server.api, server.tokens, CatalogApiClient(server.tokens, server.connection))
         val item = repository.library(ContentKind.PLAYLIST).single()
         repository.detail(item)
         assertNull(repository.peekLibrary(ContentKind.PLAYLIST))
@@ -246,8 +246,8 @@ class SpotifyRepositoryCacheTest {
         var wrongProfile = false
         var playlistItems: List<Pair<String, Long?>> = emptyList()
         val connection: (URI) -> HttpURLConnection = { uri -> Connection(uri, ::respond).also { requests += it } }
-        val api = SpotifyApiClient(tokens, connection)
-        val repository = SpotifyRepository(api, tokens, CatalogApiClient(tokens, connection), { tokens.account })
+        val api = ServiceApiClient(tokens, connection)
+        val repository = MusicRepository(api, tokens, CatalogApiClient(tokens, connection), { tokens.account })
 
         private fun respond(request: Connection): Reply {
             if (request.url.path.endsWith("/changes")) {

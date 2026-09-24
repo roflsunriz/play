@@ -10,7 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
 import io.github.playmusic.data.auth.ProtoWire.fieldVarint
-import io.github.playmusic.data.api.SpotifyRepository
+import io.github.playmusic.data.api.MusicRepository
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.ui.LibrarySection
@@ -115,10 +115,10 @@ class LibraryBrowsingTest {
     @Test fun prefetchDoesNotReadCredentialsOnMainOrRewriteTheVisibleLibrary() {
         val model = createModel()
         await { model.state.value.libraries.size == 3 }
-        assertEquals(SpotifyRepository.LIKED_SONGS_URI, model.state.value.items.first().uri)
-        assertEquals(1, model.state.value.items.count(SpotifyRepository::isLikedSongs))
+        assertEquals(MusicRepository.LIKED_SONGS_URI, model.state.value.items.first().uri)
+        assertEquals(1, model.state.value.items.count(MusicRepository::isLikedSongs))
         val items = model.state.value.items
-        val playlist = items.first { !SpotifyRepository.isLikedSongs(it) }
+        val playlist = items.first { !MusicRepository.isLikedSongs(it) }
         watchMainSessionReads = true
         instrumentation.runOnMainSync { model.prefetchDetails(items) }
         await { app.repository.peekDetail(playlist) != null }
@@ -138,7 +138,7 @@ class LibraryBrowsingTest {
     @Test fun openingAPrefetchedDetailDoesNotReadCredentialsOnMainOrRequestItAgain() {
         val model = createModel()
         await { model.state.value.libraries.size == 3 }
-        val item = model.state.value.items.first { !SpotifyRepository.isLikedSongs(it) }
+        val item = model.state.value.items.first { !MusicRepository.isLikedSongs(it) }
         runBlocking { app.repository.detail(item) }
         val before = requests.get()
         watchMainSessionReads = true

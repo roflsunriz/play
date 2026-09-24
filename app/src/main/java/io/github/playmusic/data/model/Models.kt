@@ -37,7 +37,7 @@ enum class DetailSort {
     }
 }
 
-data class SpotifyContent(
+data class MusicContent(
     val id: String,
     val uri: String,
     val title: String,
@@ -61,12 +61,12 @@ data class SpotifyContent(
 )
 
 data class ContentDetail(
-    val content: SpotifyContent,
-    val tracks: List<SpotifyContent> = emptyList(),
+    val content: MusicContent,
+    val tracks: List<MusicContent> = emptyList(),
     val totalTracks: Int = tracks.size,
     val releaseDate: String? = null,
     val playlistMetadata: PlaylistMetadata? = null,
-    val relatedContent: List<SpotifyContent> = emptyList(),
+    val relatedContent: List<MusicContent> = emptyList(),
     val artistPage: ArtistPage? = null,
 )
 
@@ -87,7 +87,7 @@ enum class RepeatMode(val apiValue: String) {
 }
 
 data class Playback(
-    val item: SpotifyContent? = null,
+    val item: MusicContent? = null,
     val progressMs: Long = 0,
     val durationMs: Long = 0,
     val isPlaying: Boolean = false,

@@ -26,7 +26,7 @@ import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.LyricsLine
 import io.github.playmusic.data.model.LyricsSyncType
 import io.github.playmusic.data.model.Playback
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.TrackLyrics
 import io.github.playmusic.ui.LyricsPanel
 import io.github.playmusic.ui.LyricsRoute
@@ -39,7 +39,7 @@ import org.junit.Test
 
 class LyricsPanelTest {
     @get:Rule val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
-    private val track = SpotifyContent("1", "spotify:track:0000000000000000000001", "Synthetic", "", null, ContentKind.TRACK)
+    private val track = MusicContent("1", "spotify:track:0000000000000000000001", "Synthetic", "", null, ContentKind.TRACK)
     private val lyrics = TrackLyrics(track.uri, LyricsSyncType.LINE_SYNCED,
         (0..29).map { LyricsLine("Synthetic line $it", it * 2_000L) }, "Synthetic provider")
 

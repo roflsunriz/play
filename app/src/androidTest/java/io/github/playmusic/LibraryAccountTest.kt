@@ -2,7 +2,7 @@ package io.github.playmusic
 
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.security.SecureSessionStore
 import kotlinx.coroutines.runBlocking
@@ -16,7 +16,7 @@ class LibraryAccountTest {
     @Test
     fun playlistOwnersUseTheirPublicProfileNames(): Unit = runBlocking {
         val username = app.sessionManager.username()
-        val profiles = io.github.playmusic.data.api.UserProfileClient(SpotifyApiClient(app.sessionManager))
+        val profiles = io.github.playmusic.data.api.UserProfileClient(ServiceApiClient(app.sessionManager))
         val ownName = profiles.profile(username).displayName
         assertTrue("The signed-in account must have a display name", !ownName.isNullOrBlank())
         val items = app.repository.library(ContentKind.PLAYLIST, forceRefresh = true)
@@ -85,7 +85,7 @@ class LibraryAccountTest {
     fun playlistsLoadFromTheSavedSession(): Unit = runBlocking {
         verifyLibrary(ContentKind.PLAYLIST)
         if (InstrumentationRegistry.getArguments().getString("recordCapture") == "true") {
-            val api = SpotifyApiClient(app.sessionManager)
+            val api = ServiceApiClient(app.sessionManager)
             val username = java.net.URLEncoder.encode(app.sessionManager.username(), "UTF-8")
             val response = api.get("/playlist/v2/user/$username/rootlist", query = mapOf(
                 "decorate" to "revision,attributes,length,owner,capabilities,status_code,timestamp",

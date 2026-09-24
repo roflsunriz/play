@@ -5,7 +5,7 @@ import java.net.URLEncoder
 import java.net.URLDecoder
 
 /** Public profile name, distinct from the account identifier used for permissions. */
-internal class UserProfileClient(private val api: SpotifyApiClient) {
+internal class UserProfileClient(private val api: ServiceApiClient) {
     data class Profile(val displayName: String?)
 
     suspend fun profile(username: String): Profile {
@@ -15,7 +15,7 @@ internal class UserProfileClient(private val api: SpotifyApiClient) {
             api.getProto("/user-profile-view/v3/profile/$encoded",
                 query = mapOf("playlist_limit" to "0", "artist_limit" to "0", "episode_limit" to "0"),
                 accept = "application/x-protobuf")
-        } catch (exception: SpotifyApiException) {
+        } catch (exception: ServiceApiException) {
             if (exception.status in setOf(403, 404, 410)) return Profile(null)
             throw exception
         }

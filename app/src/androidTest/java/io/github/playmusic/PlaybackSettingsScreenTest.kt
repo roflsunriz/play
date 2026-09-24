@@ -98,7 +98,7 @@ class PlaybackSettingsScreenTest {
     }
 
     @Test fun expandedPlayerStopUsesItsOwnTransportAction() {
-        val track = SpotifyContent("track", "spotify:track:track", "Synthetic song", "", null, ContentKind.TRACK)
+        val track = MusicContent("track", "spotify:track:track", "Synthetic song", "", null, ContentKind.TRACK)
         var stops = 0
         var toggles = 0
         compose.setContent { PlayTheme { ExpandedPlayerScreen(Playback(item = track, isPlaying = true, durationMs = 100_000),
@@ -108,8 +108,8 @@ class PlaybackSettingsScreenTest {
     }
 
     @Test fun expandedPlayerConnectsThePlayingItemsLyricsSlot() {
-        val track = SpotifyContent("track", "spotify:track:track", "Synthetic song", "", null, ContentKind.TRACK)
-        var supplied: SpotifyContent? = null
+        val track = MusicContent("track", "spotify:track:track", "Synthetic song", "", null, ContentKind.TRACK)
+        var supplied: MusicContent? = null
         compose.setContent { PlayTheme { Surface(Modifier.fillMaxSize()) {
             ExpandedPlayerScreen(Playback(item = track, isPlaying = true, durationMs = 100_000), {}, {}, {}, {}, {}, {}, {},
                 lyricsContent = { supplied = it; Text("Synthetic lyrics slot", Modifier.testTag("synthetic-lyrics")) })

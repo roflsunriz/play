@@ -2,19 +2,19 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentArtist
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 
 /** Parses the observed catalog unions, including the different wrappers used by search and albums. */
 internal object CatalogJson {
-    fun content(value: JSONObject, kind: ContentKind, album: SpotifyContent? = null): SpotifyContent {
+    fun content(value: JSONObject, kind: ContentKind, album: MusicContent? = null): MusicContent {
         val entity = unwrap(value)
         val rawUri = entity.getString("uri")
         // The service includes this navigation card in Genre search results. Keep its existing library route.
         if (kind == ContentKind.GENRE && entity.optString("__typename") == "Genre" && rawUri == "spotify:user:@:collection") {
-            return SpotifyRepository.likedSongsContent(entity.getString("name"))
+            return MusicRepository.likedSongsContent(entity.getString("name"))
         }
         val uri = if (kind == ContentKind.GENRE && !rawUri.contains(':')) "spotify:genre:$rawUri" else rawUri
         require(uri.startsWith("spotify:${kind.name.lowercase()}:") || (kind == ContentKind.GENRE && uri.startsWith("spotify:page:"))) { "Unexpected catalog entity" }
@@ -35,7 +35,7 @@ internal object CatalogJson {
         val ownerName = owner?.text("displayName") ?: owner?.text("name")
         val ownerUsername = owner?.text("username") ?: owner?.text("uri")
             ?.takeIf { it.startsWith("spotify:user:") }?.let(UserProfileClient::usernameFromUri)
-        return SpotifyContent(
+        return MusicContent(
             id = uri.substringAfterLast(':'),
             uri = uri,
             title = title,
@@ -61,7 +61,7 @@ internal object CatalogJson {
         )
     }
 
-    fun search(data: JSONObject, kind: ContentKind): List<SpotifyContent> {
+    fun search(data: JSONObject, kind: ContentKind): List<MusicContent> {
         val key = when (kind) {
             ContentKind.ALBUM -> "albumsV2"
             ContentKind.TRACK -> "tracksV2"
@@ -83,16 +83,16 @@ internal object CatalogJson {
         }
     }
 
-    fun tracks(data: JSONObject): List<SpotifyContent> = data.getJSONArray("tracks").objects().map { content(it, ContentKind.TRACK) }
+    fun tracks(data: JSONObject): List<MusicContent> = data.getJSONArray("tracks").objects().map { content(it, ContentKind.TRACK) }
 
-    fun albumTracks(album: JSONObject, parentAlbum: SpotifyContent): List<SpotifyContent> =
+    fun albumTracks(album: JSONObject, parentAlbum: MusicContent): List<MusicContent> =
         album.getJSONObject("tracksV2").getJSONArray("items").objects().map { content(it, ContentKind.TRACK, parentAlbum) }
 
-    fun episodes(page: JSONObject): List<SpotifyContent> = page.getJSONArray("items").objects().mapNotNull {
+    fun episodes(page: JSONObject): List<MusicContent> = page.getJSONArray("items").objects().mapNotNull {
         unwrap(it.getJSONObject("entity"), allowUnavailable = true)?.let { episode -> content(episode, ContentKind.EPISODE) }
     }
 
-    fun browseItems(page: JSONObject): List<SpotifyContent> = page.getJSONArray("items").objects().mapNotNull { item ->
+    fun browseItems(page: JSONObject): List<MusicContent> = page.getJSONArray("items").objects().mapNotNull { item ->
         val wrapper = item.getJSONObject("content")
         if (wrapper.optString("__typename") in setOf("UnknownType", "NoContent", "ConcertResponseWrapper")) return@mapNotNull null
         val entity = wrapper.getJSONObject("data")
@@ -108,7 +108,7 @@ internal object CatalogJson {
                 val title = representation.optJSONObject("title")?.text("transformedLabel") ?: return@mapNotNull null
                 val uri = item.getString("uri")
                 require(uri.startsWith("spotify:page:") || uri.startsWith("spotify:genre:")) { "Unexpected browse link" }
-                return@mapNotNull SpotifyContent(uri.substringAfterLast(':'), uri, title, "", cover(entity), ContentKind.GENRE)
+                return@mapNotNull MusicContent(uri.substringAfterLast(':'), uri, title, "", cover(entity), ContentKind.GENRE)
             }
             "NotFound", "RestrictedContent", "BrowseClientFeature", "BrowseSpacesHub", "BrowseExternalHref",
             "User", "Audiobook", "Chapter", "Merch", "ArtistConcerts" -> return@mapNotNull null
@@ -117,7 +117,7 @@ internal object CatalogJson {
         content(entity, kind)
     }
 
-    fun browseHeader(page: JSONObject, original: SpotifyContent): SpotifyContent {
+    fun browseHeader(page: JSONObject, original: MusicContent): MusicContent {
         val header = page.optJSONObject("header") ?: return original
         val background = header.optJSONObject("backgroundImage")
         return original.copy(title = header.optJSONObject("title")?.text("transformedLabel") ?: original.title,

@@ -1,6 +1,6 @@
 package io.github.playmusic.data.auth
 
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -330,7 +330,7 @@ class PlaybackAuthorizationClient(
         const val ACCOUNTS = "https://accounts.spotify.com"
         const val LOGIN = "$ACCOUNTS/login/ott/v2"
         const val OPEN = "https://open.spotify.com/"
-        const val TRANSFER = "${SpotifyApiClient.GAE2_BASE}/sessiontransfer/v1/token"
+        const val TRANSFER = "${ServiceApiClient.GAE2_BASE}/sessiontransfer/v1/token"
         val BROWSER_AGENT = DesktopClientProfile.headers.getValue("User-Agent").replace(" Spotify/${DesktopClientProfile.VERSION}", "")
         fun checkedUrl(stage: Stage, value: String, allowTransfer: Boolean = false): HttpUrl {
             val url = try { value.toHttpUrl() } catch (_: Exception) { fail(stage, Failure.REDIRECT) }

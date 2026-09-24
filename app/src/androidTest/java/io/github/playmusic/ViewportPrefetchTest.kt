@@ -7,7 +7,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.ContentList
 import io.github.playmusic.ui.theme.PlayTheme
 import kotlinx.coroutines.CompletableDeferred
@@ -26,13 +26,13 @@ class ViewportPrefetchTest {
 
     @Test fun evenASlowDragWithUnchangedVisibleRowsDefersPrefetchUntilIdle() {
         val state = LazyListState()
-        val reports = ConcurrentLinkedQueue<List<SpotifyContent>>()
+        val reports = ConcurrentLinkedQueue<List<MusicContent>>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         val release = CompletableDeferred<Unit>()
         try {
             composeRule.runOnIdle { scope.launch { state.scroll { release.await() } } }
             composeRule.setContent { PlayTheme { Surface(Modifier.fillMaxSize()) {
-                ContentList((0..30).map { SpotifyContent("$it", "spotify:playlist:$it", "Item $it", "", null, ContentKind.PLAYLIST) },
+                ContentList((0..30).map { MusicContent("$it", "spotify:playlist:$it", "Item $it", "", null, ContentKind.PLAYLIST) },
                     {}, {}, { reports += it }, listState = state)
             } } }
             composeRule.waitUntil { reports.isNotEmpty() && state.isScrollInProgress }

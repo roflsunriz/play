@@ -50,11 +50,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.playmusic.R
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.PlaylistLimits
 
 data class PlaylistEditorState(
-    val content: SpotifyContent? = null,
+    val content: MusicContent? = null,
     val name: String = "",
     val description: String = "",
     val imageUrl: String? = null,
@@ -176,7 +176,7 @@ internal fun PlaylistEditorScreen(
 
 @Composable
 internal fun DeletePlaylistDialog(
-    content: SpotifyContent,
+    content: MusicContent,
     isDeleting: Boolean,
     failed: Boolean,
     onDelete: () -> Unit,

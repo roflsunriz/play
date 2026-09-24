@@ -1,7 +1,7 @@
 package io.github.playmusic.data.playback
 
 import io.github.playmusic.data.api.SessionTokens
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.playback.AutomixMetadataTest.Companion.CONTEXT
 import io.github.playmusic.data.playback.AutomixMetadataTest.Companion.TRACK1
@@ -23,7 +23,7 @@ class AutomixApiClientTest {
         var now = 0L
         var settings = PlaybackTransitionSettings(crossfadeSeconds = 5)
         val calls = mutableListOf<Connection>()
-        val api = SpotifyApiClient(session) { uri -> Connection(uri,
+        val api = ServiceApiClient(session) { uri -> Connection(uri,
             if (uri.path.startsWith("/playlist/")) playlist() else AutomixMetadataTest.fixture()).also { calls += it } }
         val client = AutomixApiClient(session, { settings }, api, { now })
         val mix = checkNotNull(client.resolve(CONTEXT, TRACK1, TRACK2))

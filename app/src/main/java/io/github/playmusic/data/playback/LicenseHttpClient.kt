@@ -2,7 +2,7 @@ package io.github.playmusic.data.playback
 
 import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.auth.PlaybackAuthorizationClient
-import io.github.playmusic.data.auth.SpotifyAuthException
+import io.github.playmusic.data.auth.AuthException
 import kotlinx.coroutines.CancellationException
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -129,7 +129,7 @@ internal class LicenseHttpClient(
             // Fresh sign-ins fail here while their derived credentials are still propagating.
             // Keep the stage/failure/status so the DRM error can be told apart from a network fault.
             throw error
-        } catch (error: SpotifyAuthException) {
+        } catch (error: AuthException) {
             throw error
         } catch (error: BrowserAuthorizationRequiredException) {
             throw error

@@ -18,8 +18,8 @@ import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
 import io.github.playmusic.data.auth.ProtoWire.fieldVarint
-import io.github.playmusic.data.auth.SpotifyClientTokenClient
-import io.github.playmusic.data.auth.SpotifyLogin5Client
+import io.github.playmusic.data.auth.ClientTokenClient
+import io.github.playmusic.data.auth.Login5Client
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.ui.PlayRoute
@@ -113,7 +113,7 @@ class SessionVerificationScreenTest {
         composeRule.waitUntil(5_000) { viewModel.state.value.error != null }
         composeRule.runOnIdle {
             viewModel.clearError()
-            viewModel.play(io.github.playmusic.data.model.SpotifyContent("test", "spotify:track:0000000000000000000001",
+            viewModel.play(io.github.playmusic.data.model.MusicContent("test", "spotify:track:0000000000000000000001",
                 "Synthetic track", "", null, io.github.playmusic.data.model.ContentKind.TRACK))
             assertEquals(ErrorKind.LOGIN_REQUIRED, viewModel.state.value.error?.kind)
             assertTrue(!viewModel.state.value.isAuthorizing)
@@ -143,10 +143,10 @@ class SessionVerificationScreenTest {
     private fun createModel(expired: Boolean = true, libraryStatus: Int = 200): Pair<PlayViewModel, AtomicInteger> {
         SecureSessionStore(context).saveSession(AuthSession("synthetic-user", "test-token", byteArrayOf(1, 2, 3), if (expired) 0 else Long.MAX_VALUE))
         val count = AtomicInteger()
-        val clientTokens = SpotifyClientTokenClient(openConnection = { uri -> Connection(uri) {
+        val clientTokens = ClientTokenClient(openConnection = { uri -> Connection(uri) {
             fieldVarint(1, 1) + fieldBytes(2, fieldString(1, "synthetic-sdk-token") + fieldVarint(2, 3600) + fieldVarint(3, 1800))
         } })
-        val login = SpotifyLogin5Client("synthetic-client", clientTokens) { uri -> Connection(uri) { body ->
+        val login = Login5Client("synthetic-client", clientTokens) { uri -> Connection(uri) { body ->
             assertEquals("/v3/login", uri.path)
             val fields = readFields(body)
             assertTrue(100 in fields)

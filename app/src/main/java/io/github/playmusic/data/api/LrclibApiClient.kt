@@ -3,7 +3,7 @@ package io.github.playmusic.data.api
 import io.github.playmusic.BuildConfig
 import io.github.playmusic.data.model.LyricsLine
 import io.github.playmusic.data.model.LyricsSyncType
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.TrackLyrics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -27,7 +27,7 @@ class LrclibApiClient(
     private val sleepMs: suspend (Long) -> Unit = { delay(it) },
 ) {
     /** Null means no usable lyrics for this track: not found, instrumental, empty, or mismatched. */
-    suspend fun lyrics(content: SpotifyContent): TrackLyrics? = withContext(Dispatchers.IO) {
+    suspend fun lyrics(content: MusicContent): TrackLyrics? = withContext(Dispatchers.IO) {
         require(content.uri.matches(TRACK_URI)) { "Lyrics require a valid track URI" }
         require(content.title.isNotBlank()) { "Lyrics require a track title" }
         val artists = content.artists.map { it.name }.filter { it.isNotBlank() }
@@ -52,13 +52,13 @@ class LrclibApiClient(
             when {
                 status == 404 -> return null
                 status == 429 || status == 503 -> {
-                    if (attempt >= MAX_RETRIES) throw SpotifyApiException(status, "Lyrics request failed")
+                    if (attempt >= MAX_RETRIES) throw ServiceApiException(status, "Lyrics request failed")
                     sleepMs(retryAfterMs ?: defaultRetryAfterMs(attempt))
                     attempt++
                 }
                 status == 200 -> return body?.let { JSONObject(it) }
                     ?: throw IllegalArgumentException("Lyrics response is invalid")
-                else -> throw SpotifyApiException(status, "Lyrics request failed")
+                else -> throw ServiceApiException(status, "Lyrics request failed")
             }
         }
     }
@@ -113,7 +113,7 @@ internal fun normalizeLrclibName(text: String): String =
 
 /** Matches the returned record against the requested track so another song's lyrics never show. */
 internal fun matchLrclib(
-    content: SpotifyContent,
+    content: MusicContent,
     artists: List<String>,
     response: JSONObject,
 ): Boolean {

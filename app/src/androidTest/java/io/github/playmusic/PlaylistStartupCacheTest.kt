@@ -18,10 +18,10 @@ import io.github.playmusic.data.auth.ProtoWire.fieldVarint
 import io.github.playmusic.data.cache.PlaylistCacheEntry
 import io.github.playmusic.data.cache.PlaylistCacheSnapshot
 import io.github.playmusic.data.cache.PlaylistDiskCache
-import io.github.playmusic.data.api.SpotifyRepository
+import io.github.playmusic.data.api.MusicRepository
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.ui.PlayRoute
 import io.github.playmusic.ui.PlayViewModel
@@ -185,17 +185,17 @@ class PlaylistStartupCacheTest {
         }
     }
 
-    private fun displayed(rows: List<SpotifyContent>) = listOf(SpotifyRepository.likedSongsContent(base.getString(R.string.liked_songs))) + rows
+    private fun displayed(rows: List<MusicContent>) = listOf(MusicRepository.likedSongsContent(base.getString(R.string.liked_songs))) + rows
 
-    private fun assertLikedSongsFirstAndUnique(rows: List<SpotifyContent>) {
-        assertEquals(SpotifyRepository.LIKED_SONGS_URI, rows.first().uri)
-        assertEquals(1, rows.count(SpotifyRepository::isLikedSongs))
+    private fun assertLikedSongsFirstAndUnique(rows: List<MusicContent>) {
+        assertEquals(MusicRepository.LIKED_SONGS_URI, rows.first().uri)
+        assertEquals(1, rows.count(MusicRepository::isLikedSongs))
     }
 
-    private fun assertRootlistDiskExcludesLikedSongs(expected: List<SpotifyContent>) {
+    private fun assertRootlistDiskExcludesLikedSongs(expected: List<MusicContent>) {
         val rows = runBlocking { app.playlistDiskCache.read(USER).snapshot!!.entries.map { it.content } }
         assertEquals(expected, rows)
-        assertFalse(rows.any(SpotifyRepository::isLikedSongs))
+        assertFalse(rows.any(MusicRepository::isLikedSongs))
     }
 
     private fun start() {
@@ -228,13 +228,13 @@ class PlaylistStartupCacheTest {
         else -> 404 to ByteArray(0)
     }
 
-    private fun rootlist(rows: List<SpotifyContent>): ByteArray = fieldBytes(1, byteArrayOf(1)) + fieldVarint(2, rows.size.toLong()) +
+    private fun rootlist(rows: List<MusicContent>): ByteArray = fieldBytes(1, byteArrayOf(1)) + fieldVarint(2, rows.size.toLong()) +
         fieldBytes(5, fieldVarint(2, if (inconsistentPage) 1 else 0) +
             rows.fold(ByteArray(0)) { bytes, row -> bytes + fieldBytes(3, fieldString(1, row.uri)) } +
             rows.fold(ByteArray(0)) { bytes, row -> bytes + fieldBytes(4,
                 fieldBytes(2, fieldString(1, row.title)) + fieldVarint(3, 0) + fieldString(5, USER) + fieldVarint(9, 400)) })
 
-    private fun item(id: String, title: String) = SpotifyContent(id.padStart(22, '0'), "spotify:playlist:${id.padStart(22, '0')}", title, "Saved creator", null,
+    private fun item(id: String, title: String) = MusicContent(id.padStart(22, '0'), "spotify:playlist:${id.padStart(22, '0')}", title, "Saved creator", null,
         ContentKind.PLAYLIST, ownerName = "Saved creator", ownerUsername = USER, description = "", trackCount = 0)
 
     private class Connection(private val uri: URI, private val reply: (URI) -> Pair<Int, ByteArray>) : HttpURLConnection(uri.toURL()) {

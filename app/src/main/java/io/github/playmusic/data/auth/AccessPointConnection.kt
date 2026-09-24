@@ -115,7 +115,7 @@ internal object ApIdentityProto {
                 if (reader.fieldNumber(tag) == field && reader.wireType(tag) == 2) { found = reader.readBytes(); break }
                 reader.skip(reader.wireType(tag))
             }
-            current = found ?: throw SpotifyAuthException("AP response is missing field $field")
+            current = found ?: throw AuthException("AP response is missing field $field")
         }
         return current
     }
@@ -129,7 +129,7 @@ internal object ApIdentityProto {
                 if (reader.fieldNumber(tag) == 10 && reader.wireType(tag) == 0) error = reader.readVarint()
                 else reader.skip(reader.wireType(tag))
             }
-            throw SpotifyAuthException("Account identity was rejected by AP (code $error)")
+            throw AuthException("Account identity was rejected by AP (code $error)")
         }
         require(command == 0xac) { "Unexpected AP identity response" }
         return bytes(payload, 10).toString(Charsets.UTF_8).also { require(it.isNotBlank()) { "Account identity is missing" } }

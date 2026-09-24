@@ -38,7 +38,7 @@ import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.PlaylistMetadata
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.ContentDetailScreen
 import io.github.playmusic.ui.theme.PlayTheme
 import org.junit.Assert.assertEquals
@@ -50,7 +50,7 @@ import java.util.Locale
 
 class ContentDetailScreenTest {
     @get:Rule val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
-    private val track = SpotifyContent("track", "spotify:track:0000000000000000000001", "Synthetic track", "Artist",
+    private val track = MusicContent("track", "spotify:track:0000000000000000000001", "Synthetic track", "Artist",
         null, ContentKind.TRACK, durationMs = 125_000, albumUri = "spotify:album:0000000000000000000001",
         albumTitle = "Synthetic album")
 
@@ -59,7 +59,7 @@ class ContentDetailScreenTest {
             albumUri = null, albumTitle = null)
         val detail = ContentDetail(album, listOf(track, track, track.copy(isPlayable = false)), releaseDate = "2026-08-01")
         val positions = mutableListOf<Int>()
-        var played: SpotifyContent? = null
+        var played: MusicContent? = null
         var vibrations = 0
         render {
             CompositionLocalProvider(LocalHapticFeedback provides object : HapticFeedback {
@@ -87,7 +87,7 @@ class ContentDetailScreenTest {
         var detail by mutableStateOf<ContentDetail?>(null)
         var loading by mutableStateOf(true)
         var retried = false
-        var opened: SpotifyContent? = null
+        var opened: MusicContent? = null
         render {
             ContentDetailScreen(track, detail, loading, {}, { opened = it }, { retried = true }, {})
         }
@@ -110,7 +110,7 @@ class ContentDetailScreenTest {
         val playlist = playlist().copy(ownerName = "Displayed creator", description = "Earlier summary", trackCount = 4)
         val detail = ContentDetail(playlist, listOf(track), totalTracks = 7,
             playlistMetadata = metadata(playlist, "Configured description"))
-        var played: SpotifyContent? = null
+        var played: MusicContent? = null
         var edits = 0
         var deleted = 0
         var vibrations = 0
@@ -219,10 +219,10 @@ class ContentDetailScreenTest {
         scrollToItem("0:${first.uri}", "detail-track-0")
     }
 
-    private fun playlist() = SpotifyContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",
+    private fun playlist() = MusicContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",
         "Configured playlist", "", null, ContentKind.PLAYLIST)
 
-    private fun metadata(playlist: SpotifyContent, description: String = "Description") = PlaylistMetadata(
+    private fun metadata(playlist: MusicContent, description: String = "Description") = PlaylistMetadata(
         playlist.uri, playlist.title, description, null, "account-id", canEdit = true, canDelete = true, isOwned = true)
 
     private fun scrollToItem(key: String, tag: String): SemanticsNodeInteraction {

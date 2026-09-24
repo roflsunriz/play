@@ -3,7 +3,7 @@ package io.github.playmusic.data.api
 import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.PlaylistLimits
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -68,7 +68,7 @@ class PlaylistApiClientTest {
     fun imageUploadFailureDoesNotPartiallySaveNamesOrDescriptions() = runTest {
         val server = Server().apply { failImage = true }
         val failure = runCatching { server.client.update(content(), "新しい名前", "新しい説明", JPEG) }.exceptionOrNull()
-        assertTrue(failure is SpotifyApiException)
+        assertTrue(failure is ServiceApiException)
         assertFalse(server.requests.any { it.url.path.endsWith("/changes") })
         assertEquals("Original", server.name)
         assertEquals("Original description", server.description)
@@ -210,7 +210,7 @@ class PlaylistApiClientTest {
             override suspend fun clientToken(forceRefresh: Boolean) = "synthetic-client"
             override suspend fun usesBrowserAuthorization() = true
         }
-        val api = SpotifyApiClient(tokens) { Connection(it, ::reply).also(requests::add) }
+        val api = ServiceApiClient(tokens) { Connection(it, ::reply).also(requests::add) }
         val client = PlaylistApiClient(api, tokens)
 
         fun reply(request: Connection): Reply {
@@ -301,7 +301,7 @@ class PlaylistApiClientTest {
         private const val IMAGE_URL = "https://image.invalid/playlist-picture"
         private val JPEG = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 0xd9.toByte())
         private val PICTURE = byteArrayOf(3, 4, 5, 6)
-        private fun content() = SpotifyContent(ID, NEW_URI, "Original", "", null, ContentKind.PLAYLIST)
+        private fun content() = MusicContent(ID, NEW_URI, "Original", "", null, ContentKind.PLAYLIST)
         private fun partialAttributes(operation: ByteArray): List<Field> = fields(fields(fields(operation).bytes(6)).bytes(1))
         private fun attributes(operation: ByteArray): List<Field> = fields(partialAttributes(operation).bytes(1))
         private fun List<Field>.bytes(number: Int) = checkNotNull(single { it.number == number }.bytes)

@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.api.CatalogApiClient
 import io.github.playmusic.data.api.SpClientProto
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.model.SearchFilter
 import kotlinx.coroutines.runBlocking
@@ -18,7 +18,7 @@ class AutomixContractProbeTest {
         assumeTrue(arguments.getString("liveAutomixProbe") == "true")
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val app = (context.applicationContext as PlayApplication).container
-        val api = SpotifyApiClient(app.sessionManager)
+        val api = ServiceApiClient(app.sessionManager)
         val catalog = CatalogApiClient(app.sessionManager)
         val playlists = catalog.search(arguments.getString("automixQuery") ?: "Dance Party", SearchFilter.PLAYLISTS).take(4)
         check(playlists.isNotEmpty())

@@ -4,7 +4,7 @@ import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.testing.AudioProbeService
@@ -26,7 +26,7 @@ class AudioOutputTest {
         val originalEffects = if (exerciseEqualizer) withTimeout(5_000) { app.audioEffects.state.first { it.isReady } }.settings else null
         val uri = InstrumentationRegistry.getArguments().getString("trackUri")
             ?: "spotify:track:4CeeEOM32jQcH3eN9Q2dGj"
-        val track = app.repository.detail(SpotifyContent(uri.substringAfterLast(':'), uri,
+        val track = app.repository.detail(MusicContent(uri.substringAfterLast(':'), uri,
             "", "", null, ContentKind.TRACK)).content
         val playback = LocalPlayback(context, AudioProbeService::class.java)
         var failure: String? = null

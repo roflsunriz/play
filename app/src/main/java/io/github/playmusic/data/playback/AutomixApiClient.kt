@@ -2,9 +2,9 @@ package io.github.playmusic.data.playback
 
 import io.github.playmusic.data.api.PlaylistApiClient
 import io.github.playmusic.data.api.SessionTokens
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 class AutomixApiClient(
     private val session: SessionTokens,
     private val settings: () -> PlaybackTransitionSettings,
-    private val api: SpotifyApiClient = SpotifyApiClient(session),
+    private val api: ServiceApiClient = ServiceApiClient(session),
     private val now: () -> Long = System::currentTimeMillis,
 ) : AutomixResolver {
     private data class ContextInfo(val members: Set<String>?, val expires: Long)
@@ -35,7 +35,7 @@ class AutomixApiClient(
                 val key = AutomixMetadata.Key(contextUri, AutomixMetadata.MODE)
                 val mode = query(listOf(key))[key]
                 val members = if (mode != null && AutomixMetadata.defaultMode(mode)) {
-                    val content = SpotifyContent(contextUri.substringAfterLast(':'), contextUri, "", "", null, ContentKind.PLAYLIST)
+                    val content = MusicContent(contextUri.substringAfterLast(':'), contextUri, "", "", null, ContentKind.PLAYLIST)
                     playlists.trackUris(content).toSet()
                 } else null
                 check(session.username() == account) { "Account changed while reading transition context" }

@@ -17,10 +17,10 @@ import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.auth.ProtoWire.fieldBytes
 import io.github.playmusic.data.auth.ProtoWire.fieldString
 import io.github.playmusic.data.auth.ProtoWire.fieldVarint
-import io.github.playmusic.data.api.SpotifyRepository
+import io.github.playmusic.data.api.MusicRepository
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.security.SecureSessionStore
 import io.github.playmusic.ui.PlayRoute
 import io.github.playmusic.ui.PlayViewModel
@@ -105,16 +105,16 @@ class PlaylistViewModelTest {
         composeRule.onNodeWithTag("playlist-delete-confirm").performClick()
         composeRule.waitUntil(5_000) { model.state.value.playlistToDelete == null && model.state.value.selectedContent == null }
         composeRule.waitUntil(5_000) {
-            model.state.value.items.size == 1 && SpotifyRepository.isLikedSongs(model.state.value.items.single())
+            model.state.value.items.size == 1 && MusicRepository.isLikedSongs(model.state.value.items.single())
         }
         composeRule.runOnIdle {
             assertEquals(1, server.removals.get())
-            assertEquals(SpotifyRepository.LIKED_SONGS_URI, model.state.value.items.single().uri)
+            assertEquals(MusicRepository.LIKED_SONGS_URI, model.state.value.items.single().uri)
         }
         composeRule.onNodeWithTag("content-playlist-tracks").assertIsDisplayed()
         val cached = checkNotNull(runBlocking { checkNotNull(container).repository.cachedPlaylists() })
         assertTrue(cached.isEmpty())
-        assertFalse(cached.any(SpotifyRepository::isLikedSongs))
+        assertFalse(cached.any(MusicRepository::isLikedSongs))
     }
 
     @Test fun failedEditKeepsDraftAndRetryUpdatesTheExistingDetail() {
@@ -243,7 +243,7 @@ class PlaylistViewModelTest {
     private data class Field(val id: Int, val bytes: ByteArray? = null, val value: Long? = null)
     private companion object {
         const val USER = "synthetic-user"
-        val PLAYLIST = SpotifyContent("0123456789ABCDEFGHIJKL", "spotify:playlist:0123456789ABCDEFGHIJKL",
+        val PLAYLIST = MusicContent("0123456789ABCDEFGHIJKL", "spotify:playlist:0123456789ABCDEFGHIJKL",
             "Original", "", null, ContentKind.PLAYLIST)
         fun List<Field>.bytes(id: Int) = checkNotNull(single { it.id == id }.bytes)
         fun List<Field>.number(id: Int) = checkNotNull(single { it.id == id }.value)

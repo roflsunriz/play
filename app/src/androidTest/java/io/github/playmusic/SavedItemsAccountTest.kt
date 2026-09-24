@@ -5,7 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SearchFilter
 import io.github.playmusic.data.api.SpClientProto
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -22,7 +22,7 @@ class SavedItemsAccountTest {
         val repository = app.repository
         val journal = context.getSharedPreferences("saved_items_account_test", 0)
         check(!journal.contains("pending_uri")) { "Previous saved-item verification needs cleanup" }
-        val api = SpotifyApiClient(app.sessionManager)
+        val api = ServiceApiClient(app.sessionManager)
         suspend fun originalUris(): Set<String> {
             val uris = linkedSetOf<String>()
             var token: String? = null
@@ -49,7 +49,7 @@ class SavedItemsAccountTest {
                 assertTrue(repository.isSaved(item, forceRefresh = true))
                 assertTrue(repository.library(kind, forceRefresh = true).any { it.uri == item.uri })
                 if (kind == ContentKind.TRACK) assertTrue(repository.detail(
-                    io.github.playmusic.data.api.SpotifyRepository.likedSongsContent("Verification"), true).tracks.any { it.uri == item.uri })
+                    io.github.playmusic.data.api.MusicRepository.likedSongsContent("Verification"), true).tracks.any { it.uri == item.uri })
                 Log.i("PlaySavedCheck", "native add verified kind=$kind")
             } catch (error: Throwable) { primary = error; throw error }
             finally {

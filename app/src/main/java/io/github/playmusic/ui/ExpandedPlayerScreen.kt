@@ -69,7 +69,7 @@ import coil3.compose.SubcomposeAsyncImage
 import io.github.playmusic.R
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import java.util.Locale
 
 @Composable
@@ -83,10 +83,10 @@ internal fun ExpandedPlayerScreen(
     onRepeat: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onContentActions: (SpotifyContent) -> Unit = {},
+    onContentActions: (MusicContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
     onStop: () -> Unit = {},
-    lyricsContent: @Composable (SpotifyContent) -> Unit = {},
+    lyricsContent: @Composable (MusicContent) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val haptics = LocalHapticFeedback.current
@@ -153,7 +153,7 @@ internal fun ExpandedPlayerScreen(
 }
 
 @Composable
-private fun PlayerArtwork(item: SpotifyContent?, modifier: Modifier) {
+private fun PlayerArtwork(item: MusicContent?, modifier: Modifier) {
     val label = stringResource(R.string.player_artwork)
     val imageUrl = item?.imageUrl
     Surface(modifier.testTag("expanded-artwork").semantics { contentDescription = label },

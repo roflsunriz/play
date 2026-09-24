@@ -52,21 +52,21 @@ import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.DetailSort
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import java.util.Locale
 
 @Composable
 internal fun ContentDetailScreen(
-    selected: SpotifyContent,
+    selected: MusicContent,
     detail: ContentDetail?,
     isLoading: Boolean,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
+    onPlay: (MusicContent) -> Unit,
+    onOpen: (MusicContent) -> Unit,
     onRetry: () -> Unit,
     onPlayTrack: (Int) -> Unit,
     onEditPlaylist: () -> Unit = {},
     onDeletePlaylist: () -> Unit = {},
-    onContentActions: (SpotifyContent) -> Unit = {},
+    onContentActions: (MusicContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
     sort: DetailSort = DetailSort.TRACK_ORDER,
     sortOptions: List<DetailSort> = listOf(DetailSort.TRACK_ORDER),
@@ -169,7 +169,7 @@ internal fun ContentDetailScreen(
         if (content.albumUri != null && content.albumTitle != null) {
             item(key = "album") {
                 TextButton(onClick = { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onOpen(SpotifyContent(content.albumUri.substringAfterLast(':'), content.albumUri,
+                    onOpen(MusicContent(content.albumUri.substringAfterLast(':'), content.albumUri,
                     content.albumTitle, content.subtitle, content.imageUrl, ContentKind.ALBUM)) },
                     modifier = Modifier.testTag("detail-album-button")) {
                     Text(stringResource(R.string.open_album, content.albumTitle))

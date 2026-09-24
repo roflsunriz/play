@@ -7,10 +7,10 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.api.PlaylistCreationException
 import io.github.playmusic.data.api.SpClientProto
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.PlaylistMetadata
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -33,7 +33,7 @@ class PlaylistAccountTest {
         val app = (context.applicationContext as PlayApplication).container
         check(app.sessionStore.loadSession() != null) { "A signed-in test account is required" }
         val pending = context.getSharedPreferences("playlist_account_test", 0)
-        val api = SpotifyApiClient(app.sessionManager)
+        val api = ServiceApiClient(app.sessionManager)
         val username = app.sessionManager.username()
         // Read the raw rootlist: decorated library results can omit unavailable playlists.
         val originalUris = libraryUris(api, username)
@@ -44,7 +44,7 @@ class PlaylistAccountTest {
         }
         val cachedBefore = app.repository.library(ContentKind.PLAYLIST).map { it.uri }.toSet()
         val initialName = "Play verification ${System.currentTimeMillis()}"
-        var created: SpotifyContent? = null
+        var created: MusicContent? = null
         var primaryFailure: Throwable? = null
         try {
             Log.i(TAG, "stage=create private playlist")
@@ -87,7 +87,7 @@ class PlaylistAccountTest {
             app.repository.removePlaylistTracks(target, listOf(TRACK))
             assertTrue(app.repository.detail(target).tracks.isEmpty())
 
-            val selectedTrack = SpotifyContent(TRACK.substringAfterLast(':'), TRACK, "Verification", "", null, ContentKind.TRACK)
+            val selectedTrack = MusicContent(TRACK.substringAfterLast(':'), TRACK, "Verification", "", null, ContentKind.TRACK)
             assertFalse(app.repository.playlistMembership(selectedTrack).single { it.playlist.uri == target.uri }.containsAll)
             app.repository.setPlaylistMembership(target, selectedTrack, true)
             assertTrue(app.repository.playlistMembership(selectedTrack).single { it.playlist.uri == target.uri }.containsAll)
@@ -130,7 +130,7 @@ class PlaylistAccountTest {
         }
     }
 
-    private suspend fun libraryUris(api: SpotifyApiClient, username: String): Set<String> {
+    private suspend fun libraryUris(api: ServiceApiClient, username: String): Set<String> {
         val encoded = URLEncoder.encode(username, Charsets.UTF_8.name()).replace("+", "%20")
         val uris = mutableSetOf<String>()
         var offset = 0

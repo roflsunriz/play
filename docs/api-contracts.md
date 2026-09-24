@@ -51,7 +51,7 @@ SQLiteはschema1、最大10,000項目・1行64KiB・metadata計16MiB。破損や
 
 ViewModelから一覧・詳細を開く入口にも同期のRepositoryキャッシュ照会を置かない。表示済み一覧はViewModelの状態から即時に切り替え、未公開の一覧と詳細のキャッシュはIO上の`library`/`detail`内で確認する。同じ結果をネットワークから取り直さず、既存のアカウント確認は維持する。詳細取得を待つ間は選択した作品を表示し、他の操作へ移った場合はその要求を取り消す。
 
-手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`SpotifyRepositoryCacheTest`、`PlaylistDiskCacheTest`、`PlaylistStartupCacheTest`にある。
+手動更新と書き込み後に該当キャッシュを無効化する。内部無効化で待機中の画面要求が取消された場合は、同じアカウントで画面がまだ有効なら再取得する。ログアウトや利用者の画面操作による取消とは区別する。検証は`AccountMemoryCacheTest`、`MusicRepositoryCacheTest`、`PlaylistDiskCacheTest`、`PlaylistStartupCacheTest`にある。
 
 ### 再生用認証の自己取得
 

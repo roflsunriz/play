@@ -63,7 +63,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.SearchFilter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -72,16 +72,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 internal fun LibraryContent(
     section: LibrarySection,
-    items: List<SpotifyContent>,
+    items: List<MusicContent>,
     query: String,
     sort: LibrarySort,
     onQueryChanged: (String) -> Unit,
     onSortChanged: (LibrarySort) -> Unit,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
-    onViewportChanged: (List<SpotifyContent>) -> Unit,
+    onPlay: (MusicContent) -> Unit,
+    onOpen: (MusicContent) -> Unit,
+    onViewportChanged: (List<MusicContent>) -> Unit,
     showControls: Boolean = true,
-    onContentActions: (SpotifyContent) -> Unit = {},
+    onContentActions: (MusicContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
 ) {
     Column(Modifier.fillMaxSize()) {
@@ -163,19 +163,19 @@ private fun LibrarySort.label(kind: ContentKind): Int = when (this) {
 @Composable
 internal fun SearchContent(
     query: String,
-    items: List<SpotifyContent>,
-    suggestions: List<SpotifyContent>,
-    matchingSuggestions: List<SpotifyContent>,
+    items: List<MusicContent>,
+    suggestions: List<MusicContent>,
+    matchingSuggestions: List<MusicContent>,
     previewFailed: Boolean,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
-    onViewportChanged: (List<SpotifyContent>) -> Unit,
+    onPlay: (MusicContent) -> Unit,
+    onOpen: (MusicContent) -> Unit,
+    onViewportChanged: (List<MusicContent>) -> Unit,
     showInput: Boolean = true,
     searchFilter: SearchFilter = SearchFilter.ALL,
     onSearchFilter: (SearchFilter) -> Unit = {},
-    onContentActions: (SpotifyContent) -> Unit = {},
+    onContentActions: (MusicContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
@@ -213,7 +213,7 @@ internal fun SearchContent(
         // Genre search also returns the service's saved-songs navigation card, which opens a playlist.
         val results = if (suggesting) suggestions.filter { it.kind in searchFilter.kinds } else items.filter {
             it.kind in searchFilter.kinds || (searchFilter == SearchFilter.GENRES &&
-                io.github.playmusic.data.api.SpotifyRepository.isLikedSongs(it))
+                io.github.playmusic.data.api.MusicRepository.isLikedSongs(it))
         }
         ContentList(results, onPlay, onOpen, onViewportChanged,
             suggestions = if (suggesting) emptyList() else matchingSuggestions.filter { it.kind in searchFilter.kinds },
@@ -225,17 +225,17 @@ internal fun SearchContent(
 
 @Composable
 internal fun ContentList(
-    items: List<SpotifyContent>,
-    onPlay: (SpotifyContent) -> Unit,
-    onOpen: (SpotifyContent) -> Unit,
-    onViewportChanged: (List<SpotifyContent>) -> Unit,
+    items: List<MusicContent>,
+    onPlay: (MusicContent) -> Unit,
+    onOpen: (MusicContent) -> Unit,
+    onViewportChanged: (List<MusicContent>) -> Unit,
     emptyText: String = stringResource(R.string.empty_library),
-    suggestions: List<SpotifyContent> = emptyList(),
+    suggestions: List<MusicContent> = emptyList(),
     resultHeading: String? = null,
     suggestionHeading: String? = null,
     presentationKey: String = "",
     listState: LazyListState = rememberLazyListState(),
-    onContentActions: (SpotifyContent) -> Unit = {},
+    onContentActions: (MusicContent) -> Unit = {},
     savedUris: Set<String> = emptySet(),
 ) {
     var previousPresentation by rememberSaveable { mutableStateOf(presentationKey) }
@@ -285,8 +285,8 @@ internal fun ContentList(
 }
 
 @Composable
-private fun ContentCard(item: SpotifyContent, onPlay: (SpotifyContent) -> Unit, onOpen: (SpotifyContent) -> Unit,
-    onContentActions: (SpotifyContent) -> Unit, savedUris: Set<String>) {
+private fun ContentCard(item: MusicContent, onPlay: (MusicContent) -> Unit, onOpen: (MusicContent) -> Unit,
+    onContentActions: (MusicContent) -> Unit, savedUris: Set<String>) {
     val haptics = LocalHapticFeedback.current
     Card(onClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); onOpen(item) },
         modifier = Modifier.fillMaxWidth().testTag("content-${item.kind.name.lowercase()}-${item.id}")) {

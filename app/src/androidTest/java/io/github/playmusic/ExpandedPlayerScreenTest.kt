@@ -43,7 +43,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.ExpandedPlayerScreen
 import io.github.playmusic.ui.theme.PlayTheme
 import java.io.File
@@ -58,7 +58,7 @@ class ExpandedPlayerScreenTest {
     @get:Rule val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val artworkFile = File(context.cacheDir, "expanded-player-${UUID.randomUUID()}.png")
-    private val track = SpotifyContent("0000000000000000000001", "spotify:track:0000000000000000000001",
+    private val track = MusicContent("0000000000000000000001", "spotify:track:0000000000000000000001",
         "A full track title with room to read", "Synthetic artist", null, ContentKind.TRACK, durationMs = 180_000)
 
     @After fun cleanup() {

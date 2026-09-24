@@ -3,13 +3,15 @@ package io.github.playmusic.data.security
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.AuthSession
 import io.github.playmusic.data.api.SessionManager
 import io.github.playmusic.data.auth.BrowserAuthorizationClient
-import io.github.playmusic.data.auth.SpotifyClientTokenClient
-import io.github.playmusic.data.auth.SpotifyLogin5Client
+import io.github.playmusic.data.auth.ClientTokenClient
+import io.github.playmusic.data.auth.Login5Client
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -29,6 +31,7 @@ import java.security.KeyStore
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
@@ -65,9 +68,9 @@ class SecureSessionStoreTest {
     fun corruptedSessionIsClearedWithoutLosingDeviceIdentity() {
         val store = SecureSessionStore(context)
         val deviceId = store.loadDeviceId()
-        context.getSharedPreferences("unused", 0).edit().putString("spotify_session", "invalid.ciphertext").commit()
+        context.getSharedPreferences("unused", 0).edit().putString("play_session", "invalid.ciphertext").commit()
         assertNull(store.loadSession())
-        assertFalse(context.getSharedPreferences("unused", 0).contains("spotify_session"))
+        assertFalse(context.getSharedPreferences("unused", 0).contains("play_session"))
         assertEquals(deviceId, store.loadDeviceId())
     }
 
@@ -98,26 +101,44 @@ class SecureSessionStoreTest {
     }
 
     @Test fun schemaTwoMigratesInPlaceWithoutLosingCredentialsOrDeviceIdentity() {
+        val prefs = context.getSharedPreferences("unused", 0)
+        prefs.edit().putString("spotify_device_id", "0legacydevice").commit()
         val store = SecureSessionStore(context)
+        assertEquals("0legacydevice", store.loadDeviceId())
+        assertEquals("0legacydevice", prefs.getString("play_device_id", null))
+        assertFalse(prefs.contains("spotify_device_id"))
         val device = store.loadDeviceId()
-        store.saveSession(AuthSession("legacy-user", "legacy-access", byteArrayOf(1, 2, 3), Long.MAX_VALUE))
-        val key = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-            .getKey("play_spotify_session_key", null) as SecretKey
+        // Pre-rename installs encrypted sessions under the legacy keystore alias.
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val legacyKey = keyStore.getKey("play_spotify_session_key", null) as? SecretKey ?: run {
+            val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+            val specification = KeyGenParameterSpec.Builder(
+                "play_spotify_session_key",
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
+                .build()
+            generator.init(specification)
+            generator.generateKey()
+        }
         val legacy = """{"schemaVersion":2,"username":"legacy-user","accessToken":"legacy-access",
             "storedCredential":"AQID","expiresAtEpochMs":9223372036854775807}"""
-        val encrypt = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key) }
+        val encrypt = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, legacyKey) }
         val encoded = listOf(encrypt.iv, encrypt.doFinal(legacy.toByteArray()))
             .joinToString(".") { Base64.encodeToString(it, Base64.NO_WRAP) }
-        val prefs = context.getSharedPreferences("unused", 0)
         prefs.edit().putString("spotify_session", encoded).commit()
         val loaded = checkNotNull(store.loadSession())
         assertEquals("legacy-user", loaded.username)
         assertNull(loaded.refreshToken)
         assertArrayEquals(byteArrayOf(1, 2, 3), loaded.storedCredential)
         assertEquals(device, store.loadDeviceId())
-        val migrated = checkNotNull(prefs.getString("spotify_session", null)).split('.')
+        assertFalse(prefs.contains("spotify_session"))
+        val migrated = checkNotNull(prefs.getString("play_session", null)).split('.')
+        val currentKey = checkNotNull(keyStore.getKey("play_session_key", null)) as SecretKey
         val decrypt = Cipher.getInstance("AES/GCM/NoPadding").apply {
-            init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, Base64.decode(migrated[0], Base64.NO_WRAP)))
+            init(Cipher.DECRYPT_MODE, currentKey, GCMParameterSpec(128, Base64.decode(migrated[0], Base64.NO_WRAP)))
         }
         val json = JSONObject(String(decrypt.doFinal(Base64.decode(migrated[1], Base64.NO_WRAP))))
         assertEquals(3, json.getInt("schemaVersion"))
@@ -128,7 +149,7 @@ class SecureSessionStoreTest {
             val store = SecureSessionStore(context)
             val started = CountDownLatch(1)
             val continueResponse = CountDownLatch(1)
-            val clientTokens = SpotifyClientTokenClient(openConnection = { error("Unexpected legacy authentication") })
+            val clientTokens = ClientTokenClient(openConnection = { error("Unexpected legacy authentication") })
             val oauth = BrowserAuthorizationClient(openConnection = { uri ->
                 object : HttpURLConnection(uri.toURL()) {
                     override fun getOutputStream() = ByteArrayOutputStream()
@@ -144,7 +165,7 @@ class SecureSessionStoreTest {
                     override fun usingProxy() = false
                 }
             })
-            val manager = SessionManager(store, SpotifyLogin5Client("synthetic-client", clientTokens), clientTokens, oauth)
+            val manager = SessionManager(store, Login5Client("synthetic-client", clientTokens), clientTokens, oauth)
             manager.replaceSession(AuthSession("old-user", "expired", null, 0, "synthetic-refresh"))
             val refresh = async(Dispatchers.IO) { runCatching { manager.accessToken() } }
             try {
@@ -166,7 +187,7 @@ class SecureSessionStoreTest {
         val started = CountDownLatch(1)
         val continueResponse = CountDownLatch(1)
         val refreshInputs = java.util.Collections.synchronizedList(mutableListOf<String>())
-        val clientTokens = SpotifyClientTokenClient(openConnection = { error("Unexpected legacy authentication") })
+        val clientTokens = ClientTokenClient(openConnection = { error("Unexpected legacy authentication") })
         val oauth = BrowserAuthorizationClient(openConnection = { uri ->
             object : HttpURLConnection(uri.toURL()) {
                 val body = ByteArrayOutputStream()
@@ -187,7 +208,7 @@ class SecureSessionStoreTest {
             }
         })
         fun manager() = SessionManager(SecureSessionStore(context),
-            SpotifyLogin5Client("synthetic-client", clientTokens), clientTokens, oauth)
+            Login5Client("synthetic-client", clientTokens), clientTokens, oauth)
         val first = manager()
         first.replaceSession(AuthSession("synthetic-user", "expired", null, 0, "original-refresh"))
         val search = async(Dispatchers.Default) { first.accessToken() }

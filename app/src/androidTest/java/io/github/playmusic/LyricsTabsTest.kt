@@ -15,7 +15,7 @@ import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.LyricsLine
 import io.github.playmusic.data.model.LyricsSyncType
 import io.github.playmusic.data.model.Playback
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.TrackLyrics
 import io.github.playmusic.ui.LyricsTabbedRoute
 import io.github.playmusic.ui.theme.PlayTheme
@@ -29,7 +29,7 @@ import java.net.URI
 
 class LyricsTabsTest {
     @get:Rule val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
-    private val track = SpotifyContent("1", "spotify:track:0000000000000000000001", "Synthetic", "Singer",
+    private val track = MusicContent("1", "spotify:track:0000000000000000000001", "Synthetic", "Singer",
         null, ContentKind.TRACK, durationMs = 200_000, albumTitle = "Album")
     private val official = TrackLyrics(track.uri, LyricsSyncType.LINE_SYNCED,
         listOf(LyricsLine("Official line", 0)), "Official provider")

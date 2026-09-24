@@ -29,6 +29,6 @@ class AccessPointIdentity {
             try { return@withContext AccessPointConnection(uri.host, uri.port).username(accessToken, deviceId) }
             catch (exception: java.io.IOException) { failure = exception }
         }
-        throw SpotifyAuthException("Could not verify account identity: ${failure?.javaClass?.simpleName ?: "no access points"}")
+        throw AuthException("Could not verify account identity: ${failure?.javaClass?.simpleName ?: "no access points"}")
     }
 }

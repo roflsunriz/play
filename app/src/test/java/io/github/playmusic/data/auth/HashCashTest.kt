@@ -13,7 +13,7 @@ class HashCashTest {
     fun invalidDifficultyAndExhaustedBudgetFailPromptly() {
         assertThrows(IllegalArgumentException::class.java) { HashCash.solve(null, byteArrayOf(1), -1) }
         assertThrows(IllegalArgumentException::class.java) { HashCash.solveClientToken(byteArrayOf(1), 65) }
-        assertThrows(SpotifyAuthException::class.java) { HashCash.solve(null, byteArrayOf(1), 64, maxDurationMs = 0) }
+        assertThrows(AuthException::class.java) { HashCash.solve(null, byteArrayOf(1), 64, maxDurationMs = 0) }
     }
 
     @Test

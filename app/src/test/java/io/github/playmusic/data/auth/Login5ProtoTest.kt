@@ -11,8 +11,8 @@ class Login5ProtoTest {
     fun storedCredentialRefreshUsesV3AndPasswordLoginUsesV4() {
         val stored = LoginRequest(storedCredential = LoginStoredCredential("user", byteArrayOf(1, 2, 3)))
         val password = LoginRequest(password = LoginPassword("user", "pass"))
-        assertEquals("https://login5.spotify.com/v3/login", SpotifyLogin5Client.endpointFor(stored))
-        assertEquals("https://login5.spotify.com/v4/login", SpotifyLogin5Client.endpointFor(password))
+        assertEquals("https://login5.spotify.com/v3/login", Login5Client.endpointFor(stored))
+        assertEquals("https://login5.spotify.com/v4/login", Login5Client.endpointFor(password))
         assertArrayEquals(byteArrayOf(0xA2.toByte(), 6) + ProtoWire.varint(11) +
             byteArrayOf(10, 4, 117, 115, 101, 114, 18, 3, 1, 2, 3), stored.encode())
     }

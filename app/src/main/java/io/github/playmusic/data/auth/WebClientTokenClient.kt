@@ -26,7 +26,7 @@ class WebClientTokenClient(
     suspend fun acquire(): GrantedClientToken = withContext(Dispatchers.IO) {
         val body = requestBody(device, clientId, clientVersion).toString().toByteArray(Charsets.UTF_8)
         val connection = try { openConnection(URI(ENDPOINT)) } catch (_: IOException) {
-            throw SpotifyAuthException("Client token request failed (network)")
+            throw AuthException("Client token request failed (network)")
         }
         try {
             connection.requestMethod = "POST"
@@ -38,14 +38,14 @@ class WebClientTokenClient(
             connection.doOutput = true
             connection.outputStream.use { it.write(body) }
             val status = connection.responseCode
-            if (status != 200) throw SpotifyAuthException("Client token request failed ($status)")
+            if (status != 200) throw AuthException("Client token request failed ($status)")
             val response = connection.inputStream.use { input ->
                 val output = ByteArrayOutputStream()
                 val buffer = ByteArray(8192)
                 while (true) {
                     val length = input.read(buffer)
                     if (length < 0) break
-                    if (output.size() + length > 1_048_576) throw SpotifyAuthException("Client token response is too large")
+                    if (output.size() + length > 1_048_576) throw AuthException("Client token response is too large")
                     output.write(buffer, 0, length)
                 }
                 output.toString("UTF-8")
@@ -54,10 +54,10 @@ class WebClientTokenClient(
         } catch (error: CancellationException) {
             throw error
         } catch (_: IOException) {
-            throw SpotifyAuthException("Client token request failed (network)")
+            throw AuthException("Client token request failed (network)")
         } catch (_: JSONException) {
             // JSON parser exceptions can quote response values; do not propagate their messages or causes.
-            throw SpotifyAuthException("Client token response is invalid")
+            throw AuthException("Client token response is invalid")
         } finally {
             connection.disconnect()
         }
@@ -81,36 +81,36 @@ class WebClientTokenClient(
         internal fun parseGrant(root: JSONObject): GrantedClientToken {
             val responseType = root.opt("response_type")
             if (responseType != null && responseType != "RESPONSE_GRANTED_TOKEN_RESPONSE" && responseType != 1) {
-                throw SpotifyAuthException("Client token request did not return a grant")
+                throw AuthException("Client token request did not return a grant")
             }
-            if (!root.isNull("challenges")) throw SpotifyAuthException("Client token request requires additional verification")
+            if (!root.isNull("challenges")) throw AuthException("Client token request requires additional verification")
             val grant = root.optJSONObject("granted_token")
-                ?: throw SpotifyAuthException("Client token grant is missing")
+                ?: throw AuthException("Client token grant is missing")
             val token = (grant.opt("token") as? String)?.takeIf {
                 it.length in 1..32_768 && it.all { character -> character.code in 33..126 }
-            } ?: throw SpotifyAuthException("Client token is invalid")
+            } ?: throw AuthException("Client token is invalid")
             fun seconds(name: String, optional: Boolean = false): Int {
                 if (optional && !grant.has(name)) return 0
                 val value = grant.opt(name)
                 val parsed = if (value is Number) value.toString().toLongOrNull() else null
                 if (parsed == null || parsed !in 0..Int.MAX_VALUE.toLong()) {
-                    throw SpotifyAuthException("Client token lifetime is invalid")
+                    throw AuthException("Client token lifetime is invalid")
                 }
                 return parsed.toInt()
             }
             val expires = seconds("expires_after_seconds")
             val refresh = seconds("refresh_after_seconds", optional = true)
-            if (expires <= 0) throw SpotifyAuthException("Client token has expired")
+            if (expires <= 0) throw AuthException("Client token has expired")
             val sourceDomains = grant.optJSONArray("domains")
-                ?: throw SpotifyAuthException("Client token domains are missing")
+                ?: throw AuthException("Client token domains are missing")
             val domains = (0 until sourceDomains.length()).map { index ->
                 val value = sourceDomains.optJSONObject(index)?.opt("domain") as? String
-                    ?: throw SpotifyAuthException("Client token domain is invalid")
+                    ?: throw AuthException("Client token domain is invalid")
                 try { GrantedClientToken.normalizeDomain(value) } catch (_: ProtoParseException) {
-                    throw SpotifyAuthException("Client token domain is invalid")
+                    throw AuthException("Client token domain is invalid")
                 }
             }.distinct()
-            if (domains.isEmpty()) throw SpotifyAuthException("Client token has no permitted hosts")
+            if (domains.isEmpty()) throw AuthException("Client token has no permitted hosts")
             return GrantedClientToken(token, expires, refresh, domains)
         }
     }

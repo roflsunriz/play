@@ -17,8 +17,8 @@ class CatalogJsonTest {
         val genre = JSONObject().put("__typename", "Genre").put("uri", "spotify:genre:jazz").put("name", "Jazz")
         val results = CatalogJson.search(search(ContentKind.GENRE, JSONArray().put(genre)
             .put(JSONObject().put("__typename", "GenreResponseWrapper").put("data", card)).put(genre)), ContentKind.GENRE)
-        assertEquals(listOf("spotify:genre:jazz", SpotifyRepository.LIKED_SONGS_URI, "spotify:genre:jazz"), results.map { it.uri })
-        assertEquals(SpotifyRepository.likedSongsContent("お気に入りの曲"), results[1])
+        assertEquals(listOf("spotify:genre:jazz", MusicRepository.LIKED_SONGS_URI, "spotify:genre:jazz"), results.map { it.uri })
+        assertEquals(MusicRepository.likedSongsContent("お気に入りの曲"), results[1])
         for (uri in listOf("spotify:user:other:collection", "spotify:unknown:one", "https://example.com")) {
             assertTrue(runCatching { CatalogJson.content(JSONObject(card.toString()).put("uri", uri), ContentKind.GENRE) }.isFailure)
         }

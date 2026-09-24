@@ -73,9 +73,9 @@ class ArtistPageScreenTest {
     }
 
     @Test fun allPlayableWorksAndFavoriteButtonsDispatchTheirExactContentWithoutOpeningTheirCards() {
-        val played = mutableListOf<SpotifyContent>()
-        val opened = mutableListOf<SpotifyContent>()
-        val actions = mutableListOf<SpotifyContent>()
+        val played = mutableListOf<MusicContent>()
+        val opened = mutableListOf<MusicContent>()
+        val actions = mutableListOf<MusicContent>()
         val positions = mutableListOf<Int>()
         render { Screen(onPlay = played::add, onOpen = opened::add, onActions = actions::add,
             onPlayTrack = positions::add, savedUris = setOf(track.uri, appears.uri)) }
@@ -112,7 +112,7 @@ class ArtistPageScreenTest {
         var radioBusy by mutableStateOf(false)
         var follows = 0
         var retries = 0
-        val radios = mutableListOf<SpotifyContent>()
+        val radios = mutableListOf<MusicContent>()
         render { Screen(detail = current, loading = loading, followBusy = followingBusy, radioBusy = radioBusy,
             onFollow = { follows++; followingBusy = true }, onRetry = { retries++ },
             onRadio = { radios += it; radioBusy = true }) }
@@ -153,8 +153,8 @@ class ArtistPageScreenTest {
         var current by mutableStateOf(detail.copy(artistPage = page.copy(unavailableRelatedItems = 3)))
         var loading by mutableStateOf(false)
         var retries = 0
-        val played = mutableListOf<SpotifyContent>()
-        val opened = mutableListOf<SpotifyContent>()
+        val played = mutableListOf<MusicContent>()
+        val opened = mutableListOf<MusicContent>()
         render { Screen(detail = current, loading = loading, onPlay = played::add, onOpen = opened::add,
             onRetry = { retries++; loading = true }) }
         scroll("related-error", "artist-related-error").assertTextEquals(
@@ -187,7 +187,7 @@ class ArtistPageScreenTest {
     @Test fun searchArtistNameOpensArtistPageAndSuggestedArtistUsesTheSameRoute() {
         var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,
             searchQuery = "artist", searchFilter = SearchFilter.ARTISTS, items = listOf(artist)))
-        val opened = mutableListOf<SpotifyContent>()
+        val opened = mutableListOf<MusicContent>()
         var played = 0
         render { HomeScreen(state, {}, {}, {}, {}, {}, { played++ }, {}, {}, {}, {}, {}, {},
             onOpenContent = { opened += it; state = state.copy(selectedContent = it, detail = detail.copy(content = it)) },
@@ -226,10 +226,10 @@ class ArtistPageScreenTest {
         assertFullyVisible("artist-suggested-${suggested.id}")
     }
 
-    @Composable private fun Screen(selected: SpotifyContent = artist, detail: ContentDetail? = this.detail,
+    @Composable private fun Screen(selected: MusicContent = artist, detail: ContentDetail? = this.detail,
         loading: Boolean = false, followBusy: Boolean = false, radioBusy: Boolean = false,
-        onPlay: (SpotifyContent) -> Unit = {}, onPlayTrack: (Int) -> Unit = {}, onOpen: (SpotifyContent) -> Unit = {},
-        onFollow: () -> Unit = {}, onRadio: (SpotifyContent) -> Unit = {}, onActions: (SpotifyContent) -> Unit = {},
+        onPlay: (MusicContent) -> Unit = {}, onPlayTrack: (Int) -> Unit = {}, onOpen: (MusicContent) -> Unit = {},
+        onFollow: () -> Unit = {}, onRadio: (MusicContent) -> Unit = {}, onActions: (MusicContent) -> Unit = {},
         savedUris: Set<String> = emptySet(), onRetry: () -> Unit = {}) =
         ArtistPageScreen(selected, detail, loading, followBusy, radioBusy, onPlay, onPlayTrack, onOpen, onFollow,
             onRadio, onActions, savedUris, onRetry)
@@ -264,5 +264,5 @@ class ArtistPageScreenTest {
 
     private fun text(id: Int) = composeRule.activity.getString(id)
     private fun item(kind: ContentKind, id: String, title: String) =
-        SpotifyContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
+        MusicContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
 }

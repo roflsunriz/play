@@ -2,7 +2,7 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.test.runTest
 import org.json.JSONArray
 import org.json.JSONObject
@@ -51,8 +51,8 @@ class SavedLibraryActionsTest {
     @Test
     fun likedSongsDetailsFollowCollectionChangesAndNeverRequestAPlaylistNamedTracks() = runTest {
         val server = Server()
-        val liked = SpotifyRepository.likedSongsContent("お気に入りの曲")
-        assertTrue(SpotifyRepository.isLikedSongs(liked))
+        val liked = MusicRepository.likedSongsContent("お気に入りの曲")
+        assertTrue(MusicRepository.isLikedSongs(liked))
         assertTrue(server.repository.detail(liked).tracks.isEmpty())
         server.repository.setSaved(track(), true)
         assertEquals(listOf(TRACK), server.repository.detail(liked).tracks.map { it.uri })
@@ -136,7 +136,7 @@ class SavedLibraryActionsTest {
             override suspend fun usesBrowserAuthorization() = true
         }
         private val connection: (URI) -> HttpURLConnection = { uri -> Connection(uri, ::respond).also { requests += it } }
-        val repository = SpotifyRepository(SpotifyApiClient(tokens, connection), tokens, CatalogApiClient(tokens, connection))
+        val repository = MusicRepository(ServiceApiClient(tokens, connection), tokens, CatalogApiClient(tokens, connection))
 
         private fun respond(request: Connection): ByteArray = when (request.url.path) {
             "/playlist/v2/user/$USER/rootlist" -> ProtoWire.fieldBytes(1, byteArrayOf(1)) +
@@ -212,9 +212,9 @@ class SavedLibraryActionsTest {
         private const val SECOND_TRACK = "spotify:track:abcdefghijklmnopqrstuv"
         private const val ALBUM = "spotify:album:0123456789ABCDEFGHIJKL"
         private const val PLAYLIST_ID = "0123456789ABCDEFGHIJKL"
-        private fun track() = SpotifyContent(TRACK.substringAfterLast(':'), TRACK, "Track", "", null, ContentKind.TRACK)
-        private fun album() = SpotifyContent(ALBUM.substringAfterLast(':'), ALBUM, "Album", "", null, ContentKind.ALBUM)
-        private fun playlist() = SpotifyContent(PLAYLIST_ID, "spotify:playlist:$PLAYLIST_ID", "Playlist", "", null, ContentKind.PLAYLIST)
+        private fun track() = MusicContent(TRACK.substringAfterLast(':'), TRACK, "Track", "", null, ContentKind.TRACK)
+        private fun album() = MusicContent(ALBUM.substringAfterLast(':'), ALBUM, "Album", "", null, ContentKind.ALBUM)
+        private fun playlist() = MusicContent(PLAYLIST_ID, "spotify:playlist:$PLAYLIST_ID", "Playlist", "", null, ContentKind.PLAYLIST)
         private fun trackJson(uri: String) = JSONObject().put("uri", uri).put("name", "Track")
         private fun fields(bytes: ByteArray): List<Field> {
             val reader = ProtoWire.Reader(bytes)

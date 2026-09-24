@@ -70,7 +70,7 @@ class BrowserAuthorizationClient(
                     val result = socket.use { readCallback(it, pending, completedMessage) } ?: continue
                     trace("callback state verified")
                     withContext(Dispatchers.Main) { onCallback() }
-                    if (result.error != null) throw SpotifyAuthException("Login was declined")
+                    if (result.error != null) throw AuthException("Login was declined")
                     val token = request(mapOf(
                         "client_id" to DesktopClientProfile.CLIENT_ID,
                         "grant_type" to "authorization_code",
@@ -82,7 +82,7 @@ class BrowserAuthorizationClient(
                     trace("authorization token received")
                     return@withContext token
                 }
-                throw SpotifyAuthException("Login timed out. Sign in again")
+                throw AuthException("Login timed out. Sign in again")
             }
         }
 
@@ -145,17 +145,17 @@ class BrowserAuthorizationClient(
                     runCatching { JSONObject(reader.readText()).optString("error") }
                         .getOrNull()?.takeIf { it.matches(Regex("[a-z_]{1,64}")) }
                 }
-                throw SpotifyAuthException("Login request failed ($status${error?.let { ": $it" }.orEmpty()})",
+                throw AuthException("Login request failed ($status${error?.let { ": $it" }.orEmpty()})",
                     requiresLogin = parameters["grant_type"] == "refresh_token" && error == "invalid_grant")
             }
             val json = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
             require(json.getString("token_type").equals("Bearer", ignoreCase = true))
             val refresh = if (json.isNull("refresh_token")) null else
                 (json.opt("refresh_token") as? String)?.takeIf { it.isNotBlank() && it != "null" }
-                    ?: throw SpotifyAuthException("Login returned invalid refresh credentials")
+                    ?: throw AuthException("Login returned invalid refresh credentials")
             trace("token response includes refresh credentials=${refresh != null}")
             Tokens((json.opt("access_token") as? String)?.takeIf { it.isNotBlank() }
-                    ?: throw SpotifyAuthException("Login returned invalid access credentials"),
+                    ?: throw AuthException("Login returned invalid access credentials"),
                 refresh,
                 json.getLong("expires_in").also { require(it in 1..86_400) })
         } finally { connection.disconnect() }

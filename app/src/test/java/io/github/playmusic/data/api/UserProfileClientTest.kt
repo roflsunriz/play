@@ -39,7 +39,7 @@ class UserProfileClientTest {
 
     @Test fun profileRequestUsesTheObservedPathMimeAndZeroContentLimits() = runBlocking {
         val tokens = tokens()
-        val api = SpotifyApiClient(tokens) { uri ->
+        val api = ServiceApiClient(tokens) { uri ->
             assertEquals("/user-profile-view/v3/profile/name%20with%2Fslash", uri.rawPath)
             assertEquals("playlist_limit=0&artist_limit=0&episode_limit=0", uri.rawQuery)
             object : HttpURLConnection(uri.toURL()) {
@@ -58,7 +58,7 @@ class UserProfileClientTest {
 
     @Test fun unavailableProfilesAndNetworkErrorsRemainDifferent() = runBlocking {
         for (status in listOf(403, 404, 410, 503)) {
-            val api = SpotifyApiClient(tokens()) { uri -> object : HttpURLConnection(uri.toURL()) {
+            val api = ServiceApiClient(tokens()) { uri -> object : HttpURLConnection(uri.toURL()) {
                 override fun getResponseCode() = status
                 override fun getErrorStream() = ByteArrayInputStream(ByteArray(0))
                 override fun connect() = Unit
@@ -66,7 +66,7 @@ class UserProfileClientTest {
                 override fun usingProxy() = false
             } }
             val result = runCatching { UserProfileClient(api).profile("account") }
-            if (status == 503) assertTrue(result.exceptionOrNull() is SpotifyApiException)
+            if (status == 503) assertTrue(result.exceptionOrNull() is ServiceApiException)
             else assertNull(result.getOrThrow().displayName)
         }
     }

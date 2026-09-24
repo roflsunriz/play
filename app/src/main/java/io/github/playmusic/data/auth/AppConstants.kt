@@ -1,15 +1,16 @@
 ﻿package io.github.playmusic.data.auth
 
 object AppConstants {
-    /** Official Spotify Android client ID (used for client token and Login5). */
-    const val SPOTIFY_CLIENT_ID = "9a8d2f0ce77a4e248bb71fefcb557637"
+    /** 公式AndroidクライアントのID（client tokenとLogin5で使用）。値はサーバーが要求するため変更しない。 */
+    const val CLIENT_ID = "9a8d2f0ce77a4e248bb71fefcb557637"
 
-    /** Version reported by the official app (updates to the current APK version). */
+    /** 公式アプリが報告する版（現行APKの版へ追随）。 */
     const val CLIENT_VERSION = "9.1.82.1596"
 
     /**
-     * User agent format used by the official Spotify Android app.
-     * The model is static in the captured app; other devices should use Build.MODEL.
+     * 公式Androidアプリが使うUser-Agent形式。
+     * 機種は取得時の端末で固定しており、他端末ではBuild.MODELを使うこと。
+     * 値自体はサーバーが検証するため変更しない。
      */
-    const val SPOTIFY_USER_AGENT = "Spotify/9.1.82.1596 Android/36 (SH-R80P)"
+    const val USER_AGENT = "Spotify/9.1.82.1596 Android/36 (SH-R80P)"
 }

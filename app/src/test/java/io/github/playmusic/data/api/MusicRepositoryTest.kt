@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URI
 
-class SpotifyRepositoryTest {
+class MusicRepositoryTest {
     @Test
     fun anEmptyItemDoesNotShiftTitlesOntoTheNextPlaylist() = runTest {
         val field = io.github.playmusic.data.auth.ProtoWire
@@ -101,8 +101,8 @@ class SpotifyRepositoryTest {
             } else Reply(status = 503)
         }
         val error = runCatching { backend.repository.library(ContentKind.TRACK) }.exceptionOrNull()
-        assertTrue(error is SpotifyApiException)
-        assertEquals(503, (error as SpotifyApiException).status)
+        assertTrue(error is ServiceApiException)
+        assertEquals(503, (error as ServiceApiException).status)
     }
 
     @Test
@@ -115,7 +115,7 @@ class SpotifyRepositoryTest {
                 else Reply(bytes = """{"errors":[{"message":"Metadata unavailable"}]}""".toByteArray())
             }
             val error = runCatching { backend.repository.library(ContentKind.TRACK) }.exceptionOrNull()
-            assertTrue(if (cancel) error is CancellationException else error is SpotifyApiException)
+            assertTrue(if (cancel) error is CancellationException else error is ServiceApiException)
         }
     }
 
@@ -160,8 +160,8 @@ class SpotifyRepositoryTest {
         val requests = java.util.Collections.synchronizedList(mutableListOf<Connection>())
         val tokens = Tokens()
         private val connection: (URI) -> HttpURLConnection = { uri -> Connection(uri, reply).also { requests += it } }
-        val api = SpotifyApiClient(tokens, connection)
-        val repository = SpotifyRepository(api, tokens, CatalogApiClient(tokens, connection))
+        val api = ServiceApiClient(tokens, connection)
+        val repository = MusicRepository(api, tokens, CatalogApiClient(tokens, connection))
     }
 
     private class Connection(uri: URI, private val reply: (Connection) -> Reply) : HttpURLConnection(uri.toURL()) {

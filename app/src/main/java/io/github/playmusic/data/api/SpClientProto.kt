@@ -404,7 +404,7 @@ object SpClientProto {
                 1 -> {
                     val status = parseStatus(reader.readBytes())
                     if (status != null && status != 0 && status !in 200..299) {
-                        throw SpotifyApiException(status, "Metadata provider request failed")
+                        throw ServiceApiException(status, "Metadata provider request failed")
                     }
                 }
                 3 -> result += parseEntityExtensionData(reader.readBytes())

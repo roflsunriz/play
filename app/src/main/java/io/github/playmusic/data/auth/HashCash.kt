@@ -27,7 +27,7 @@ object HashCash {
             if (iterations++ and 4095 == 0) {
                 if (Thread.currentThread().isInterrupted) throw InterruptedException("Verification cancelled")
                 if (System.nanoTime() - start >= maxDurationMs * 1_000_000) {
-                    throw SpotifyAuthException("Verification calculation timed out. Try again.")
+                    throw AuthException("Verification calculation timed out. Try again.")
                 }
             }
             digest.reset()

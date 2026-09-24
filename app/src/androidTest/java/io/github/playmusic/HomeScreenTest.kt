@@ -25,7 +25,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.R
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.HomeScreen
 import io.github.playmusic.ui.LibrarySection
 import io.github.playmusic.ui.PlayUiState
@@ -40,7 +40,7 @@ class HomeScreenTest {
     val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
 
     @Test fun failedBackgroundPlaylistSyncKeepsTheCachedListUsable() {
-        val item = SpotifyContent("cached", "spotify:playlist:cached", "Cached playlist", "", null, ContentKind.PLAYLIST)
+        val item = MusicContent("cached", "spotify:playlist:cached", "Cached playlist", "", null, ContentKind.PLAYLIST)
         var retried = false
         composeRule.setContent { TestTheme {
             HomeScreen(PlayUiState(isLoggedIn = true, items = listOf(item), playlistSyncFailed = true),
@@ -69,7 +69,7 @@ class HomeScreenTest {
 
     @Test
     fun untitledPlaylistHasALocalizedTitleAndRemainsClickable() {
-        val item = SpotifyContent("untitled", "spotify:playlist:untitled", "", "", null, ContentKind.PLAYLIST)
+        val item = MusicContent("untitled", "spotify:playlist:untitled", "", "", null, ContentKind.PLAYLIST)
         var played = false
         val title = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.untitled_playlist)
         composeRule.setContent {
@@ -90,7 +90,7 @@ class HomeScreenTest {
 
     @Test
     fun contentAndPlaybackControlsDispatchActions() {
-        val track = SpotifyContent("track-id", "spotify:track:track-id", "Track", "Artist", null, ContentKind.TRACK)
+        val track = MusicContent("track-id", "spotify:track:track-id", "Track", "Artist", null, ContentKind.TRACK)
         var played = false
         var toggled = false
         var next = false
@@ -194,9 +194,9 @@ class HomeScreenTest {
 
     @Test
     fun metadataFilterSortAndClearRemainUsable() {
-        val a = SpotifyContent("a", "spotify:playlist:a", "Alpha", "", null, ContentKind.PLAYLIST,
+        val a = MusicContent("a", "spotify:playlist:a", "Alpha", "", null, ContentKind.PLAYLIST,
             ownerName = "Alice", description = "Quiet &amp; calm evening", trackCount = 12)
-        val b = SpotifyContent("b", "spotify:playlist:b", "Beta", "", null, ContentKind.PLAYLIST,
+        val b = MusicContent("b", "spotify:playlist:b", "Beta", "", null, ContentKind.PLAYLIST,
             ownerName = "Bob", description = "Running", trackCount = 30)
         val source = listOf(b, a)
         var state by mutableStateOf(PlayUiState(isLoggedIn = true, items = source))
@@ -226,7 +226,7 @@ class HomeScreenTest {
 
     private fun verifyExtraLibraryFilter(section: LibrarySection) {
         val kind = checkNotNull(section.kind)
-        val a = SpotifyContent("a", "spotify:${kind.name.lowercase()}:a", "Alpha", "Artist one", null, kind,
+        val a = MusicContent("a", "spotify:${kind.name.lowercase()}:a", "Alpha", "Artist one", null, kind,
             albumTitle = "Parent album", releaseDate = "1991", durationMs = 185_000)
         val b = a.copy(id = "b", uri = "spotify:${kind.name.lowercase()}:b", title = "Beta", subtitle = "Artist two", releaseDate = "2002")
         val source = listOf(b, a)
@@ -267,7 +267,7 @@ class HomeScreenTest {
 
     @Test
     fun miniPlayerOpensArtworkControllerAndReturnsToTheLibrary() {
-        val track = SpotifyContent("now", "spotify:track:now", "Now playing", "Artist", null, ContentKind.TRACK,
+        val track = MusicContent("now", "spotify:track:now", "Now playing", "Artist", null, ContentKind.TRACK,
             durationMs = 180_000, albumTitle = "Album")
         val items = (0..30).map { track.copy(id = "row$it", uri = "spotify:track:row$it", title = "Track $it") }
         composeRule.setContent { TestTheme {
@@ -283,7 +283,7 @@ class HomeScreenTest {
 
     @Test
     fun searchShowsSuggestedContentBeforeTypingAndMatchingCandidatesAfterTyping() {
-        val suggested = SpotifyContent("suggested", "spotify:album:suggested", "Suggested album", "Artist", null, ContentKind.ALBUM)
+        val suggested = MusicContent("suggested", "spotify:album:suggested", "Suggested album", "Artist", null, ContentKind.ALBUM)
         var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,
             suggestedItems = listOf(suggested)))
         composeRule.setContent { TestTheme {

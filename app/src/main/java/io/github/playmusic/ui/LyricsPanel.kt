@@ -47,7 +47,7 @@ import io.github.playmusic.R
 import io.github.playmusic.data.api.LrclibApiClient
 import io.github.playmusic.data.api.LyricsSource
 import io.github.playmusic.data.model.Playback
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.TrackLyrics
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -62,7 +62,7 @@ internal sealed interface LyricsState {
 /** No persistent cache: leaving the player/account also releases the response text. */
 @Composable
 internal fun LyricsRoute(
-    content: SpotifyContent,
+    content: MusicContent,
     playback: Playback,
     client: LyricsSource,
     onSeek: (Long) -> Unit,
@@ -78,7 +78,7 @@ private enum class LyricsTab { OFFICIAL, LRCLIB }
 /** Shows the delivered lyrics with the community source on switchable tabs. */
 @Composable
 internal fun LyricsTabbedRoute(
-    content: SpotifyContent,
+    content: MusicContent,
     playback: Playback,
     official: LyricsSource,
     lrclib: LrclibApiClient,
@@ -106,7 +106,7 @@ internal fun LyricsTabbedRoute(
 
 @Composable
 private fun LyricsFetcher(
-    content: SpotifyContent,
+    content: MusicContent,
     playback: Playback,
     fetch: suspend () -> TrackLyrics?,
     onSeek: (Long) -> Unit,

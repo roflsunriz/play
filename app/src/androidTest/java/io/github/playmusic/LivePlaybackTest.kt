@@ -10,7 +10,7 @@ import androidx.media3.session.SessionToken
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.RepeatMode
 import io.github.playmusic.data.playback.PlaybackService
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +35,7 @@ class LivePlaybackTest {
         val app = (context.applicationContext as PlayApplication).container
         check(app.sessionStore.loadSession()?.refreshToken != null) { "Complete normal sign-in first" }
         val trackUri = InstrumentationRegistry.getArguments().getString("trackUri") ?: TRACK
-        val item = SpotifyContent(trackUri.substringAfterLast(':'), trackUri, "", "", null, ContentKind.TRACK)
+        val item = MusicContent(trackUri.substringAfterLast(':'), trackUri, "", "", null, ContentKind.TRACK)
         val detail = app.repository.detail(item).content
         assertTrue(detail.durationMs > 120_000)
         var failure: String? = null
@@ -98,7 +98,7 @@ class LivePlaybackTest {
                 }
                 Log.i(TAG, "protected track reached end")
                 val secondUri = "spotify:track:2mvffzYUJ9Ld9xhsF5DUjU"
-                val second = app.repository.detail(SpotifyContent(secondUri.substringAfterLast(':'), secondUri,
+                val second = app.repository.detail(MusicContent(secondUri.substringAfterLast(':'), secondUri,
                     "", "", null, ContentKind.TRACK)).content
                 app.localPlayback.play(listOf(detail, second))
                 awaitState("First queue item") { app.localPlayback.state.value.isPlaying && app.localPlayback.state.value.progressMs > 500 }

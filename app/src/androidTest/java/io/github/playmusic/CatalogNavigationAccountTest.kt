@@ -3,7 +3,7 @@ package io.github.playmusic
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.api.CatalogApiClient
-import io.github.playmusic.data.api.SpotifyRepository
+import io.github.playmusic.data.api.MusicRepository
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SearchFilter
 import kotlinx.coroutines.runBlocking
@@ -21,7 +21,7 @@ class CatalogNavigationAccountTest {
             for (filter in SearchFilter.entries) {
                 val items = app.repository.search(query, filter)
                 assertTrue("Category must match its results or the service's saved-songs navigation card",
-                    items.all { it.kind in filter.kinds || (ContentKind.GENRE in filter.kinds && SpotifyRepository.isLikedSongs(it)) })
+                    items.all { it.kind in filter.kinds || (ContentKind.GENRE in filter.kinds && MusicRepository.isLikedSongs(it)) })
                 assertTrue("Results must contain titles", items.all { it.kind == ContentKind.PLAYLIST || it.title.isNotBlank() })
                 if (filter == SearchFilter.ALL) assertTrue("Reported search must return results", items.isNotEmpty())
                 Log.i(TAG, "search category=$filter count=${items.size}")
@@ -38,9 +38,9 @@ class CatalogNavigationAccountTest {
                 runCatching {
                     val items = app.repository.search(query, filter)
                     assertTrue(items.isNotEmpty())
-                    assertTrue(items.all { it.kind in filter.kinds || (ContentKind.GENRE in filter.kinds && SpotifyRepository.isLikedSongs(it)) })
+                    assertTrue(items.all { it.kind in filter.kinds || (ContentKind.GENRE in filter.kinds && MusicRepository.isLikedSongs(it)) })
                     if (query == "インターネット" && filter == SearchFilter.GENRES) {
-                        val savedSongs = items.single(SpotifyRepository::isLikedSongs)
+                        val savedSongs = items.single(MusicRepository::isLikedSongs)
                         val detail = app.repository.detail(savedSongs)
                         assertEquals(savedSongs.uri, detail.content.uri)
                         assertTrue(detail.tracks.all { it.kind == ContentKind.TRACK })
@@ -59,7 +59,7 @@ class CatalogNavigationAccountTest {
         assertEquals(track.uri, detail.content.uri)
         assertTrue("Detailed track must have artist links", detail.content.artists.isNotEmpty())
         val artist = detail.content.artists.first()
-        val artistContent = io.github.playmusic.data.model.SpotifyContent(artist.uri.substringAfterLast(':'), artist.uri,
+        val artistContent = io.github.playmusic.data.model.MusicContent(artist.uri.substringAfterLast(':'), artist.uri,
             artist.name, "", null, ContentKind.ARTIST)
         val artistDetail = catalog.detail(artistContent)
         assertEquals(artist.uri, artistDetail.content.uri)

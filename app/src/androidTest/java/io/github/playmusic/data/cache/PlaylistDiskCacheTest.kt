@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -256,7 +256,7 @@ class PlaylistDiskCacheTest {
     }
     private fun uri(letter: Char) = "spotify:playlist:${letter.toString().repeat(22)}"
     private fun entry(letter: Char) = PlaylistCacheEntry(
-        SpotifyContent(id = letter.toString().repeat(22), uri = uri(letter), title = "Playlist $letter", subtitle = "Display name",
+        MusicContent(id = letter.toString().repeat(22), uri = uri(letter), title = "Playlist $letter", subtitle = "Display name",
             imageUrl = "https://images.example/$letter.jpg", kind = ContentKind.PLAYLIST,
             ownerName = "Display name", ownerUsername = "synthetic-owner", description = "Description $letter", trackCount = 42,
             releaseDate = null), "revision-$letter", 90)

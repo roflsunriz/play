@@ -18,7 +18,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,7 +54,7 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         mutableState.value
     }
 
-    suspend fun play(items: List<SpotifyContent>, index: Int = 0, startPositionMs: Long = 0,
+    suspend fun play(items: List<MusicContent>, index: Int = 0, startPositionMs: Long = 0,
         contextUri: String? = null): Unit = withContext(Dispatchers.Main.immediate) {
         require(items.isNotEmpty() && index in items.indices)
         require(items.all { it.kind == ContentKind.TRACK && it.uri.matches(Regex("spotify:track:[A-Za-z0-9]{22}")) })
@@ -150,7 +150,7 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         val item = player.currentMediaItem
         val metadata = item?.mediaMetadata
         mutableState.value = Playback(
-            item = if (item == null || metadata == null) null else SpotifyContent(
+            item = if (item == null || metadata == null) null else MusicContent(
                 id = item.mediaId.substringAfterLast(':'), uri = item.mediaId,
                 title = metadata.title?.toString().orEmpty(), subtitle = metadata.artist?.toString().orEmpty(),
                 imageUrl = metadata.artworkUri?.toString(), kind = ContentKind.TRACK,
@@ -179,7 +179,7 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         } else if (!player.isPlaying) { progressJob?.cancel(); progressJob = null }
     }
 
-    private fun mediaItem(content: SpotifyContent, contextUri: String?): MediaItem = MediaItem.Builder()
+    private fun mediaItem(content: MusicContent, contextUri: String?): MediaItem = MediaItem.Builder()
         .setMediaId(content.uri).setUri(content.uri).setMimeType(MimeTypes.AUDIO_MP4)
         .setDrmConfiguration(MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID).setLicenseUri(StreamingApiClient.LICENSE_URL).build())
         .setMediaMetadata(MediaMetadata.Builder().setTitle(content.title).setArtist(content.subtitle)

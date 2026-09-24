@@ -28,7 +28,7 @@ import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.SearchFilter
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.ArtistPicker
 import io.github.playmusic.ui.ContentActionsDialog
 import io.github.playmusic.ui.ContentActionsState
@@ -52,7 +52,7 @@ class ContentActionsScreenTest {
 
     @Test fun favoriteButtonChangesItsAccessibleActionAndPassesTheExactContent() {
         var saved by mutableStateOf(false)
-        var selected: SpotifyContent? = null
+        var selected: MusicContent? = null
         render { ContentAddButton(track, saved) { selected = it } }
         val button = composeRule.onNodeWithTag("add-track-track-one")
         button.assertContentDescriptionEquals(text(R.string.add_favorite)).performClick()
@@ -190,7 +190,7 @@ class ContentActionsScreenTest {
     @Test fun homeLibraryAndDetailPassTheSelectedTrackOrAlbumWithoutStartingPlayback() {
         var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.TRACKS,
             items = listOf(track), libraries = mapOf(LibrarySection.TRACKS to listOf(track))))
-        val actions = mutableListOf<SpotifyContent>()
+        val actions = mutableListOf<MusicContent>()
         var played = 0
         render { Home(state, onActions = { actions += it }, onPlay = { played++ }) }
         composeRule.onNodeWithTag("add-track-track-one")
@@ -208,7 +208,7 @@ class ContentActionsScreenTest {
     }
 
     @Test fun expandedPlayerPassesTheCurrentlyPlayingTrackToContentActions() {
-        val calls = mutableListOf<SpotifyContent>()
+        val calls = mutableListOf<MusicContent>()
         render { Home(PlayUiState(isLoggedIn = true, playback = Playback(track, durationMs = 180_000),
             libraries = mapOf(LibrarySection.TRACKS to listOf(track))), onActions = { calls += it }) }
         composeRule.onNodeWithTag("mini-player-info", useUnmergedTree = true).performClick()
@@ -222,7 +222,7 @@ class ContentActionsScreenTest {
     }
 
     @Test fun genreFilterKeepsTheReturnedSavedSongsCardAndOtherKindsStayFiltered() {
-        val savedSongs = io.github.playmusic.data.api.SpotifyRepository.likedSongsContent("Saved songs")
+        val savedSongs = io.github.playmusic.data.api.MusicRepository.likedSongsContent("Saved songs")
         val genre = item(ContentKind.GENRE, "jazz", "Jazz")
         val state = PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,
             searchQuery = "music", searchFilter = SearchFilter.GENRES, items = listOf(savedSongs, genre, track))
@@ -237,7 +237,7 @@ class ContentActionsScreenTest {
         var state by mutableStateOf(PlayUiState(isLoggedIn = true, selectedSection = LibrarySection.SEARCH,
             searchQuery = "music", items = contents))
         val filters = mutableListOf<SearchFilter>()
-        val actions = mutableListOf<SpotifyContent>()
+        val actions = mutableListOf<MusicContent>()
         render { Home(state, onActions = { actions += it }, onFilter = {
             filters += it; state = state.copy(searchFilter = it)
         }) }
@@ -264,7 +264,7 @@ class ContentActionsScreenTest {
 
     @Test fun artistPickerDispatchesTheChosenArtistAndCanBeDismissed() {
         val artists = listOf(item(ContentKind.ARTIST, "one", "First artist"), item(ContentKind.ARTIST, "two", "Second artist"))
-        var selected: SpotifyContent? = null
+        var selected: MusicContent? = null
         var dismissed = false
         render { ArtistPicker(artists, { selected = it }, { dismissed = true }) }
         captureDialog("artist-picker")
@@ -278,8 +278,8 @@ class ContentActionsScreenTest {
         onRetry: () -> Unit = {}, onDismiss: () -> Unit = {}) =
         ContentActionsDialog(state, onFavorite, onPlaylists, onPlaylist, onRadio, onArtists, onRetry, onDismiss)
 
-    @Composable private fun Home(state: PlayUiState, onActions: (SpotifyContent) -> Unit,
-        onPlay: (SpotifyContent) -> Unit = {}, onFilter: (SearchFilter) -> Unit = {}) =
+    @Composable private fun Home(state: PlayUiState, onActions: (MusicContent) -> Unit,
+        onPlay: (MusicContent) -> Unit = {}, onFilter: (SearchFilter) -> Unit = {}) =
         HomeScreen(state, onSectionSelected = {}, onSearchChanged = {}, onSearch = {}, onRefresh = {}, onLogout = {},
             onPlay = onPlay, onPlayPause = {}, onNext = {}, onPrevious = {}, onSeek = {}, onShuffle = {}, onRepeat = {},
             onContentActions = onActions, onSearchFilter = onFilter)
@@ -298,5 +298,5 @@ class ContentActionsScreenTest {
         PlayTheme { Surface(Modifier.fillMaxSize()) { content() } }
     }
     private fun item(kind: ContentKind, id: String, title: String) =
-        SpotifyContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
+        MusicContent(id, "spotify:${kind.name.lowercase()}:$id", title, "", null, kind)
 }

@@ -10,6 +10,7 @@
 
 ### Changed
 
+- 対象サービスの固有名をソースコードからできるだけ除去するため、内部の型・クライアント名を中立な名称へ改名した（MusicContent／MusicRepository／ServiceApiClient／ServiceApiException／AuthException／ClientTokenClient／Login5Clientなど）。サーバーが要求するAPI固定値（URI scheme・ホスト・要求ヘッダー・UA・proto型・公開IDと版）は変更していない。保存済みログイン・端末ID・画像キャッシュは移行して維持する。
 - 依存更新を安全に省力化するため、Dependabot の patch／minor PR を既存 CI の全チェック成功後に自動取り込みし、失敗ジョブを一度再実行する設定を追加した。
 - 依存関係を更新した（AGP 9.4.0→9.4.1、coil 3.6.2→3.6.3、jose4j 0.9.6→0.9.7、okhttp 4.12.0→5.5.0）。okhttp 5 の分割アーティファクトに合わせ、JVM 単体テストだけ okhttp-jvm を解決し、テストの Call 実装に tag・addEventListener を追加した。
 

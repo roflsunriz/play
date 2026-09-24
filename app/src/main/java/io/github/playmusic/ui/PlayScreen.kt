@@ -95,7 +95,7 @@ import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.DetailSort
 import io.github.playmusic.data.model.Playback
 import io.github.playmusic.data.model.RepeatMode
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.launch
 
 internal const val GITHUB_RELEASES_URL = "https://github.com/roflsunriz/play/releases"
@@ -274,7 +274,7 @@ internal fun HomeScreen(
     onSearch: () -> Unit,
     onRefresh: () -> Unit,
     onLogout: () -> Unit,
-    onPlay: (SpotifyContent) -> Unit,
+    onPlay: (MusicContent) -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
@@ -282,7 +282,7 @@ internal fun HomeScreen(
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
     onBrowserLogin: () -> Unit = {},
-    onOpenContent: (SpotifyContent) -> Unit = onPlay,
+    onOpenContent: (MusicContent) -> Unit = onPlay,
     onBack: () -> Unit = {},
     onPlayDetailTrack: (Int) -> Unit = { index -> state.detail?.tracks?.getOrNull(index)?.let(onPlay) },
     onCreatePlaylist: () -> Unit = {},
@@ -290,16 +290,16 @@ internal fun HomeScreen(
     onDeletePlaylist: () -> Unit = {},
     onLibraryQueryChanged: (String) -> Unit = {},
     onLibrarySortChanged: (LibrarySort) -> Unit = {},
-    onViewportChanged: (List<SpotifyContent>) -> Unit = {},
+    onViewportChanged: (List<MusicContent>) -> Unit = {},
     onPlaylistSyncRetry: () -> Unit = onRefresh,
     onAudioEffects: () -> Unit = {},
     onSleepTimer: () -> Unit = {},
-    onContentActions: (SpotifyContent) -> Unit = {},
+    onContentActions: (MusicContent) -> Unit = {},
     onSearchFilter: (io.github.playmusic.data.model.SearchFilter) -> Unit = {},
     onPlaybackSettings: () -> Unit = {},
     onArtistFollow: () -> Unit = {},
-    onArtistRadio: (SpotifyContent) -> Unit = {},
-    lyricsContent: @Composable (SpotifyContent) -> Unit = {},
+    onArtistRadio: (MusicContent) -> Unit = {},
+    lyricsContent: @Composable (MusicContent) -> Unit = {},
     onStop: () -> Unit = {},
     visibleDetail: ContentDetail? = null,
     detailSort: DetailSort = DetailSort.TRACK_ORDER,

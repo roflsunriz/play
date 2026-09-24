@@ -11,6 +11,11 @@ import okio.Path.Companion.toPath
 
 class PlayApplication : Application(), SingletonImageLoader.Factory {
     val container: AppContainer by lazy { AppContainer(this) }
+    override fun onCreate() {
+        super.onCreate()
+        // One-time cleanup of the pre-rename artwork cache directory.
+        runCatching { cacheDir.resolve(LEGACY_ARTWORK_CACHE_DIR).takeIf { it.exists() }?.deleteRecursively() }
+    }
     override fun newImageLoader(context: Context): ImageLoader = ImageLoader.Builder(context)
         .crossfade(true)
         .memoryCache {
@@ -20,7 +25,7 @@ class PlayApplication : Application(), SingletonImageLoader.Factory {
         }
         .diskCache {
             DiskCache.Builder()
-                .directory(context.cacheDir.resolve("spotify_artwork_cache").absolutePath.toPath())
+                .directory(context.cacheDir.resolve("artwork_cache").absolutePath.toPath())
                 .maxSizeBytes(ARTWORK_CACHE_LIMIT_BYTES)
                 .build()
         }
@@ -29,5 +34,7 @@ class PlayApplication : Application(), SingletonImageLoader.Factory {
     private companion object {
         const val MEMORY_CACHE_PERCENT = 0.20
         const val ARTWORK_CACHE_LIMIT_BYTES = 128L * 1024L * 1024L
+        // Pre-rename directory name. Only used to delete leftovers from older installs.
+        const val LEGACY_ARTWORK_CACHE_DIR = "spotify_artwork_cache"
     }
 }

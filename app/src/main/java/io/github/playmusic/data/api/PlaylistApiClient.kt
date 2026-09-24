@@ -4,17 +4,17 @@ import io.github.playmusic.data.auth.ProtoWire
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.PlaylistLimits
 import io.github.playmusic.data.model.PlaylistMetadata
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.CancellationException
 import org.json.JSONObject
 import java.net.URLEncoder
 
 /** Mutates only the explicitly selected playlist; playlist deletion is removal from the rootlist. */
 class PlaylistApiClient(
-    private val api: SpotifyApiClient,
+    private val api: ServiceApiClient,
     private val sessionTokens: SessionTokens,
 ) {
-    suspend fun metadata(content: SpotifyContent): PlaylistMetadata =
+    suspend fun metadata(content: MusicContent): PlaylistMetadata =
         metadata(read(content), content.uri, sessionTokens.username())
 
     internal suspend fun metadata(detail: SpClientProto.PlaylistDetail, uri: String): PlaylistMetadata =
@@ -37,11 +37,11 @@ class PlaylistApiClient(
         )
     }
 
-    suspend fun create(name: String, description: String): SpotifyContent {
+    suspend fun create(name: String, description: String): MusicContent {
         PlaylistLimits.validate(name, description)
         val reply = api.postProto("/playlist/v2/playlist", PlaylistMutationProto.create(name, description))
         val uri = PlaylistMutationProto.createdUri(reply.bodyBytes)
-        val created = SpotifyContent(uri.substringAfterLast(':'), uri, name, "", null, ContentKind.PLAYLIST)
+        val created = MusicContent(uri.substringAfterLast(':'), uri, name, "", null, ContentKind.PLAYLIST)
         try {
             val completed = completeCreation(created)
             val saved = metadata(completed)
@@ -56,7 +56,7 @@ class PlaylistApiClient(
     }
 
     /** Resumes a known newly created playlist without creating another remote object. */
-    suspend fun completeCreation(content: SpotifyContent): SpotifyContent {
+    suspend fun completeCreation(content: MusicContent): MusicContent {
         val current = metadata(content)
         check(current.isOwned) { "Only the playlist owner can finish creation" }
         makePrivate(content)
@@ -68,12 +68,12 @@ class PlaylistApiClient(
     }
 
     suspend fun update(
-        content: SpotifyContent,
+        content: MusicContent,
         name: String,
         description: String,
         imageJpeg: ByteArray? = null,
         removeImage: Boolean = false,
-    ): SpotifyContent {
+    ): MusicContent {
         PlaylistLimits.validate(name, description, imageJpeg)
         require(imageJpeg == null || !removeImage) { "Cannot replace and remove the image together" }
         val detail = read(content)
@@ -90,29 +90,29 @@ class PlaylistApiClient(
         return content.copy(title = updated.name, imageUrl = updated.imageUrl)
     }
 
-    suspend fun delete(content: SpotifyContent) {
+    suspend fun delete(content: MusicContent) {
         check(metadata(content).canDelete) { "This playlist cannot be deleted by the current account" }
         applyRootlist(PlaylistMutationProto.remove(listOf(content.uri)))
         check(!rootlistContains(content.uri)) { "The playlist is still in the library" }
     }
 
-    suspend fun addTracks(content: SpotifyContent, trackUris: List<String>) {
+    suspend fun addTracks(content: MusicContent, trackUris: List<String>) {
         checkEditableItems(content, trackUris)
         if (trackUris.isNotEmpty()) apply(content, PlaylistMutationProto.add(trackUris, System.currentTimeMillis()))
     }
 
-    suspend fun removeTracks(content: SpotifyContent, trackUris: List<String>) {
+    suspend fun removeTracks(content: MusicContent, trackUris: List<String>) {
         checkEditableItems(content, trackUris)
         if (trackUris.isNotEmpty()) apply(content, PlaylistMutationProto.remove(trackUris))
     }
 
     /** Reads original entries, including tracks whose catalog metadata is unavailable. */
-    suspend fun trackUris(content: SpotifyContent, requireEditable: Boolean = false): List<String> =
+    suspend fun trackUris(content: MusicContent, requireEditable: Boolean = false): List<String> =
         trackSnapshot(content, requireEditable).uris
 
     internal data class TrackSnapshot(val uris: List<String>, val canEdit: Boolean)
 
-    internal suspend fun trackSnapshot(content: SpotifyContent, requireEditable: Boolean = false): TrackSnapshot {
+    internal suspend fun trackSnapshot(content: MusicContent, requireEditable: Boolean = false): TrackSnapshot {
         val id = playlistId(content)
         val uris = mutableListOf<String>()
         var offset = 0
@@ -143,7 +143,7 @@ class PlaylistApiClient(
         } while (true)
     }
 
-    private suspend fun checkEditableItems(content: SpotifyContent, uris: List<String>) {
+    private suspend fun checkEditableItems(content: MusicContent, uris: List<String>) {
         require(uris.size <= 100 && uris.all { it.matches(TRACK_URI) }) { "Invalid playlist tracks" }
         val detail = read(content)
         check(metadata(detail, content.uri).isOwned && detail.capabilities.canEditItems != false) {
@@ -151,16 +151,16 @@ class PlaylistApiClient(
         }
     }
 
-    private suspend fun read(content: SpotifyContent): SpClientProto.PlaylistDetail = SpClientProto.parsePlaylist(
+    private suspend fun read(content: MusicContent): SpClientProto.PlaylistDetail = SpClientProto.parsePlaylist(
         api.getProto("/playlist/v2/playlist/${playlistId(content)}", mapOf("from" to "0", "length" to "0",
             "decorate" to "revision,length,attributes,timestamp,owner,capabilities")).bodyBytes,
     )
 
-    private suspend fun apply(content: SpotifyContent, operation: ByteArray) {
+    private suspend fun apply(content: MusicContent, operation: ByteArray) {
         api.postProto("/playlist/v2/playlist/${playlistId(content)}/changes", PlaylistMutationProto.changes(listOf(operation)))
     }
 
-    private suspend fun makePrivate(content: SpotifyContent) {
+    private suspend fun makePrivate(content: MusicContent) {
         val path = "/playlist-permission/v1/playlist/${playlistId(content)}/permission/base"
         val permission = JSONObject(api.get(path).body)
         if (permission.optString("permissionLevel") != "BLOCKED") {
@@ -172,7 +172,7 @@ class PlaylistApiClient(
         }
     }
 
-    private suspend fun uploadPicture(content: SpotifyContent, bytes: ByteArray): ByteArray {
+    private suspend fun uploadPicture(content: MusicContent, bytes: ByteArray): ByteArray {
         val response = api.postBytes("/v4/playlist", bytes, "image/jpeg", "https://image-upload.spotify.com")
         val token = JSONObject(response.body).optString("uploadToken")
         check(token.isNotBlank()) { "Playlist image upload returned no registration token" }
@@ -202,7 +202,7 @@ class PlaylistApiClient(
         return "/playlist/v2/user/$username/rootlist"
     }
 
-    private fun playlistId(content: SpotifyContent): String {
+    private fun playlistId(content: MusicContent): String {
         require(content.kind == ContentKind.PLAYLIST && content.id.matches(PLAYLIST_ID) &&
             content.uri == "spotify:playlist:${content.id}") { "Invalid playlist identifier" }
         return content.id
@@ -214,5 +214,5 @@ class PlaylistApiClient(
     }
 }
 
-class PlaylistCreationException(val createdContent: SpotifyContent, cause: Exception) :
+class PlaylistCreationException(val createdContent: MusicContent, cause: Exception) :
     Exception("The playlist was created, but its library setup needs to be retried", cause)

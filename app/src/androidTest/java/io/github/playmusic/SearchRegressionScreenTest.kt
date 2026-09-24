@@ -10,7 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
-import io.github.playmusic.data.api.SpotifyRepository
+import io.github.playmusic.data.api.MusicRepository
 import org.junit.Assume.assumeTrue
 import org.junit.BeforeClass
 import org.junit.Rule
@@ -33,7 +33,7 @@ class SearchRegressionScreenTest {
             awaitResults()
             captureScreen(composeRule.onRoot(), "search-$filter")
         }
-        composeRule.onNodeWithTag("content-list").performScrollToKey(SpotifyRepository.LIKED_SONGS_URI)
+        composeRule.onNodeWithTag("content-list").performScrollToKey(MusicRepository.LIKED_SONGS_URI)
         composeRule.onNodeWithTag("content-playlist-tracks").assertIsDisplayed().performClick()
         composeRule.waitUntil(30_000) { composeRule.onAllNodesWithTag("loading-indicator").fetchSemanticsNodes().isEmpty() }
         composeRule.onNodeWithTag("error-dismiss-button").assertDoesNotExist()

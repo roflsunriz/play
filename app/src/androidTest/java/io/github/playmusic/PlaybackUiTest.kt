@@ -12,7 +12,7 @@ import androidx.compose.ui.test.performTouchInput
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.Playback
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.HomeScreen
 import io.github.playmusic.ui.PlayUiState
 import io.github.playmusic.ui.theme.PlayTheme
@@ -24,7 +24,7 @@ import org.junit.Test
 
 class PlaybackUiTest {
     @get:Rule val composeRule = createComposeRule()
-    private val track = SpotifyContent("synthetic", "spotify:track:0000000000000000000001",
+    private val track = MusicContent("synthetic", "spotify:track:0000000000000000000001",
         "Synthetic track", "Artist", null, ContentKind.TRACK, durationMs = 180_000)
 
     @Test fun dragRetainsItsPositionWhileProgressUpdatesAndTapSeeks() {

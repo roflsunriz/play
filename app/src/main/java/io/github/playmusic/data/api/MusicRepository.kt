@@ -2,7 +2,7 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.model.PlaylistMetadata
 import io.github.playmusic.data.cache.PlaylistDiskCache
 import io.github.playmusic.data.cache.PlaylistCacheEntry
@@ -29,8 +29,8 @@ import kotlinx.coroutines.sync.withLock
  * - 保存アイテム一覧: POST /collection/v2/paging (body: username + kind + limit)
  * - メタデータ・検索: CatalogApiClientの実測済みクエリ
  */
-class SpotifyRepository(
-    private val api: SpotifyApiClient,
+class MusicRepository(
+    private val api: ServiceApiClient,
     private val sessionManager: SessionTokens,
     private val catalog: CatalogApiClient = CatalogApiClient(sessionManager),
     private val accountIdentity: (() -> String?)? = null,
@@ -44,7 +44,7 @@ class SpotifyRepository(
     private val membershipWrites = Mutex()
     private val userProfiles = UserProfileClient(api)
     private val profileNames = AccountMemoryCache<String, UserProfileClient.Profile>(256, 256, { 1 }, 4)
-    private val libraries = AccountMemoryCache<ContentKind, List<SpotifyContent>>(3, 3, { 1 }, 3)
+    private val libraries = AccountMemoryCache<ContentKind, List<MusicContent>>(3, 3, { 1 }, 3)
     private val collections = AccountMemoryCache<String, List<String>>(1, 1, { 1 }, 1)
     private val collectionDates = AccountMemoryCache<String, Map<String, Long>>(1, 1, { 1 }, 1)
     private val details = AccountMemoryCache<String, ContentDetail>(24, 6000, { detail ->
@@ -54,48 +54,48 @@ class SpotifyRepository(
         } ?: 0)).coerceAtLeast(1)
     }, 2)
 
-    suspend fun createPlaylist(name: String, description: String = ""): SpotifyContent = writePlaylist(
+    suspend fun createPlaylist(name: String, description: String = ""): MusicContent = writePlaylist(
         onSuccess = { account, content -> playlistDiskCache?.updateItem(account, content) }) {
         val username = sessionManager.username()
         val ownerName = ownerDisplayName(username)
         playlists.create(name, description).copy(ownerUsername = username, ownerName = ownerName, description = description, trackCount = 0)
     }
 
-    suspend fun completePlaylistCreation(content: SpotifyContent): SpotifyContent = writePlaylist(content.uri,
+    suspend fun completePlaylistCreation(content: MusicContent): MusicContent = writePlaylist(content.uri,
         onSuccess = { account, updated -> playlistDiskCache?.updateItem(account, updated) }) {
         playlists.completeCreation(content)
     }
 
-    suspend fun playlistMetadata(content: SpotifyContent): PlaylistMetadata = playlists.metadata(content)
+    suspend fun playlistMetadata(content: MusicContent): PlaylistMetadata = playlists.metadata(content)
 
     suspend fun updatePlaylistMetadata(
-        content: SpotifyContent,
+        content: MusicContent,
         name: String,
         description: String,
         imageJpeg: ByteArray? = null,
         removeImage: Boolean = false,
-    ): SpotifyContent = writePlaylist(content.uri,
+    ): MusicContent = writePlaylist(content.uri,
         onSuccess = { account, updated -> playlistDiskCache?.updateItem(account, updated) }) {
         playlists.update(content, name, description, imageJpeg, removeImage).copy(description = description)
     }
 
-    suspend fun deletePlaylist(content: SpotifyContent) = writePlaylist(content.uri,
+    suspend fun deletePlaylist(content: MusicContent) = writePlaylist(content.uri,
         onSuccess = { account, _ -> playlistDiskCache?.removeItem(account, content.uri) }) { playlists.delete(content) }
 
-    suspend fun addPlaylistTracks(content: SpotifyContent, trackUris: List<String>) = writePlaylist(content.uri) {
+    suspend fun addPlaylistTracks(content: MusicContent, trackUris: List<String>) = writePlaylist(content.uri) {
         playlists.addTracks(content, trackUris)
     }
 
-    suspend fun removePlaylistTracks(content: SpotifyContent, trackUris: List<String>) = writePlaylist(content.uri) {
+    suspend fun removePlaylistTracks(content: MusicContent, trackUris: List<String>) = writePlaylist(content.uri) {
         playlists.removeTracks(content, trackUris)
     }
 
-    suspend fun isSaved(content: SpotifyContent, forceRefresh: Boolean = false): Boolean = withContext(Dispatchers.IO) {
+    suspend fun isSaved(content: MusicContent, forceRefresh: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         require(content.kind == ContentKind.TRACK || content.kind == ContentKind.ALBUM) { "Only tracks and albums can be saved" }
         content.uri in collectionUris("collection", forceRefresh)
     }
 
-    suspend fun setSaved(content: SpotifyContent, saved: Boolean) = withContext(Dispatchers.IO) {
+    suspend fun setSaved(content: MusicContent, saved: Boolean) = withContext(Dispatchers.IO) {
         membershipWrites.withLock {
             require(content.kind == ContentKind.TRACK || content.kind == ContentKind.ALBUM) { "Only tracks and albums can be saved" }
             val account = currentAccount()
@@ -117,7 +117,7 @@ class SpotifyRepository(
     }
 
     /** Checked means every track in the selection is present. Partial albums add only missing tracks. */
-    suspend fun playlistMembership(content: SpotifyContent): List<PlaylistMembership> = withContext(Dispatchers.IO) {
+    suspend fun playlistMembership(content: MusicContent): List<PlaylistMembership> = withContext(Dispatchers.IO) {
         val account = currentAccount()
         val selectedUris = selectionTrackUris(content)
         val owned = library(ContentKind.PLAYLIST).filter { it.ownerUsername == account }
@@ -135,7 +135,7 @@ class SpotifyRepository(
         rows
     }
 
-    suspend fun setPlaylistMembership(playlist: SpotifyContent, content: SpotifyContent, present: Boolean) = withContext(Dispatchers.IO) {
+    suspend fun setPlaylistMembership(playlist: MusicContent, content: MusicContent, present: Boolean) = withContext(Dispatchers.IO) {
         membershipWrites.withLock {
             val account = currentAccount()
             val selected = selectionTrackUris(content)
@@ -165,7 +165,7 @@ class SpotifyRepository(
         }
     }
 
-    private suspend fun selectionTrackUris(content: SpotifyContent): List<String> {
+    private suspend fun selectionTrackUris(content: MusicContent): List<String> {
         val tracks = when (content.kind) {
             ContentKind.TRACK -> listOf(content.uri)
             ContentKind.ALBUM -> detail(content).tracks.map { it.uri }
@@ -176,7 +176,7 @@ class SpotifyRepository(
     }
 
     suspend fun library(kind: ContentKind, forceRefresh: Boolean = false,
-        refreshOwnerNames: Boolean = forceRefresh): List<SpotifyContent> = withContext(Dispatchers.IO) {
+        refreshOwnerNames: Boolean = forceRefresh): List<MusicContent> = withContext(Dispatchers.IO) {
         if (kind !in LIBRARY_KINDS) return@withContext emptyList()
         val account = currentAccount()
         val invalidateDetails = if (forceRefresh) details.invalidationFor(account) {
@@ -191,19 +191,19 @@ class SpotifyRepository(
         result
     }
 
-    fun peekLibrary(kind: ContentKind): List<SpotifyContent>? {
+    fun peekLibrary(kind: ContentKind): List<MusicContent>? {
         val account = peekAccount() ?: return null
         return libraries.peek(account, kind)
     }
 
-    fun peekDetail(content: SpotifyContent): ContentDetail? {
+    fun peekDetail(content: MusicContent): ContentDetail? {
         val account = peekAccount() ?: return null
         return details.peek(account, content.uri)
     }
 
     fun clearCache() { libraries.clear(); collections.clear(); collectionDates.clear(); details.clear(); profileNames.clear() }
 
-    suspend fun cachedPlaylists(): List<SpotifyContent>? = withContext(Dispatchers.IO) {
+    suspend fun cachedPlaylists(): List<MusicContent>? = withContext(Dispatchers.IO) {
         val account = currentAccount()
         val snapshot = playlistDiskCache?.read(account)?.snapshot
         checkAccount(account)
@@ -223,7 +223,7 @@ class SpotifyRepository(
         cacheAfterWrite { playlistDiskCache?.clear(account) }
     }
 
-    private suspend fun loadLibrary(kind: ContentKind, forceRefresh: Boolean, refreshOwnerNames: Boolean): List<SpotifyContent> = coroutineScope {
+    private suspend fun loadLibrary(kind: ContentKind, forceRefresh: Boolean, refreshOwnerNames: Boolean): List<MusicContent> = coroutineScope {
         when (kind) {
             ContentKind.PLAYLIST -> libraryPlaylists(refreshOwnerNames)
             ContentKind.ALBUM -> libraryAlbums(forceRefresh)
@@ -232,19 +232,19 @@ class SpotifyRepository(
         }
     }
 
-    suspend fun search(query: String, filter: io.github.playmusic.data.model.SearchFilter = io.github.playmusic.data.model.SearchFilter.ALL): List<SpotifyContent> =
+    suspend fun search(query: String, filter: io.github.playmusic.data.model.SearchFilter = io.github.playmusic.data.model.SearchFilter.ALL): List<MusicContent> =
         withContext(Dispatchers.IO) { resolveOwners(catalog.search(query, filter)) }
 
-    suspend fun radio(content: SpotifyContent): SpotifyContent = withContext(Dispatchers.IO) { catalog.radio(content) }
+    suspend fun radio(content: MusicContent): MusicContent = withContext(Dispatchers.IO) { catalog.radio(content) }
 
-    suspend fun setArtistFollowed(content: SpotifyContent, followed: Boolean): Boolean = withContext(Dispatchers.IO) {
+    suspend fun setArtistFollowed(content: MusicContent, followed: Boolean): Boolean = withContext(Dispatchers.IO) {
         require(content.kind == ContentKind.ARTIST)
         val account = currentAccount()
         try { catalog.setArtistFollowed(content.uri, followed).also { checkAccount(account) } }
         finally { details.invalidate(account, content.uri) }
     }
 
-    suspend fun detail(content: SpotifyContent, forceRefresh: Boolean = false): ContentDetail = withContext(Dispatchers.IO) {
+    suspend fun detail(content: MusicContent, forceRefresh: Boolean = false): ContentDetail = withContext(Dispatchers.IO) {
         // This is a view of the saved-track library, so do not retain a second, stale copy.
         if (isLikedSongs(content)) return@withContext loadDetail(content, forceRefresh)
         val account = currentAccount()
@@ -256,7 +256,7 @@ class SpotifyRepository(
         result
     }
 
-    private suspend fun loadDetail(content: SpotifyContent, forceRefresh: Boolean): ContentDetail {
+    private suspend fun loadDetail(content: MusicContent, forceRefresh: Boolean): ContentDetail {
         if (isLikedSongs(content)) {
             val tracks = library(ContentKind.TRACK, forceRefresh)
             val addedAt = collectionAddedAt("collection", forceRefresh)
@@ -296,7 +296,7 @@ class SpotifyRepository(
             playlistMetadata = playlists.metadata(metadata, content.uri))
     }
 
-    private suspend fun libraryPlaylists(refreshOwnerNames: Boolean): List<SpotifyContent> {
+    private suspend fun libraryPlaylists(refreshOwnerNames: Boolean): List<MusicContent> {
         val account = currentAccount()
         repeat(3) {
             currentCoroutineContext().ensureActive()
@@ -348,7 +348,7 @@ class SpotifyRepository(
                 val metadata = item.metadata
                 if (metadata?.status in setOf(403, 404, 410)) return@async null
                 if (metadata?.status != null && metadata.status !in 200..299)
-                    throw SpotifyApiException(metadata.status, "Playlist metadata request failed")
+                    throw ServiceApiException(metadata.status, "Playlist metadata request failed")
                 val attributes = metadata?.attributes
                 if (attributes?.deletedByOwner == true) return@async null
                 val fingerprint = playlistFingerprint(item)
@@ -392,12 +392,12 @@ class SpotifyRepository(
             .joinToString("") { "%02x".format(it) }
     }
 
-    private suspend fun fetchPlaylistDetail(uri: String): SpotifyContent? {
+    private suspend fun fetchPlaylistDetail(uri: String): MusicContent? {
         val id = uri.removePrefix("spotify:playlist:")
         if (id.isBlank()) return null
         val response = try {
             api.get(path = "/playlist/v2/playlist/$id", acceptProto = true)
-        } catch (exception: SpotifyApiException) {
+        } catch (exception: ServiceApiException) {
             if (exception.status in setOf(403, 404, 410)) return null
             throw exception
         }
@@ -408,9 +408,9 @@ class SpotifyRepository(
     }
 
     private fun playlistContent(uri: String, attributes: SpClientProto.PlaylistAttributes,
-        ownerUsername: String? = null, trackCount: Int? = null): SpotifyContent? {
+        ownerUsername: String? = null, trackCount: Int? = null): MusicContent? {
         if (attributes.deletedByOwner) return null
-        return SpotifyContent(
+        return MusicContent(
             id = uri.removePrefix("spotify:playlist:"),
             uri = uri,
             title = attributes.name.orEmpty(),
@@ -435,7 +435,7 @@ class SpotifyRepository(
         return profile.displayName
     }
 
-    private suspend fun resolveOwners(items: List<SpotifyContent>, forceRefresh: Boolean = false): List<SpotifyContent> = coroutineScope {
+    private suspend fun resolveOwners(items: List<MusicContent>, forceRefresh: Boolean = false): List<MusicContent> = coroutineScope {
         val usernames = items.filter { it.kind == ContentKind.PLAYLIST &&
             (forceRefresh || it.ownerName.isNullOrBlank() || it.ownerName == it.ownerUsername) }
             .mapNotNull { it.ownerUsername?.takeIf(String::isNotBlank) }.distinct()
@@ -493,12 +493,12 @@ class SpotifyRepository(
         catch (_: Exception) { cacheFailures.tryEmit(Unit) }
     }
 
-    private suspend fun libraryAlbums(forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
+    private suspend fun libraryAlbums(forceRefresh: Boolean): List<MusicContent> = coroutineScope {
         val uris = collectionUris("collection", forceRefresh).filter { it.startsWith("spotify:album:") }
         catalog.albums(uris)
     }
 
-    private suspend fun libraryTracks(forceRefresh: Boolean): List<SpotifyContent> = coroutineScope {
+    private suspend fun libraryTracks(forceRefresh: Boolean): List<MusicContent> = coroutineScope {
         val uris = collectionUris("collection", forceRefresh).filter { it.startsWith("spotify:track:") }
         catalog.tracks(uris)
     }
@@ -547,8 +547,8 @@ class SpotifyRepository(
 
     companion object {
         const val LIKED_SONGS_URI = "spotify:collection:tracks"
-        fun likedSongsContent(title: String) = SpotifyContent("tracks", LIKED_SONGS_URI, title, "", null, ContentKind.PLAYLIST)
-        fun isLikedSongs(content: SpotifyContent): Boolean = content.uri == LIKED_SONGS_URI
+        fun likedSongsContent(title: String) = MusicContent("tracks", LIKED_SONGS_URI, title, "", null, ContentKind.PLAYLIST)
+        fun isLikedSongs(content: MusicContent): Boolean = content.uri == LIKED_SONGS_URI
         const val PLAYLIST_PAGE_SIZE = 120
         const val COLLECTION_PAGE_SIZE = 200
         const val MAX_PARALLEL_REQUESTS = 6

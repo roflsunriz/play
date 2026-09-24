@@ -1,7 +1,7 @@
 package io.github.playmusic.ui
 
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -13,14 +13,14 @@ import kotlinx.coroutines.launch
 /** A small, replaceable queue. Scrolling pauses new work without repeatedly aborting the same socket. */
 internal class DetailPrefetcher(
     private val scope: CoroutineScope,
-    private val isCached: (SpotifyContent) -> Boolean,
-    private val load: suspend (SpotifyContent) -> Unit,
+    private val isCached: (MusicContent) -> Boolean,
+    private val load: suspend (MusicContent) -> Unit,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    private val requests = MutableStateFlow<List<SpotifyContent>>(emptyList())
+    private val requests = MutableStateFlow<List<MusicContent>>(emptyList())
     private var worker: Job? = null
 
-    fun update(items: List<SpotifyContent>) {
+    fun update(items: List<MusicContent>) {
         requests.value = items.filter { it.kind == ContentKind.PLAYLIST || it.kind == ContentKind.ALBUM }
             .distinctBy { it.uri }.take(MAX_ITEMS)
         if (requests.value.isEmpty() || worker?.isActive == true) return

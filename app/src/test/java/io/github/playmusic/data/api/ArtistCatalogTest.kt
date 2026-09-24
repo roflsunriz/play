@@ -2,7 +2,7 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.model.ArtistReleaseType
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -160,7 +160,7 @@ class ArtistCatalogTest {
         const val TRACK = "2222222222222222222222"
         const val ALBUM = "3333333333333333333333"
         const val EP = "4444444444444444444444"
-        fun content() = SpotifyContent(ARTIST, "spotify:artist:$ARTIST", "Artist", "", null, ContentKind.ARTIST)
+        fun content() = MusicContent(ARTIST, "spotify:artist:$ARTIST", "Artist", "", null, ContentKind.ARTIST)
         fun entity(kind: String, id: String) = JSONObject().put("uri", "spotify:$kind:$id").put("name", "Title")
         fun page(type: String, id: String) = JSONObject().put("items", JSONArray().put(JSONObject().put("releases",
             JSONObject().put("items", JSONArray().put(entity("album", id).put("type", type).put("coverArt", JSONObject()

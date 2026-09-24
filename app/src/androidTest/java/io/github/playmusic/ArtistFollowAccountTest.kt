@@ -3,10 +3,10 @@ package io.github.playmusic
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.api.SpClientProto
-import io.github.playmusic.data.api.SpotifyApiClient
+import io.github.playmusic.data.api.ServiceApiClient
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SearchFilter
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -32,7 +32,7 @@ class ArtistFollowAccountTest {
         check(!journal.contains("pending_uri") && !journal.contains("account_hash")) {
             "Previous artist-follow verification needs reviewed cleanup before another write"
         }
-        val api = SpotifyApiClient(app.sessionManager)
+        val api = ServiceApiClient(app.sessionManager)
 
         suspend fun checkAccount() = check(app.sessionManager.username() == account) {
             "Account changed; preserve the verification journal for cleanup on the original account"
@@ -55,7 +55,7 @@ class ArtistFollowAccountTest {
             return uris
         }
 
-        suspend fun isFollowed(item: SpotifyContent): Boolean {
+        suspend fun isFollowed(item: MusicContent): Boolean {
             checkAccount()
             val followed = checkNotNull(repository.detail(item, forceRefresh = true).artistPage).isFollowed
             checkAccount()
@@ -65,7 +65,7 @@ class ArtistFollowAccountTest {
         val original = originalCollectionUris()
         val originalArtists = original.filterTo(linkedSetOf()) { it.startsWith("spotify:artist:") }
         val candidates = repository.search("jazz", SearchFilter.ARTISTS)
-        var selected: SpotifyContent? = null
+        var selected: MusicContent? = null
         for (candidate in candidates) {
             require(candidate.kind == ContentKind.ARTIST)
             if (candidate.uri !in original && !isFollowed(candidate)) { selected = candidate; break }

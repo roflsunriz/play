@@ -17,10 +17,8 @@ fun interface LyricsSource {
 }
 
 /**
- * Wire contract cross-checked 2026-09-15 against public implementation source:
- * https://github.com/Spotui/Spotui/blob/main/spotify/src/main/kotlin/com/metrolist/spotify/Spotify.kt
- * https://github.com/akashrchandran/spotify-lyrics-api
- * Official bundle: https://open.spotifycdn.com/cdn/build/web-player/web-player.bca09f6d.js
+ * Wire contract cross-checked 2026-09-15 against a public lyrics client implementation
+ * and the official web-player bundle: https://open.spotifycdn.com/cdn/build/web-player/web-player.bca09f6d.js
  * Modules 65509 (request), 17547 (timing and provider); the renderer also checks capStatus.
  * Response content belongs to the provider; only synthetic fixtures belong in this repository.
  */
@@ -41,7 +39,7 @@ class LyricsApiClient(
         when (response.first) {
             404 -> null
             200 -> LyricsJson.parse(trackUri, response.second)
-            else -> throw SpotifyApiException(response.first, "Lyrics request failed")
+            else -> throw ServiceApiException(response.first, "Lyrics request failed")
         }
     }
 

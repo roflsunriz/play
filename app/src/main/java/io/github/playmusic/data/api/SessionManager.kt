@@ -1,8 +1,8 @@
 package io.github.playmusic.data.api
 
-import io.github.playmusic.data.auth.SpotifyAuthException
-import io.github.playmusic.data.auth.SpotifyClientTokenClient
-import io.github.playmusic.data.auth.SpotifyLogin5Client
+import io.github.playmusic.data.auth.AuthException
+import io.github.playmusic.data.auth.ClientTokenClient
+import io.github.playmusic.data.auth.Login5Client
 import io.github.playmusic.data.auth.BrowserAuthorizationClient
 import io.github.playmusic.data.auth.LoginVerificationRequiredException
 import io.github.playmusic.data.security.SecureSessionStore
@@ -22,8 +22,8 @@ interface SessionTokens {
 
 class SessionManager(
     private val store: SecureSessionStore,
-    private val login5Client: SpotifyLogin5Client,
-    private val clientTokenClient: SpotifyClientTokenClient,
+    private val login5Client: Login5Client,
+    private val clientTokenClient: ClientTokenClient,
     private val browserAuthorizationClient: BrowserAuthorizationClient = BrowserAuthorizationClient(),
 ) : SessionTokens {
     private val refreshMutex = Mutex()
@@ -46,13 +46,13 @@ class SessionManager(
     }
 
     override suspend fun username(): String {
-        val session = store.loadSession() ?: throw SpotifyAuthException("Service login is required")
+        val session = store.loadSession() ?: throw AuthException("Service login is required")
         return session.username
     }
 
     override suspend fun accessToken(forceRefresh: Boolean): String = refreshMutex.withLock {
         val (session, generation) = synchronized(sessionChangeLock) {
-            (store.loadSession() ?: throw SpotifyAuthException("Service login is required")) to sessionGeneration
+            (store.loadSession() ?: throw AuthException("Service login is required")) to sessionGeneration
         }
         if (!forceRefresh && !session.expiresSoon()) return@withLock session.accessToken
         // The server rotates refresh credentials. Once sent, finish persisting the response
@@ -68,15 +68,15 @@ class SessionManager(
                 return@withContext refreshed.accessToken
             }
             val storedCredential = session.storedCredential
-                ?: throw SpotifyAuthException("Service stored credentials are missing")
+                ?: throw AuthException("Service stored credentials are missing")
             val outcome = login5Client.loginWithStoredCredential(
                 username = session.username,
                 storedCredential = storedCredential,
                 deviceId = store.loadDeviceId(),
             )
             val refreshed = when (outcome) {
-                is SpotifyLogin5Client.LoginOutcome.Success -> outcome
-                is SpotifyLogin5Client.LoginOutcome.CodeChallengeRequired -> throw LoginVerificationRequiredException(session.username, outcome)
+                is Login5Client.LoginOutcome.Success -> outcome
+                is Login5Client.LoginOutcome.CodeChallengeRequired -> throw LoginVerificationRequiredException(session.username, outcome)
             }
             saveRefreshedSession(
                 session.copy(
@@ -93,7 +93,7 @@ class SessionManager(
 
     override suspend fun clientToken(forceRefresh: Boolean): String =
         clientTokenClient.acquire(
-            clientId = io.github.playmusic.data.auth.AppConstants.SPOTIFY_CLIENT_ID,
+            clientId = io.github.playmusic.data.auth.AppConstants.CLIENT_ID,
             deviceId = store.loadDeviceId(),
             forceRefresh = forceRefresh,
         ).token

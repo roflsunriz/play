@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import java.net.HttpURLConnection
 import java.net.URI
 
-class SpotifyClientTokenClient(
+class ClientTokenClient(
     private val userAgent: String = DEFAULT_USER_AGENT,
     private val clientVersion: String = CLIENT_VERSION,
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
@@ -39,18 +39,18 @@ class SpotifyClientTokenClient(
         val response = post(initialRequest.encode(), "initial")
         if (response.grantedToken != null) {
             return@withContext response.grantedToken.takeIf { it.token.isNotBlank() }
-                ?: throw SpotifyAuthException("Client token response is empty")
+                ?: throw AuthException("Client token response is empty")
         }
         val challenges = response.challenges
-            ?: throw SpotifyAuthException("Service client token request did not return a result")
-        if (challenges.state.isBlank()) throw SpotifyAuthException("Service client token challenge state is missing")
+            ?: throw AuthException("Service client token request did not return a result")
+        if (challenges.state.isBlank()) throw AuthException("Service client token challenge state is missing")
         val hashCash = challenges.challenges.firstNotNullOfOrNull { it.hashCash }
-            ?: throw SpotifyAuthException("Service client token challenge is not supported")
+            ?: throw AuthException("Service client token challenge is not supported")
         val suffix = runInterruptible(Dispatchers.Default) { HashCash.solveClientToken(hashCash.prefix, hashCash.length) }
         val answerRequest = initialRequest.encodeChallengeAnswers(challenges.state, HashCashAnswer(suffix))
         val answerResponse = post(answerRequest, "challenge")
         answerResponse.grantedToken?.takeIf { it.token.isNotBlank() }
-            ?: throw SpotifyAuthException("Service did not return a client token after challenge")
+            ?: throw AuthException("Service did not return a client token after challenge")
     }
 
     private fun post(body: ByteArray, phase: String): ClientTokenResponse {
@@ -68,7 +68,7 @@ class SpotifyClientTokenClient(
             connection.outputStream.use { it.write(body) }
             val status = connection.responseCode
             if (status !in 200..299) {
-                throw SpotifyAuthException("Client token $phase request failed ($status)")
+                throw AuthException("Client token $phase request failed ($status)")
             }
             val responseBody = connection.inputStream.use { input ->
                 val result = java.io.ByteArrayOutputStream()
@@ -77,7 +77,7 @@ class SpotifyClientTokenClient(
                     val count = input.read(buffer)
                     if (count < 0) break
                     if (result.size() + count > MAX_RESPONSE_BYTES) {
-                        throw SpotifyAuthException("Client token response is too large")
+                        throw AuthException("Client token response is too large")
                     }
                     result.write(buffer, 0, count)
                 }
@@ -92,7 +92,7 @@ class SpotifyClientTokenClient(
     private companion object {
         const val CLIENT_TOKEN_ENDPOINT = "https://clienttoken.spotify.com/v1/clienttoken"
         const val CLIENT_VERSION = AppConstants.CLIENT_VERSION
-        const val DEFAULT_USER_AGENT = AppConstants.SPOTIFY_USER_AGENT
+        const val DEFAULT_USER_AGENT = AppConstants.USER_AGENT
         const val CONNECT_TIMEOUT_MS = 15_000
         const val READ_TIMEOUT_MS = 20_000
         const val MAX_RESPONSE_BYTES = 1_048_576

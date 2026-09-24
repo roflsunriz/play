@@ -8,7 +8,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteOpenHelper
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -23,7 +23,7 @@ import java.io.IOException
 import java.security.MessageDigest
 import java.security.SecureRandom
 
-data class PlaylistCacheEntry(val content: SpotifyContent, val fingerprint: String?, val ownerCheckedAtMs: Long = 0)
+data class PlaylistCacheEntry(val content: MusicContent, val fingerprint: String?, val ownerCheckedAtMs: Long = 0)
 data class PlaylistCacheSnapshot(val entries: List<PlaylistCacheEntry>, val syncedAtMs: Long)
 data class PlaylistCacheRead(val generation: Long, val snapshot: PlaylistCacheSnapshot?)
 
@@ -50,7 +50,7 @@ class PlaylistDiskCache(private val context: Context) {
         }
     }
 
-    suspend fun updateItem(account: String, content: SpotifyContent) {
+    suspend fun updateItem(account: String, content: MusicContent) {
         val row = withContext(Dispatchers.IO) { prepareEntry(PlaylistCacheEntry(content, null)) }
         access(account) { db ->
             val before = readState(db)
@@ -239,7 +239,7 @@ class PlaylistDiskCache(private val context: Context) {
         }
     }
 
-    private fun validateContent(content: SpotifyContent) {
+    private fun validateContent(content: MusicContent) {
         require(content.kind == ContentKind.PLAYLIST && content.uri == "spotify:playlist:${content.id}") { "Invalid playlist cache content" }
         validateUri(content.uri)
         require(content.title.length <= 2_048 && content.subtitle.length <= 4_096 && content.durationMs >= 0 &&
@@ -255,7 +255,7 @@ class PlaylistDiskCache(private val context: Context) {
         }
     }
 
-    private fun encode(content: SpotifyContent): String = JSONObject().apply {
+    private fun encode(content: MusicContent): String = JSONObject().apply {
         put("id", content.id); put("uri", content.uri); put("kind", content.kind.name)
         put("title", content.title); put("subtitle", content.subtitle)
         put("imageUrl", content.imageUrl ?: JSONObject.NULL); put("durationMs", content.durationMs)
@@ -266,10 +266,10 @@ class PlaylistDiskCache(private val context: Context) {
         put("releaseDate", content.releaseDate ?: JSONObject.NULL)
     }.toString()
 
-    private fun decode(serialized: String): SpotifyContent = try {
+    private fun decode(serialized: String): MusicContent = try {
         val json = JSONObject(serialized)
         if (json.keys().asSequence().toSet() != CONTENT_FIELDS || json.requiredString("kind") != "PLAYLIST") invalid()
-        SpotifyContent(id = json.requiredString("id"), uri = json.requiredString("uri"),
+        MusicContent(id = json.requiredString("id"), uri = json.requiredString("uri"),
             title = json.requiredString("title"), subtitle = json.requiredString("subtitle"),
             imageUrl = json.nullableString("imageUrl"), kind = ContentKind.PLAYLIST,
             durationMs = json.integer("durationMs"), albumUri = json.nullableString("albumUri"),

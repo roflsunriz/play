@@ -12,13 +12,13 @@ class ApIdentityProtoTest {
     }
 
     @Test fun aServerRejectionCannotBecomeAnAuthenticatedSession() {
-        assertThrows(SpotifyAuthException::class.java) {
+        assertThrows(AuthException::class.java) {
             ApIdentityProto.username(0xad, ProtoWire.fieldVarint(10, 12))
         }
     }
 
     @Test fun rejectsMissingIdentityAndUnexpectedPackets() {
-        assertThrows(SpotifyAuthException::class.java) { ApIdentityProto.username(0xac, ByteArray(0)) }
+        assertThrows(AuthException::class.java) { ApIdentityProto.username(0xac, ByteArray(0)) }
         assertThrows(IllegalArgumentException::class.java) { ApIdentityProto.username(0x04, ByteArray(0)) }
         assertThrows(IllegalArgumentException::class.java) { ApIdentityProto.username(0xac, ProtoWire.fieldString(10, "")) }
     }

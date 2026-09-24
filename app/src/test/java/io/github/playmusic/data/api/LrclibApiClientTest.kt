@@ -3,7 +3,7 @@ package io.github.playmusic.data.api
 import io.github.playmusic.data.model.ContentArtist
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.LyricsSyncType
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -84,7 +84,7 @@ class LrclibApiClientTest {
         assertNull(client.lyrics(track()))
     }
 
-    private fun track() = SpotifyContent("track", TRACK, "Song", "Singer", null, ContentKind.TRACK,
+    private fun track() = MusicContent("track", TRACK, "Song", "Singer", null, ContentKind.TRACK,
         durationMs = 200_000, albumTitle = "Album", artists = listOf(ContentArtist("spotify:artist:singer", "Singer")))
 
     private fun client(connections: MutableList<Connection> = mutableListOf(), statuses: List<Int> = listOf(200),

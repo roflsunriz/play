@@ -7,7 +7,7 @@ import androidx.media3.common.Player
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.data.playback.PlaybackTransitionSettings
 import io.github.playmusic.data.playback.TransitionPlayer
@@ -39,7 +39,7 @@ class PlaybackTransitionsTest {
         suspend fun await(block: suspend () -> Boolean) = withTimeout(20_000) { while (!block()) delay(25) }
         val tracks = (1..2).map { index ->
             val id = index.toString().padStart(22, '0')
-            SpotifyContent(id, "spotify:track:$id", "Synthetic $index", "", null, ContentKind.TRACK, durationMs = 12_000)
+            MusicContent(id, "spotify:track:$id", "Synthetic $index", "", null, ContentKind.TRACK, durationMs = 12_000)
         }
         ActivityScenario.launch(PlaylistUiTestActivity::class.java).use {
             try {
@@ -74,7 +74,7 @@ class PlaybackTransitionsTest {
             (checkNotNull(PlaybackTestService.activeSession).player as TransitionPlayer).block()
         }
         suspend fun await(predicate: suspend () -> Boolean) = withTimeout(20_000) { while (!predicate()) delay(20) }
-        fun track(id: String) = SpotifyContent(id, "spotify:track:$id", "Synthetic $id", "", null,
+        fun track(id: String) = MusicContent(id, "spotify:track:$id", "Synthetic $id", "", null,
             ContentKind.TRACK, durationMs = 12_000)
         val first = listOf(track("a".padStart(22, '0')))
         val second = listOf(track("b".padStart(22, '0')))
@@ -111,7 +111,7 @@ class PlaybackTransitionsTest {
         }
         suspend fun await(predicate: suspend () -> Boolean) = withTimeout(20_000) { while (!predicate()) delay(20) }
         val id = "c".padStart(22, '0')
-        val tracks = listOf(SpotifyContent(id, "spotify:track:$id", "Synthetic seek", "", null,
+        val tracks = listOf(MusicContent(id, "spotify:track:$id", "Synthetic seek", "", null,
             ContentKind.TRACK, durationMs = 12_000))
         try {
             store.setSettings(PlaybackTransitionSettings(fadeInSeconds = 1, fadeOutSeconds = 1, crossfadeSeconds = 2,
@@ -144,7 +144,7 @@ class PlaybackTransitionsTest {
         suspend fun await(predicate: suspend () -> Boolean) = withTimeout(20_000) { while (!predicate()) delay(20) }
         val tracks = (1..3).map { value ->
             val id = value.toString().padStart(22, '0')
-            SpotifyContent(id, "spotify:track:$id", "Synthetic $value", "", null, ContentKind.TRACK, durationMs = 12_000)
+            MusicContent(id, "spotify:track:$id", "Synthetic $value", "", null, ContentKind.TRACK, durationMs = 12_000)
         }
         try {
             store.setSettings(PlaybackTransitionSettings(fadeInSeconds = 1, fadeOutSeconds = 1, crossfadeSeconds = 2, automixEnabled = false))

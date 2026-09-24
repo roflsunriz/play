@@ -5,7 +5,7 @@ import androidx.media3.common.Player
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.RepeatMode
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.data.playback.PlaybackService
 import io.github.playmusic.testing.PlaybackTestService
@@ -27,7 +27,7 @@ class LocalPlaybackTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val original = LocalPlayback(context, PlaybackTestService::class.java)
         val reconnecting = LocalPlayback(context, PlaybackTestService::class.java)
-        val track = SpotifyContent("0000000000000000000001", "spotify:track:0000000000000000000001",
+        val track = MusicContent("0000000000000000000001", "spotify:track:0000000000000000000001",
             "Synthetic", "", null, ContentKind.TRACK)
         try {
             original.play(listOf(track))
@@ -68,7 +68,7 @@ class LocalPlaybackTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val player = LocalPlayback(context, PlaybackTestService::class.java)
         val tracks = listOf("0000000000000000000001", "0000000000000000000002").mapIndexed { index, id ->
-            SpotifyContent(id, "spotify:track:$id", "Synthetic ${index + 1}", "Local verification", null,
+            MusicContent(id, "spotify:track:$id", "Synthetic ${index + 1}", "Local verification", null,
                 ContentKind.TRACK, durationMs = 12_000)
         }
         suspend fun <T> actualPlayer(read: Player.() -> T): T = withContext(Dispatchers.Main) {

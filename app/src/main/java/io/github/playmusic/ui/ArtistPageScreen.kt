@@ -35,10 +35,10 @@ import java.text.NumberFormat
 private enum class ArtistDiscographyFilter { ALL, ALBUMS, SINGLES }
 
 @Composable
-internal fun ArtistPageScreen(selected: SpotifyContent, detail: ContentDetail?, loading: Boolean,
-    followBusy: Boolean, radioBusy: Boolean, onPlay: (SpotifyContent) -> Unit,
-    onPlayTrack: (Int) -> Unit, onOpen: (SpotifyContent) -> Unit, onFollow: () -> Unit,
-    onRadio: (SpotifyContent) -> Unit, onActions: (SpotifyContent) -> Unit,
+internal fun ArtistPageScreen(selected: MusicContent, detail: ContentDetail?, loading: Boolean,
+    followBusy: Boolean, radioBusy: Boolean, onPlay: (MusicContent) -> Unit,
+    onPlayTrack: (Int) -> Unit, onOpen: (MusicContent) -> Unit, onFollow: () -> Unit,
+    onRadio: (MusicContent) -> Unit, onActions: (MusicContent) -> Unit,
     savedUris: Set<String>, onRetry: () -> Unit) {
     val content = detail?.content ?: selected
     val page = detail?.artistPage
@@ -163,8 +163,8 @@ private fun ArtistSectionTitle(label: Int) { Text(stringResource(label), style =
     fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp)) }
 
 @Composable
-private fun ArtistWorkCard(content: SpotifyContent, tag: String, onOpen: (SpotifyContent) -> Unit,
-    onPlay: (SpotifyContent) -> Unit, onActions: (SpotifyContent) -> Unit, savedUris: Set<String>) {
+private fun ArtistWorkCard(content: MusicContent, tag: String, onOpen: (MusicContent) -> Unit,
+    onPlay: (MusicContent) -> Unit, onActions: (MusicContent) -> Unit, savedUris: Set<String>) {
     Card(onClick = { onOpen(content) }, modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -5,7 +5,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.data.model.ContentKind
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.testing.AudioProbeService
 import kotlinx.coroutines.delay
@@ -26,7 +26,7 @@ class LiveEqualizerTest {
         val app = (context.applicationContext as PlayApplication).container
         val original = withTimeout(5_000) { app.audioEffects.state.first { it.isReady } }.settings
         val uri = "spotify:track:4CeeEOM32jQcH3eN9Q2dGj"
-        val track = app.repository.detail(SpotifyContent(uri.substringAfterLast(':'), uri, "", "", null, ContentKind.TRACK)).content
+        val track = app.repository.detail(MusicContent(uri.substringAfterLast(':'), uri, "", "", null, ContentKind.TRACK)).content
         suspend fun measure(settings: EqualizerSettings): List<Double> {
             app.audioEffects.setSettings(settings)
             val playback = LocalPlayback(context, AudioProbeService::class.java)

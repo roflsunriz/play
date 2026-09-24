@@ -30,7 +30,7 @@ import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.PlaylistLimits
 import io.github.playmusic.data.model.PlaylistMetadata
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.ui.ContentDetailScreen
 import io.github.playmusic.ui.DeletePlaylistDialog
 import io.github.playmusic.ui.HomeScreen
@@ -47,7 +47,7 @@ import org.junit.Test
 
 class PlaylistEditorScreenTest {
     @get:Rule val composeRule = createAndroidComposeRule<PlaylistUiTestActivity>()
-    private val playlist = SpotifyContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",
+    private val playlist = MusicContent("0000000000000000000001", "spotify:playlist:0000000000000000000001",
         "Playlist", "Owner", null, ContentKind.PLAYLIST)
 
     @Test fun formValidatesInputAndKeepsChangesAfterFailedSave() {

@@ -16,7 +16,7 @@ class Login5ClientTest {
         val requests = AtomicInteger()
         val client = client(requests, listOf(error(Login5Error.TIMEOUT), error(Login5Error.INVALID_CREDENTIALS), success()))
         val failure = runCatching { client.loginWithStoredCredential("synthetic-user", byteArrayOf(1), "device") }.exceptionOrNull()
-        assertTrue(failure is SpotifyAuthException)
+        assertTrue(failure is AuthException)
         assertTrue(failure?.message.orEmpty().contains("INVALID_CREDENTIALS"))
         assertEquals(2, requests.get())
     }
@@ -26,7 +26,7 @@ class Login5ClientTest {
         val requests = AtomicInteger()
         val client = client(requests, listOf(error(Login5Error.TOO_MANY_ATTEMPTS), success()))
         val failure = runCatching { client.loginWithPassword("synthetic-user", "test-password", "device") }.exceptionOrNull()
-        assertTrue(failure is SpotifyAuthException)
+        assertTrue(failure is AuthException)
         assertEquals(1, requests.get())
     }
 
@@ -35,14 +35,14 @@ class Login5ClientTest {
         val requests = AtomicInteger()
         val client = client(requests, listOf(ProtoWire.fieldBytes(1, ByteArray(0))))
         val failure = runCatching { client.loginWithPassword("synthetic-user", "test-password", "device") }.exceptionOrNull()
-        assertTrue(failure is SpotifyAuthException)
+        assertTrue(failure is AuthException)
     }
 
-    private fun client(requests: AtomicInteger, responses: List<ByteArray>): SpotifyLogin5Client {
-        val tokens = SpotifyClientTokenClient(openConnection = { uri -> Connection(uri) {
+    private fun client(requests: AtomicInteger, responses: List<ByteArray>): Login5Client {
+        val tokens = ClientTokenClient(openConnection = { uri -> Connection(uri) {
             ProtoWire.fieldVarint(1, 1) + ProtoWire.fieldBytes(2, ProtoWire.fieldString(1, "synthetic-sdk-token") + ProtoWire.fieldVarint(2, 3600))
         } })
-        return SpotifyLogin5Client("synthetic-client", tokens) { uri -> Connection(uri) {
+        return Login5Client("synthetic-client", tokens) { uri -> Connection(uri) {
             responses.getOrElse(requests.getAndIncrement()) { throw IllegalStateException("Unexpected extra login request") }
         } }
     }

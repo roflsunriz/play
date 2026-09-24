@@ -2,7 +2,7 @@ package io.github.playmusic.data.api
 
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.SearchFilter
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,7 +24,7 @@ class CatalogNavigationTest {
                 assertEquals("トリッカル", connection.body.getJSONObject("variables").getString("searchTerm"))
                 Reply(data("searchV2", JSONObject().put(key, JSONObject().put("items", JSONArray()))))
             }
-            assertEquals(emptyList<SpotifyContent>(), backend.client.search("トリッカル", filter))
+            assertEquals(emptyList<MusicContent>(), backend.client.search("トリッカル", filter))
             val expected = filter.kinds.map { "search" + when (it) {
                 ContentKind.SHOW -> "Podcasts"
                 else -> it.name.lowercase().replaceFirstChar(Char::uppercaseChar) + "s"
@@ -127,8 +127,8 @@ class CatalogNavigationTest {
             }
         }
         val error = runCatching { backend.client.detail(content(ContentKind.GENRE, "jazz")) }.exceptionOrNull()
-        assertTrue(error is SpotifyApiException)
-        assertEquals(503, (error as SpotifyApiException).status)
+        assertTrue(error is ServiceApiException)
+        assertEquals(503, (error as ServiceApiException).status)
     }
 
     @Test
@@ -211,7 +211,7 @@ class CatalogNavigationTest {
         const val PLAYLIST_ID = "4444444444444444444444"
         const val SHOW_ID = "5555555555555555555555"
         fun entity(kind: String, id: String) = JSONObject().put("uri", "spotify:$kind:$id").put("name", "Title")
-        fun content(kind: ContentKind, id: String) = SpotifyContent(id, "spotify:${kind.name.lowercase()}:$id", "Title", "", null, kind)
+        fun content(kind: ContentKind, id: String) = MusicContent(id, "spotify:${kind.name.lowercase()}:$id", "Title", "", null, kind)
         fun page(items: JSONArray, next: Int?) = JSONObject().put("items", items)
             .put("pagingInfo", JSONObject().put("nextOffset", next ?: JSONObject.NULL))
         fun data(key: String, value: Any) = JSONObject().put("data", JSONObject().put(key, value)).toString()

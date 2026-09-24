@@ -7,13 +7,13 @@ import kotlinx.coroutines.runInterruptible
 import java.net.HttpURLConnection
 import java.net.URI
 
-class SpotifyLogin5Client(
+class Login5Client(
     val clientId: String,
-    private val clientTokenClient: SpotifyClientTokenClient,
+    private val clientTokenClient: ClientTokenClient,
     private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
 ) {
     suspend fun acquireClientToken(deviceId: String): GrantedClientToken =
-        clientTokenClient.acquire(clientId = AppConstants.SPOTIFY_CLIENT_ID, deviceId = deviceId)
+        clientTokenClient.acquire(clientId = AppConstants.CLIENT_ID, deviceId = deviceId)
 
     sealed class LoginOutcome {
         data class Success(
@@ -97,7 +97,7 @@ class SpotifyLogin5Client(
     private suspend fun authenticate(loginRequest: LoginRequest, deviceId: String): LoginOutcome =
         withContext(Dispatchers.IO) {
             // The device SDK token is platform-specific, independently of the Login5 audience.
-            val clientToken = clientTokenClient.acquire(AppConstants.SPOTIFY_CLIENT_ID, deviceId).token
+            val clientToken = clientTokenClient.acquire(AppConstants.CLIENT_ID, deviceId).token
             var currentRequest = loginRequest
             repeat(MAX_LOGIN_TRIES) { attempt ->
                 val response = post(currentRequest, clientToken)
@@ -107,12 +107,12 @@ class SpotifyLogin5Client(
                         delay(LOGIN_TIMEOUT_MS)
                         return@repeat
                     }
-                    throw SpotifyAuthException("Login failed: ${error.name}")
+                    throw AuthException("Login failed: ${error.name}")
                 }
                 val success = response.ok
                 if (success != null) {
                     if (success.username.isBlank() || success.accessToken.isBlank() || success.accessTokenExpiresIn <= 0) {
-                        throw SpotifyAuthException("Login response is incomplete")
+                        throw AuthException("Login response is incomplete")
                     }
                     return@withContext LoginOutcome.Success(
                         username = success.username,
@@ -124,18 +124,18 @@ class SpotifyLogin5Client(
                 val codeChallenge = response.challenges.firstOrNull { it.code != null }
                 if (codeChallenge != null) {
                     val context = response.loginContext
-                        ?: throw SpotifyAuthException("Service login challenge is missing login context")
+                        ?: throw AuthException("Service login challenge is missing login context")
                     return@withContext LoginOutcome.CodeChallengeRequired(context, codeChallenge.code?.maskedTarget.orEmpty())
                 }
                 if (response.challenges.isEmpty() || response.challenges.any { it.hashcash == null }) {
-                    throw SpotifyAuthException("Login response contains no supported result or challenge")
+                    throw AuthException("Login response contains no supported result or challenge")
                 }
                 if (attempt == MAX_LOGIN_TRIES - 1) {
-                    throw SpotifyAuthException("Login challenge attempt limit reached")
+                    throw AuthException("Login challenge attempt limit reached")
                 }
                 currentRequest = solveChallenges(response, currentRequest)
             }
-            throw SpotifyAuthException("Login challenge attempt limit reached")
+            throw AuthException("Login challenge attempt limit reached")
         }
 
     private suspend fun solveChallenges(response: LoginResponse, request: LoginRequest): LoginRequest {
@@ -179,7 +179,7 @@ class SpotifyLogin5Client(
                     ?.use { it.readBytes() }
                     ?: ByteArray(0)
                 if (status !in 200..299) {
-                    throw SpotifyAuthException("Service login request failed ($status)")
+                    throw AuthException("Service login request failed ($status)")
                 }
                 LoginResponse.parse(responseBody)
             } finally {
@@ -195,7 +195,7 @@ class SpotifyLogin5Client(
                 "https://login5.spotify.com/v4/login"
             }
 
-        private const val USER_AGENT = AppConstants.SPOTIFY_USER_AGENT
+        private const val USER_AGENT = AppConstants.USER_AGENT
         private const val CONNECT_TIMEOUT_MS = 15_000
         private const val READ_TIMEOUT_MS = 20_000
         private const val LOGIN_TIMEOUT_MS = 3_000L

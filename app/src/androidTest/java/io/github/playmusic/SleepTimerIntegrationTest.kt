@@ -10,7 +10,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.RepeatMode
-import io.github.playmusic.data.model.SpotifyContent
+import io.github.playmusic.data.model.MusicContent
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.data.playback.SleepTimerMode
 import io.github.playmusic.data.playback.SleepTimerRequest
@@ -136,6 +136,6 @@ class SleepTimerIntegrationTest {
         }
     }
 
-    private val track = SpotifyContent("0000000000000000000001", "spotify:track:0000000000000000000001",
+    private val track = MusicContent("0000000000000000000001", "spotify:track:0000000000000000000001",
         "Synthetic", "", null, ContentKind.TRACK, durationMs = 12_000)
 }

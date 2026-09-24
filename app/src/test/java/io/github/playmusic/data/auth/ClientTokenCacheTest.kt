@@ -47,7 +47,7 @@ class ClientTokenCacheTest {
         assertEquals("sdk-2", client.acquire("client", "device").token)
     }
 
-    private fun client(requests: AtomicInteger, clock: () -> Long, expires: Int = 120) = SpotifyClientTokenClient(
+    private fun client(requests: AtomicInteger, clock: () -> Long, expires: Int = 120) = ClientTokenClient(
         clock = clock,
         openConnection = { uri -> Connection(uri) {
             val number = requests.incrementAndGet()

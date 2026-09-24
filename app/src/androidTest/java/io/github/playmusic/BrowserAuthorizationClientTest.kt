@@ -2,7 +2,7 @@ package io.github.playmusic
 
 import android.util.Base64
 import io.github.playmusic.data.auth.BrowserAuthorizationClient
-import io.github.playmusic.data.auth.SpotifyAuthException
+import io.github.playmusic.data.auth.AuthException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -61,7 +61,7 @@ class BrowserAuthorizationClientTest {
         val client = BrowserAuthorizationClient(openConnection = { requested = true; error("Unexpected token request") }, now = { time })
         val expired = client.begin()
         time = 700_000
-        assertThrows(SpotifyAuthException::class.java) { runBlocking { client.awaitAuthorization(expired, "Done") } }
+        assertThrows(AuthException::class.java) { runBlocking { client.awaitAuthorization(expired, "Done") } }
         assertTrue(expired.server.isClosed)
         val cancelled = client.begin()
         cancelled.close()
@@ -84,7 +84,7 @@ class BrowserAuthorizationClientTest {
         val empty = BrowserAuthorizationClient(openConnection = { uri -> Connection(uri, refreshJson = "null") })
         assertNull(empty.refresh("synthetic-refresh").refreshToken)
         val invalid = BrowserAuthorizationClient(openConnection = { uri -> Connection(uri, refreshJson = "{}") })
-        assertThrows(SpotifyAuthException::class.java) { runBlocking { invalid.refresh("synthetic-refresh") } }
+        assertThrows(AuthException::class.java) { runBlocking { invalid.refresh("synthetic-refresh") } }
     }
 
     private class Connection(uri: URI, private val includeRefresh: Boolean = true,

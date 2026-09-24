@@ -9,7 +9,7 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
 
-class SpotifyApiClient(
+class ServiceApiClient(
     private val sessionManager: SessionTokens,
     private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
 ) {
@@ -87,7 +87,7 @@ class SpotifyApiClient(
         }
         if (response.status !in 200..299) {
             val message = extractError(response.body)
-            throw SpotifyApiException(response.status, message)
+            throw ServiceApiException(response.status, message)
         }
         return response
     }
@@ -118,7 +118,7 @@ class SpotifyApiClient(
             if (clientToken == null) DesktopClientProfile.headers.forEach(connection::setRequestProperty)
             else {
                 connection.setRequestProperty("Client-Token", clientToken)
-                connection.setRequestProperty("User-Agent", AppConstants.SPOTIFY_USER_AGENT)
+                connection.setRequestProperty("User-Agent", AppConstants.USER_AGENT)
                 connection.setRequestProperty("Spotify-App-Version", AppConstants.CLIENT_VERSION)
                 connection.setRequestProperty("App-Platform", "Android")
             }
@@ -183,4 +183,4 @@ class SpotifyApiClient(
     }
 }
 
-class SpotifyApiException(val status: Int, message: String) : Exception("$message ($status)")
+class ServiceApiException(val status: Int, message: String) : Exception("$message ($status)")

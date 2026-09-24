@@ -2,7 +2,7 @@ package io.github.playmusic.data.playback
 
 import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.auth.PlaybackAuthorizationClient
-import io.github.playmusic.data.auth.SpotifyAuthException
+import io.github.playmusic.data.auth.AuthException
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
 import org.junit.Test
@@ -217,7 +217,7 @@ class LicenseHttpClientTest {
         assertSame(transfer, runCatching {
             client(mutableListOf()).post(LICENSE, REQUEST) { throw transfer }
         }.exceptionOrNull())
-        val clientToken = SpotifyAuthException("synthetic client token failure")
+        val clientToken = AuthException("synthetic client token failure")
         assertSame(clientToken, runCatching {
             client(mutableListOf()).post(LICENSE, REQUEST) { throw clientToken }
         }.exceptionOrNull())
