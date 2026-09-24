@@ -106,6 +106,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
     val routeStates = rememberSaveableStateHolder()
     val context = LocalContext.current
     var sleepTimerOpen by rememberSaveable { mutableStateOf(false) }
+    var previewReport by rememberSaveable { mutableStateOf(false) }
     val pickPlaylistImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) viewModel.loadPlaylistImage(context.contentResolver, uri)
     }
@@ -203,7 +204,13 @@ fun PlayRoute(viewModel: PlayViewModel) {
     }
     if (state.artistChoices.isNotEmpty()) ArtistPicker(state.artistChoices,
         { viewModel.closeArtistChoices(); viewModel.openDetail(it) }, viewModel::closeArtistChoices)
-    state.error?.let { ErrorDialog(it, viewModel::clearError, onLogin) }
+    state.error?.let { ErrorDialog(it, state.errorReport, viewModel::clearError, onLogin,
+        onShareReport = { previewReport = true }) }
+    if (previewReport) state.errorReport?.let {
+        ReportPreviewDialog(it, onShare = { context -> viewModel.shareErrorReport(context) },
+            onOpenIssue = { context -> viewModel.openErrorIssue(context) },
+            onDismiss = { previewReport = false })
+    }
 }
 
 @Composable
@@ -602,7 +609,13 @@ private fun PlaybackBar(
 }
 
 @Composable
-private fun ErrorDialog(error: UiError, onDismiss: () -> Unit, onLogin: () -> Unit) {
+private fun ErrorDialog(
+    error: UiError,
+    report: io.github.playmusic.data.playback.PlaybackErrorReport?,
+    onDismiss: () -> Unit,
+    onLogin: () -> Unit,
+    onShareReport: () -> Unit,
+) {
     val message = when (error.kind) {
         ErrorKind.LOGIN -> stringResource(R.string.login_failed)
         ErrorKind.LOGIN_REQUIRED -> stringResource(R.string.login_required)
@@ -628,11 +641,55 @@ private fun ErrorDialog(error: UiError, onDismiss: () -> Unit, onLogin: () -> Un
                         Text(stringResource(R.string.browser_login))
                     }
                 }
+                if (report != null) {
+                    TextButton(onClick = onShareReport, modifier = Modifier.testTag("error-share-button")) {
+                        Text(stringResource(R.string.diagnostics_share))
+                    }
+                }
                 TextButton(onClick = onDismiss, modifier = Modifier.testTag("error-dismiss-button")) {
                     Text(stringResource(R.string.dismiss))
                 }
             }
         },
         icon = { Icon(Icons.Default.Close, contentDescription = null) },
+    )
+}
+
+@Composable
+private fun ReportPreviewDialog(
+    report: io.github.playmusic.data.playback.PlaybackErrorReport,
+    onShare: (android.content.Context) -> Unit,
+    onOpenIssue: (android.content.Context) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.diagnostics_preview_title)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.diagnostics_preview_notice),
+                    style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.verticalScroll(rememberScrollState())) {
+                    androidx.compose.foundation.text.selection.SelectionContainer {
+                        Text(report.toShareText(), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = { onShare(context) }, modifier = Modifier.testTag("report-share-button")) {
+                    Text(stringResource(R.string.diagnostics_share))
+                }
+                TextButton(onClick = { onOpenIssue(context) }, modifier = Modifier.testTag("report-issue-button")) {
+                    Text(stringResource(R.string.diagnostics_open_issue))
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("report-dismiss-button")) {
+                    Text(stringResource(R.string.dismiss))
+                }
+            }
+        },
     )
 }

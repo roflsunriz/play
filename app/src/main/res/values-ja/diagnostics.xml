@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">診断情報を共有</string>
+    <string name="diagnostics_preview_title">匿名化レポートを共有しますか？</string>
+    <string name="diagnostics_preview_notice">誤差分類と計測値のみを含みます。トークン、アカウント情報、曲名は含みません。</string>
+    <string name="diagnostics_open_issue">Issueページを開く</string>
+</resources>

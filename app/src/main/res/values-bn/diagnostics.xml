@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">ডায়াগনস্টিক শেয়ার করুন</string>
+    <string name="diagnostics_preview_title">বেনামি রিপোর্ট শেয়ার করবেন?</string>
+    <string name="diagnostics_preview_notice">শুধু ত্রুটির শ্রেণি ও পরিমাপ থাকে। কোনো টোকেন, অ্যাকাউন্ট বা গানের নাম থাকে না।</string>
+    <string name="diagnostics_open_issue">ইস্যু পেজ খুলুন</string>
+</resources>

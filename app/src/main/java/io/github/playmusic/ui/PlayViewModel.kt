@@ -18,6 +18,7 @@ import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.data.audio.EqualizerPreset
 import io.github.playmusic.data.audio.settings
 import io.github.playmusic.data.playback.StreamingApiClient
+import io.github.playmusic.data.playback.PlaybackErrorReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -77,6 +78,7 @@ data class PlayUiState(
     val searchPreviewFailed: Boolean = false,
     val playlistSyncFailed: Boolean = false,
     val error: UiError? = null,
+    val errorReport: PlaybackErrorReport? = null,
     val loginPending: LoginPending? = null,
     val browserAuthorization: BrowserAuthorizationUi? = null,
     val isAuthorizing: Boolean = false,
@@ -137,6 +139,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { container.localPlayback.state.collect { mutableState.value = mutableState.value.copy(playback = it) } }
         viewModelScope.launch { container.localPlayback.errors.collect {
             if (mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, it))
+        } }
+        viewModelScope.launch { container.localPlayback.latestReport.collect {
+            if (it != null && mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(errorReport = it)
         } }
         viewModelScope.launch { container.repository.playlistCacheFailures.collect {
             if (mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(playlistSyncFailed = true)
@@ -854,7 +859,29 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun clearError() {
-        mutableState.value = mutableState.value.copy(error = null)
+        container.localPlayback.clearReport()
+        mutableState.value = mutableState.value.copy(error = null, errorReport = null)
+    }
+
+    /** Shares the anonymized report through the user's own apps; never uploads automatically. */
+    fun shareErrorReport(context: android.content.Context) {
+        val report = mutableState.value.errorReport ?: return
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_TEXT, report.toShareText())
+        val chooser = android.content.Intent.createChooser(send,
+            context.getString(io.github.playmusic.R.string.diagnostics_share))
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
+    }
+
+    /** Opens a prefilled issue page in the user's browser/app; posting stays a manual step. */
+    fun openErrorIssue(context: android.content.Context) {
+        val report = mutableState.value.errorReport ?: return
+        val view = android.content.Intent(android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse(report.issueUrl()))
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(view)
     }
 
     fun reportLoginFailure(message: String?) {

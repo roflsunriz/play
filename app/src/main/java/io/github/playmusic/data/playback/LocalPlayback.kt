@@ -37,17 +37,25 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** Controls the app's media service; no external playback device is required. */
-class LocalPlayback(context: Context, private val serviceClass: Class<out MediaSessionService> = PlaybackService::class.java) {
+class LocalPlayback(
+    context: Context,
+    private val serviceClass: Class<out MediaSessionService> = PlaybackService::class.java,
+    private val diagnostics: PlaybackDiagnostics = PlaybackDiagnostics(),
+) {
     private val context = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableState = MutableStateFlow(Playback())
     private val mutableErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val state = mutableState.asStateFlow()
     val errors = mutableErrors.asSharedFlow()
+    private val mutableReport = MutableStateFlow<PlaybackErrorReport?>(null)
+    val latestReport = mutableReport.asStateFlow()
+    fun clearReport() { mutableReport.value = null }
     internal fun reportWarning(message: String) { mutableErrors.tryEmit(message) }
     private var controller: MediaController? = null
     private var connection: ListenableFuture<MediaController>? = null
     private var progressJob: Job? = null
+    private var lastQueueSize = 0
 
     suspend fun snapshot(): Playback = withContext(Dispatchers.Main.immediate) {
         publish(connectedController())
@@ -58,6 +66,8 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         contextUri: String? = null): Unit = withContext(Dispatchers.Main.immediate) {
         require(items.isNotEmpty() && index in items.indices)
         require(items.all { it.kind == ContentKind.TRACK && it.uri.matches(Regex("spotify:track:[A-Za-z0-9]{22}")) })
+        lastQueueSize = items.size
+        diagnostics.recordCommand("play", startPositionMs.coerceAtLeast(0) / 5_000 * 5_000, index, items.size)
         connectedController().apply {
             setMediaItems(items.map { mediaItem(it, contextUri) }, index, startPositionMs.coerceAtLeast(0))
             prepare()
@@ -70,29 +80,30 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
         if (playbackState == Player.STATE_ENDED) seekToDefaultPosition()
         if (playbackState == Player.STATE_IDLE) prepare()
         play()
-    }
-    suspend fun pause() = command { pause() }
-    suspend fun stop() = command { stop() }
-    suspend fun next() = command { if (hasNextMediaItem()) seekToNextMediaItem() }
-    suspend fun previous() = command { seekToPrevious() }
+    }.also { diagnostics.recordCommand("resume") }
+    suspend fun pause() = command { pause() }.also { diagnostics.recordCommand("pause") }
+    suspend fun stop() = command { stop() }.also { diagnostics.recordCommand("stop") }
+    suspend fun next() = command { if (hasNextMediaItem()) seekToNextMediaItem() }.also { diagnostics.recordCommand("next") }
+    suspend fun previous() = command { seekToPrevious() }.also { diagnostics.recordCommand("previous") }
     suspend fun seek(positionMs: Long) = command {
         val upper = duration.takeIf { it != C.TIME_UNSET && it >= 0 } ?: Long.MAX_VALUE
         seekTo(positionMs.coerceIn(0, upper))
-    }
+    }.also { diagnostics.recordCommand("seek", positionMs.coerceAtLeast(0) / 5_000 * 5_000) }
     suspend fun seekAndPlay(positionMs: Long) = command {
         val upper = duration.takeIf { it != C.TIME_UNSET && it >= 0 } ?: Long.MAX_VALUE
         seekTo(positionMs.coerceIn(0, upper))
         if (playbackState == Player.STATE_IDLE) prepare()
         play()
-    }
+    }.also { diagnostics.recordCommand("seek-play", positionMs.coerceAtLeast(0) / 5_000 * 5_000) }
     suspend fun setShuffle(enabled: Boolean) = command { shuffleModeEnabled = enabled }
+        .also { diagnostics.recordCommand(if (enabled) "shuffle-on" else "shuffle-off") }
     suspend fun setRepeat(mode: RepeatMode) = command {
         repeatMode = when (mode) {
             RepeatMode.OFF -> Player.REPEAT_MODE_OFF
             RepeatMode.CONTEXT -> Player.REPEAT_MODE_ALL
             RepeatMode.TRACK -> Player.REPEAT_MODE_ONE
         }
-    }
+    }.also { diagnostics.recordCommand("repeat-${mode.name}") }
 
     suspend fun clear() = withContext(Dispatchers.Main.immediate) {
         try {
@@ -139,7 +150,23 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
             controller = result
             result.addListener(object : Player.Listener {
                 override fun onEvents(player: Player, events: Player.Events) { publish(result) }
-                override fun onPlayerError(error: PlaybackException) { mutableErrors.tryEmit(error.errorCodeName) }
+                override fun onPlayerError(error: PlaybackException) {
+                    mutableErrors.tryEmit(error.errorCodeName)
+                    val snapshot = mutableState.value
+                    mutableReport.value = PlaybackErrorReports.build(
+                        error = error,
+                        diagnostics = diagnostics,
+                        trackUri = snapshot.item?.uri,
+                        trackIndex = result.currentMediaItemIndex,
+                        queueSize = lastQueueSize,
+                        linkedMatch = null,
+                        repeatMode = snapshot.repeatMode.name,
+                        shuffle = snapshot.shuffle,
+                        positionMs = result.currentPosition,
+                        durationMs = result.duration.takeIf { it != C.TIME_UNSET && it > 0 }
+                            ?: snapshot.durationMs,
+                    )
+                }
             })
         }
         publish(result)
@@ -149,6 +176,7 @@ class LocalPlayback(context: Context, private val serviceClass: Class<out MediaS
     private fun publish(player: MediaController) {
         val item = player.currentMediaItem
         val metadata = item?.mediaMetadata
+        lastQueueSize = player.mediaItemCount.takeIf { it > 0 } ?: lastQueueSize
         mutableState.value = Playback(
             item = if (item == null || metadata == null) null else MusicContent(
                 id = item.mediaId.substringAfterLast(':'), uri = item.mediaId,

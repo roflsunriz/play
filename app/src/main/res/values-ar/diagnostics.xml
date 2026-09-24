@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">مشاركة التشخيص</string>
+    <string name="diagnostics_preview_title">هل تريد مشاركة التقرير المجهول؟</string>
+    <string name="diagnostics_preview_notice">يتضمن تصنيفات الأخطاء والقياسات فقط، دون رموز أو حساب أو عناوين.</string>
+    <string name="diagnostics_open_issue">فتح صفحة المشكلة</string>
+</resources>

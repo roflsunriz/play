@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">Поделиться диагностикой</string>
+    <string name="diagnostics_preview_title">Поделиться анонимным отчётом?</string>
+    <string name="diagnostics_preview_notice">Только классы ошибок и измерения. Без токенов, данных аккаунта и названий.</string>
+    <string name="diagnostics_open_issue">Открыть страницу issue</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">डायग्नोस्टिक्स साझा करें</string>
+    <string name="diagnostics_preview_title">अनाम रिपोर्ट साझा करें?</string>
+    <string name="diagnostics_preview_notice">केवल त्रुटि वर्गीकरण और माप शामिल हैं। कोई टोकन, खाता विवरण या गाने के नाम नहीं।</string>
+    <string name="diagnostics_open_issue">इश्यू पेज खोलें</string>
+</resources>

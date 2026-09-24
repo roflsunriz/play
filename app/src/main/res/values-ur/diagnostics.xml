@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">تشخیص شیئر کریں</string>
+    <string name="diagnostics_preview_title">گمنام رپورٹ شیئر کریں؟</string>
+    <string name="diagnostics_preview_notice">صرف خرابی کی اقسام اور پیمائش شامل ہیں۔ کوئی ٹوکن، اکاؤنٹ یا گانے کے نام نہیں۔</string>
+    <string name="diagnostics_open_issue">ایشو صفحہ کھولیں</string>
+</resources>

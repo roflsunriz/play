@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">Share diagnostics</string>
+    <string name="diagnostics_preview_title">Share anonymized report?</string>
+    <string name="diagnostics_preview_notice">Only error classifications and measurements are included. No tokens, account details, or track titles.</string>
+    <string name="diagnostics_open_issue">Open issue page</string>
+</resources>

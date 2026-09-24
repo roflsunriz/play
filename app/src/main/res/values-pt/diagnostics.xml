@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">Compartilhar diagnóstico</string>
+    <string name="diagnostics_preview_title">Compartilhar relatório anônimo?</string>
+    <string name="diagnostics_preview_notice">Inclui apenas classificações de erro e medições. Sem tokens, conta ou títulos.</string>
+    <string name="diagnostics_open_issue">Abrir página do issue</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_share">分享诊断信息</string>
+    <string name="diagnostics_preview_title">要分享匿名化报告吗？</string>
+    <string name="diagnostics_preview_notice">仅包含错误分类和测量值，不含令牌、帐户信息或曲名。</string>
+    <string name="diagnostics_open_issue">打开Issue页面</string>
+</resources>
