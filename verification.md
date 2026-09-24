@@ -1,5 +1,14 @@
 # 検証手順と結果
 
+## 2026-09-25の結果
+
+### v0.7.0の公開（匿名化エラー報告）
+
+- プッシュ前にOSV-Scanner v2.6.0（配布SHA-256照合済み）で公開DBをローカル照合し、依存592件に該当する既知脆弱性0件を確認した。未処理のDependabot PRはなし。`testDebugUnitTest` 250件失敗0、`lintDebug` エラー0、`assembleDebug`・`assembleRelease` 成功。
+- バージョンを0.7.0・versionCode 7へ確定してmainへプッシュし、main CI成功後に同コミットへ`v0.7.0`タグを付け、Release CIも成功した。公開物は`play-0.7.0.apk`とSHA-256ファイルである。
+- ダウンロードしたAPKはSHA-256 `f83d05021cf778944f13ebc2bd6c6aa4b8a6e9f6fa351191ef50c44996e67921`が添付検証値と一致、v2/v3署名、専用証明書（`7ff600f4…`が`SECURITY.md`と一致）、debuggableなし、versionCode 7・versionName 0.7.0を確認した。
+- 実機への更新と実機での共有導線の確認は未実行。
+
 ## 2026-09-24の結果
 
 ### 匿名化エラー報告の共有委任
