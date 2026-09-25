@@ -72,4 +72,5 @@
     <string name="web_session_saved">Веб-сессия сохранена.</string>
     <string name="web_session_invalid">Это значение использовать нельзя. Вставьте полное значение cookie sp_dc.</string>
     <string name="web_session_save_failed">Не удалось сохранить веб-сессию. Повторите попытку.</string>
+    <string name="web_session_browser">Получить в браузере</string>
 </resources>

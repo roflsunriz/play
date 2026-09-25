@@ -71,4 +71,5 @@
     <string name="web_session_saved">Sesión web guardada.</string>
     <string name="web_session_invalid">Este valor no se puede usar. Pega el valor completo de la cookie sp_dc.</string>
     <string name="web_session_save_failed">No se pudo guardar la sesión web. Inténtalo de nuevo.</string>
+    <string name="web_session_browser">Obtener en el navegador</string>
 </resources>

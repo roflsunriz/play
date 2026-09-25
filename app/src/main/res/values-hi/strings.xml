@@ -70,4 +70,5 @@
     <string name="web_session_saved">वेब सत्र सहेजा गया।</string>
     <string name="web_session_invalid">इस मान का उपयोग नहीं किया जा सकता। पूरा sp_dc कुकी मान पेस्ट करें।</string>
     <string name="web_session_save_failed">वेब सत्र सहेजा नहीं जा सका। पुनः प्रयास करें।</string>
+    <string name="web_session_browser">ब्राउज़र में प्राप्त करें</string>
 </resources>

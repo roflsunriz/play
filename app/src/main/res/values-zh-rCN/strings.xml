@@ -69,4 +69,5 @@
     <string name="web_session_saved">已保存网页会话。</string>
     <string name="web_session_invalid">此值不可用。请粘贴完整的 sp_dc Cookie 值。</string>
     <string name="web_session_save_failed">无法保存网页会话。请重试。</string>
+    <string name="web_session_browser">在浏览器中获取</string>
 </resources>

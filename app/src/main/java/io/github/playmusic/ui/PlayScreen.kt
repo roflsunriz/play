@@ -200,7 +200,9 @@ fun PlayRoute(viewModel: PlayViewModel) {
     }
     if (state.webSessionOpen) WebSessionDialog(state.webSessionInput, state.webSessionInvalid,
         state.webSessionSaveFailed, state.webSessionSaved, viewModel::updateWebSessionInput,
-        viewModel::saveWebSession, viewModel::clearWebSession, viewModel::closeWebSession)
+        viewModel::saveWebSession, viewModel::clearWebSession, viewModel::closeWebSession,
+        viewModel::openWebLogin)
+    if (state.webViewOpen) WebLoginScreen(viewModel::importSpDcFromBrowser, viewModel::closeWebLogin)
     if (sleepTimerOpen) SleepTimerDialog(viewModel.sleepTimer) { sleepTimerOpen = false }
     state.contentActions?.let { action ->
         ContentActionsDialog(action, viewModel::toggleFavorite, viewModel::choosePlaylists, viewModel::togglePlaylist,

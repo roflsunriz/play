@@ -70,4 +70,5 @@
     <string name="web_session_saved">Web session saved.</string>
     <string name="web_session_invalid">This value cannot be used. Paste the complete sp_dc cookie value.</string>
     <string name="web_session_save_failed">Could not save the web session. Try again.</string>
+    <string name="web_session_browser">Get in browser</string>
 </resources>

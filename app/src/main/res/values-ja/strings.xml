@@ -69,4 +69,5 @@
     <string name="web_session_saved">Webセッションを保存しました。</string>
     <string name="web_session_invalid">この値は使えません。sp_dcのCookie値をすべて貼り付けてください。</string>
     <string name="web_session_save_failed">Webセッションを保存できませんでした。再試行してください。</string>
+    <string name="web_session_browser">ブラウザーで取得</string>
 </resources>

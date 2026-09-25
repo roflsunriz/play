@@ -102,6 +102,7 @@ data class PlayUiState(
     val webSessionSaved: Boolean = false,
     val webSessionSaveFailed: Boolean = false,
     val webSessionAutoPrompted: Boolean = false,
+    val webViewOpen: Boolean = false,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -909,22 +910,48 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             mutableState.value = mutableState.value.copy(webSessionInvalid = true)
             return
         }
-        val session = container.sessionStore.loadSession()
-        if (session == null) {
-            mutableState.value = mutableState.value.copy(webSessionSaveFailed = true)
-            return
-        }
-        // commit() inside the store surfaces storage failures instead of reporting success.
-        val failure = runCatching {
-            container.sessionManager.replaceSession(session.copy(webCookie = value))
-        }.exceptionOrNull()
-        if (failure != null) {
+        if (!persistWebCookie(value)) {
             mutableState.value = mutableState.value.copy(webSessionSaveFailed = true)
             return
         }
         mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
             webSessionInvalid = false, webSessionSaveFailed = false, webSessionSaved = true)
         warmPlaybackAuthorization()
+    }
+
+    fun openWebLogin() {
+        mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
+            webSessionInvalid = false, webSessionSaveFailed = false, webViewOpen = true)
+    }
+
+    fun closeWebLogin() {
+        mutableState.value = mutableState.value.copy(webViewOpen = false)
+    }
+
+    fun importSpDcFromBrowser(value: String) {
+        val trimmed = value.trim()
+        if (!io.github.playmusic.data.auth.PlaybackAuthorizationClient.isValidWebCookie(trimmed)) {
+            mutableState.value = mutableState.value.copy(webViewOpen = false, webSessionOpen = true,
+                webSessionInvalid = true)
+            return
+        }
+        if (!persistWebCookie(trimmed)) {
+            mutableState.value = mutableState.value.copy(webViewOpen = false, webSessionOpen = true,
+                webSessionSaveFailed = true)
+            return
+        }
+        mutableState.value = mutableState.value.copy(webViewOpen = false, webSessionInput = "",
+            webSessionInvalid = false, webSessionSaveFailed = false, webSessionSaved = true)
+        warmPlaybackAuthorization()
+    }
+
+    /** Persists a validated cookie. False covers no sign-in and storage failure. */
+    private fun persistWebCookie(value: String): Boolean {
+        val session = container.sessionStore.loadSession() ?: return false
+        // commit() inside the store surfaces storage failures instead of reporting success.
+        return runCatching {
+            container.sessionManager.replaceSession(session.copy(webCookie = value))
+        }.exceptionOrNull() == null
     }
 
     fun clearWebSession() {
