@@ -2,7 +2,6 @@ package io.github.playmusic.data.auth
 
 import io.github.playmusic.AppContainer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -15,42 +14,45 @@ import java.util.concurrent.TimeUnit
 object PlaybackAuthorizationDiagnostics {
     suspend fun run(container: AppContainer): List<String> = withContext(Dispatchers.IO) {
         val lines = mutableListOf<String>()
+        fun emit(line: String): String {
+            android.util.Log.i("PlayAuthDiag", line)
+            lines += line
+            return line
+        }
         val session = container.sessionStore.loadSession()
-        lines += "session present=${session != null} browser=${session?.refreshToken != null} expiredSoon=${session?.expiresSoon() == true}"
+        emit("session present=${session != null} browser=${session?.refreshToken != null} expiredSoon=${session?.expiresSoon() == true}")
         if (session == null) return@withContext lines
         val bearer = runCatching { container.sessionManager.accessToken(false) }.getOrElse {
-            lines += "bearer-failed ${describe(it)}"
+            emit("bearer-failed ${describe(it)}")
             return@withContext lines
         }
-        lines += "baseline ${probe(bearer)}"
-        delay(4_500)
-        lines += "newver ${probe(bearer, appVersion = "1.3.0.277")}"
-        delay(4_500)
-        lines += "otturl ${probe(bearer, url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}"
+        emit("baseline ${probe(bearer)}")
+        emit("newver ${probe(bearer, appVersion = "1.3.0.277")}")
+        emit("otturl ${probe(bearer, url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}")
+        emit("wghost ${probe(bearer, host = "https://spclient.wg.spotify.com")}")
+        emit("wgott ${probe(bearer, host = "https://spclient.wg.spotify.com", url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}")
         val desktop = runCatching {
             ClientTokenClient(
                 userAgent = DesktopClientProfile.headers.getValue("User-Agent"),
                 clientVersion = DesktopClientProfile.VERSION,
             ).acquire(DesktopClientProfile.CLIENT_ID, container.sessionStore.loadDeviceId()).token
         }
-        lines += if (desktop.isSuccess) {
-            "desktop-ct ${probe(bearer, mapOf("client-token" to desktop.getOrThrow()))}"
+        if (desktop.isSuccess) {
+            emit("desktop-ct ${probe(bearer, mapOf("client-token" to desktop.getOrThrow()))}")
         } else {
-            "desktop-ct-failed ${describe(desktop.exceptionOrNull()!!)}"
+            emit("desktop-ct-failed ${describe(desktop.exceptionOrNull()!!)}")
         }
-        delay(4_500)
         val androidToken = runCatching { container.sessionManager.clientToken(false) }
-        lines += if (androidToken.isSuccess) {
-            "android-ct ${probe(bearer, mapOf("client-token" to androidToken.getOrThrow()))}"
+        if (androidToken.isSuccess) {
+            emit("android-ct ${probe(bearer, mapOf("client-token" to androidToken.getOrThrow()))}")
         } else {
-            "android-ct-failed ${describe(androidToken.exceptionOrNull()!!)}"
+            emit("android-ct-failed ${describe(androidToken.exceptionOrNull()!!)}")
         }
-        delay(4_500)
         val refreshed = runCatching { container.sessionManager.accessToken(true) }
-        lines += if (refreshed.isSuccess) {
-            "refreshed ${probe(refreshed.getOrThrow())}"
+        if (refreshed.isSuccess) {
+            emit("refreshed ${probe(refreshed.getOrThrow())}")
         } else {
-            "refresh-failed ${describe(refreshed.exceptionOrNull()!!)}"
+            emit("refresh-failed ${describe(refreshed.exceptionOrNull()!!)}")
         }
         lines
     }
@@ -74,6 +76,7 @@ object PlaybackAuthorizationDiagnostics {
         extra: Map<String, String> = emptyMap(),
         appVersion: String? = null,
         url: String = "https://open.spotify.com/",
+        host: String = "https://gae2-spclient.spotify.com",
     ): String {
         val client = OkHttpClient.Builder()
             .followRedirects(false)
@@ -95,7 +98,7 @@ object PlaybackAuthorizationDiagnostics {
         ) + extra
         val body = JSONObject().put("url", url).toString()
         val builder = Request.Builder()
-            .url("https://gae2-spclient.spotify.com/sessiontransfer/v1/token")
+            .url("$host/sessiontransfer/v1/token")
             .header("Accept", "*/*")
         headers.forEach { (name, value) -> builder.header(name, value) }
         builder.post(body.toRequestBody("application/json".toMediaType()))

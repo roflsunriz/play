@@ -761,9 +761,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     private fun warmPlaybackAuthorization() {
         playbackWarmupJob?.cancel()
         playbackWarmupJob = viewModelScope.launch {
-            runCatching { PlaybackAuthorizationDiagnostics.run(container) }.getOrElse {
-                listOf("probe-failed ${it.javaClass.simpleName}")
-            }.forEach { android.util.Log.i("PlayAuthDiag", it) }
+            runCatching { PlaybackAuthorizationDiagnostics.run(container) }.onFailure {
+                android.util.Log.i("PlayAuthDiag", "probe-failed ${it.javaClass.simpleName}")
+            }
             runCatching { ensurePlaybackAuthorization() }
         }
     }
