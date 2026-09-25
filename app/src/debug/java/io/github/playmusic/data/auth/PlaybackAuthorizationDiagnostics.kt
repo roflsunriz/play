@@ -75,7 +75,30 @@ object PlaybackAuthorizationDiagnostics {
         }
         emit(dpopRefreshProbe(container))
         emit(dpopTransferProbe(bearer))
+        emit(cookieChainProbe(container))
         lines
+    }
+
+    /**
+     * Exercises the real product path (transfer, then the imported-cookie fallback) and logs
+     * only the outcome classification. Warms the cache as a side effect.
+     */
+    private suspend fun cookieChainProbe(container: AppContainer): String {
+        if (container.sessionStore.loadSession()?.webCookie == null) {
+            return "cookie-path no-cookie-saved"
+        }
+        return try {
+            container.playbackAuthorization.headers(
+                java.net.URI("https://gae2-spclient.spotify.com/widevine-license/v1/audio/license"))
+            "cookie-path headers-ok"
+        } catch (error: PlaybackAuthorizationClient.PlaybackAuthorizationException) {
+            "cookie-path ${error.stage}/${error.failure} status=${error.status ?: "-"}"
+        } catch (error: IllegalStateException) {
+            "cookie-path check-failed ${(error.message ?: "-").take(64)}"
+        } catch (error: Exception) {
+            if (error is InterruptedException) throw error
+            "cookie-path ${error.javaClass.simpleName}"
+        }
     }
 
     /**

@@ -6,7 +6,7 @@ import org.junit.Test
 class WebLoginCaptureTest {
     @Test fun allowedHostsCoverTheLoginFlowOnly() {
         for (host in listOf("open.spotify.com", "accounts.spotify.com", "xpui.app.spotify.com",
-            "open.spotifycdn.com", "OPEN.SPOTIFY.COM")) {
+            "open.spotifycdn.com", "OPEN.SPOTIFY.COM", "www.google.com", "www.gstatic.com")) {
             assertTrue("allow $host", WebLoginCapture.isAllowedHost(host))
         }
         for (host in listOf(null, "", "spotify.com", "open.spotify.com.attacker.invalid",

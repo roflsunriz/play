@@ -299,7 +299,7 @@ class PlaybackAuthorizationClient(
                             }
                             if (this@Transport.cookies.size > 64) fail(stage, Failure.SIZE_LIMIT)
                         }
-                        val maximum = if (stage in setOf(Stage.REDIRECT, Stage.CONFIGURATION, Stage.CSRF_PAGE)) 2_097_152 else 131_072
+                        val maximum = if (stage in setOf(Stage.REDIRECT, Stage.CONFIGURATION, Stage.CSRF_PAGE, Stage.WEB)) 2_097_152 else 131_072
                         val bytes = response.body?.byteStream()?.use { input ->
                             val result = ByteArrayOutputStream()
                             val buffer = ByteArray(8192)

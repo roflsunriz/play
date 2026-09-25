@@ -9,13 +9,16 @@ import io.github.playmusic.data.auth.PlaybackAuthorizationClient
  * cookie value is taken from the cookie store after the user signs in normally.
  */
 object WebLoginCapture {
-    const val START_URL = "https://open.spotify.com/"
+    /** The accounts login page is lighter than the player shell and does not depend on endpoint resolution. */
+    const val START_URL = "https://accounts.spotify.com/login"
 
     fun isAllowedHost(host: String?): Boolean {
         if (host.isNullOrBlank()) return false
         val normalized = host.lowercase()
         return normalized == "open.spotify.com" || normalized == "accounts.spotify.com" ||
-            normalized.endsWith(".spotify.com") || normalized.endsWith(".spotifycdn.com")
+            normalized.endsWith(".spotify.com") || normalized.endsWith(".spotifycdn.com") ||
+            // Bot check on the login page.
+            normalized == "www.google.com" || normalized == "www.gstatic.com"
     }
 
     /** Returns the validated sp_dc value from a cookie header, or null. Never logs its input. */
