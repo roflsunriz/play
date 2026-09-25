@@ -31,6 +31,7 @@ object PlaybackAuthorizationDiagnostics {
         emit("otturl ${probe(bearer, url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}")
         emit("wghost ${probe(bearer, host = "https://spclient.wg.spotify.com")}")
         emit("wgott ${probe(bearer, host = "https://spclient.wg.spotify.com", url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}")
+        emit("jdk ${probeJdk(bearer)}")
         val desktop = runCatching {
             ClientTokenClient(
                 userAgent = DesktopClientProfile.headers.getValue("User-Agent"),
@@ -121,6 +122,43 @@ object PlaybackAuthorizationDiagnostics {
             }
         } catch (error: Exception) {
             "network ${error.javaClass.simpleName}"
+        }
+    }
+
+    /** Same request through java.net.HttpURLConnection (the catalog path). Isolates TLS-stack gating. */
+    private fun probeJdk(bearer: String): String {
+        var connection: java.net.HttpURLConnection? = null
+        return try {
+            connection = java.net.URI("https://gae2-spclient.spotify.com/sessiontransfer/v1/token")
+                .toURL().openConnection() as java.net.HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 15_000
+            connection.doOutput = true
+            connection.setRequestProperty("Accept", "*/*")
+            DesktopClientProfile.headers.forEach(connection::setRequestProperty)
+            connection.setRequestProperty("Authorization", "Bearer $bearer")
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0")
+            val payload = JSONObject().put("url", "https://open.spotify.com/").toString().toByteArray(Charsets.UTF_8)
+            connection.outputStream.use { it.write(payload) }
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            val type = connection.getHeaderField("Content-Type")?.substringBefore(';')?.trim().orEmpty().ifBlank { "-" }
+            if (status in 200..299) {
+                val json = runCatching { JSONObject(text) }.getOrNull()
+                val hasToken = (json?.opt("token") as? String)?.isNotBlank() == true
+                val expires = (json?.opt("expires_in") as? Number)?.toLong()
+                "status=$status type=$type hasToken=$hasToken expiresIn=${expires ?: "-"}"
+            } else {
+                "status=$status type=$type len=${text.toByteArray(Charsets.UTF_8).size} body=${redact(text)}"
+            }
+        } catch (error: Exception) {
+            "network ${error.javaClass.simpleName}"
+        } finally {
+            connection?.disconnect()
         }
     }
 }
