@@ -45,6 +45,8 @@ object PlaybackAuthorizationDiagnostics {
         emit("baseline ${probe(bearer)}")
         emit("newver ${probe(bearer, appVersion = "1.3.0.277")}")
         emit("otturl ${probe(bearer, url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}")
+        emit("ottbare ${probe(bearer, url = "https://accounts.spotify.com/login/ott/v2")}")
+        emit("ottempty ${probe(bearer, url = "https://accounts.spotify.com/login/ott/v2#token=")}")
         emit("wghost ${probe(bearer, host = "https://spclient.wg.spotify.com")}")
         emit("wgott ${probe(bearer, host = "https://spclient.wg.spotify.com", url = "https://accounts.spotify.com/login/ott/v2#token=$bearer")}")
         emit("jdk ${probeJdk(bearer)}")
