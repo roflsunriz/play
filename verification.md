@@ -443,7 +443,8 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 
 - 報告は転送段階の HTTP 403。診断用debug版（専用署名・上書き・データ保持）で実機ZY22JBMT9Dの転送POSTを分類記録した（秘密値は記録なし）。
 - 元Bearer・版1.3.0.277・OTT形式URL（`login/ott/v2#token=`）・wgホスト・wgホスト＋OTT形式URL・Android client-token付与・強制更新Bearer・JDK標準HTTPの全8種が `403 {"error":"invalid_request"}` で一致。期限・client-token欠落・版の古さ・url形状・ホスト（gae2／wg）・TLS実装および組み合わせではない。実体に`gae2`の文字はなくspclient系はすべてwgホストを使用。
-- 同一アカウントのWindows版実アプリは再生できるためアカウント側の問題は否定。残るはBearer種別（OAuth WebとLogin5派生／DPoP束縛）かlineage固有の拒否。次の切り分けは再ログインのみで本人許可待ち。
+- 同一アカウントのWindows版実アプリは再生できるためアカウント側の問題は否定。Play側の再ログイン（新規lineage）でも同一403のためlineage固有の拒否も否定。新規セッションに保存認証情報はなくLogin5派生Bearerは検証不可。
+- 結論：転送経路はPlayが発行できる全資格情報をcategoricalに拒否。要求形は09-13頃の200報告時と同一のためサーバー側の変更が濃厚。実クライアントとの差分はDPoP束縛／Login5派生セッションに絞られ、修正にはその調査が必要。#18は当日報告。
 - 同一Bearer＋同一デスクトップヘッダーで一覧表示は正常のため、失敗は転送経路に孤立する。製品の転送要求は09-15時点と同一形のため、サーバー側または資格情報側の変化が濃厚。
 - 現行デスクトップ実体（1.3.1.234）の読み取り専用確認で、実クライアントのurl欄は `https://accounts.spotify.com/login/ott/v2#token=` であることを確定。同実体にDPoP束縛とTokenExchangerのDPoP失敗分類がある。「DPoP束縛またはLogin5派生Bearerの要求」が残る有力候補。
 - 診断後は公開v0.7.0（SHA-256一致・同一証明書）へ上書き復帰し、DEBUGGABLEなし・データ保持を確認。詳細は `session/09-25-16-19.md`。

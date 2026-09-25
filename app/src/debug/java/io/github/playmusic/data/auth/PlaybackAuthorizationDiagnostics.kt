@@ -20,8 +20,24 @@ object PlaybackAuthorizationDiagnostics {
             return line
         }
         val session = container.sessionStore.loadSession()
-        emit("session present=${session != null} browser=${session?.refreshToken != null} expiredSoon=${session?.expiresSoon() == true}")
+        emit("session present=${session != null} browser=${session?.refreshToken != null} expiredSoon=${session?.expiresSoon() == true} storedCred=${session?.storedCredential != null}")
         if (session == null) return@withContext lines
+        val stored = session.storedCredential
+        if (stored != null) {
+            val login = runCatching {
+                container.login5Client.loginWithStoredCredential(
+                    username = session.username,
+                    storedCredential = stored,
+                    deviceId = container.sessionStore.loadDeviceId(),
+                )
+            }
+            val outcome = login.getOrNull()
+            if (outcome is Login5Client.LoginOutcome.Success) {
+                emit("login5 ${probe(outcome.accessToken)}")
+            } else {
+                emit("login5-failed ${login.exceptionOrNull()?.javaClass?.simpleName ?: outcome?.javaClass?.simpleName}")
+            }
+        }
         val bearer = runCatching { container.sessionManager.accessToken(false) }.getOrElse {
             emit("bearer-failed ${describe(it)}")
             return@withContext lines
