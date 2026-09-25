@@ -469,3 +469,9 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 - OSV-Scanner 2.6.0を公式配布から取得し、公開SHA-256と一致確認。`gradle/verification-metadata.xml`の全依存をオンライン照会し、更新前592パッケージ、更新後596パッケージとも既知の脆弱性報告は0件。既存例外は`gradle/osv-scanner.toml`。
 - AndroidX Core更新の検証メタデータは6アーティファクトのみ追加、旧984ハッシュの変更・削除は0件。追加6ハッシュをGoogle Mavenの実ファイルと比較し一致を確認。`verifyPlatformTools`で現行AGP用のLinux/macOS/Windows AAPT2を解決した。
 - 空Gradle homeの検証は、このWindows環境でGradle 9.7.1の生成クラスコンパイルがJARのAccessDeniedで失敗した。昇格・一時ディレクトリ・JDK 21でも同じ。既存homeから`--refresh-dependencies`で全依存を再解決し、`testDebugUnitTest`、`lintDebug`、`assembleDebugAndroidTest`、`assembleRelease`が成功した。空homeそのもののCI再現は未検証として扱う。
+
+## v0.8.0公開候補の端末更新（2026-09-25）
+
+- 版番号は`versionCode=8`、`versionName=0.8.0`。`testDebugUnitTest`、`lintDebug`、`assembleDebug`、`assembleRelease`をJDK 17の昇格環境で成功させた。unsigned APKを既存の`tools/sign-release.ps1`で署名し、公開証明書SHA-256、APK署名v2/v3、非debuggable、隣接SHA-256ファイルを確認した。`extract-changelog.ps1`で0.8.0の本文を抽出した。
+- razrへ署名済みrelease APKを`adb install -r`で上書きし、認証データを保持したまま0.7.0 debug版から0.8.0 release版へ更新した。通常起動と保存ライブラリ表示を確認。画面の再生操作後、MediaSessionは再生位置36秒→69秒へ進み、DRMエラーなし。一時停止操作でPAUSED・速度0になった。Pixelには触れていない。
+- 既存のdebug向け`AudioOutputTest` APKをminify済みreleaseへinstrumentすると、開始前にテストランナーが`kotlin.jvm.internal.Intrinsics`と`androidx.tracing.Trace`を解決できずcrashした。製品の通常起動では再現していない。release版の復号後音声レベルはこの方法では未計測であり、同ソースdebug版の約310秒の実音声検証と区別する。
