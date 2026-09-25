@@ -450,7 +450,7 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 - 旧セッション確認（Pixel 10a・同一アカウント）：既存付与のセッションでは転送が全種200（token有・299秒）となり、公開版0.7.0で10秒以上の再生を確認。Pixelの既存セッションは保持し、ログアウトしていない。
 - 当時の補助経路（razr・同一アカウント）：取込済みCookieによる製品経路の認証取得（`headers-ok`）を確認し、再生27秒超でシーク位置が進行、DRMエラーなし。旧WebViewは黒画面で使えず、当時は手動取込を使用した。後述の通常ブラウザー再認可ではCookieを使わずに完走した。
 - 旧資格情報では同一Bearer＋同一デスクトップヘッダーで一覧表示は正常だったため、失敗は転送権限に限られていた。製品の転送要求は09-15時点と同一形であり、認可で付与された権限の差が原因だった。
-- 現行デスクトップ実体（1.3.1.234）の読み取り専用確認で、実クライアントのurl欄は `https://accounts.spotify.com/login/ott/v2#token=` であることを確定。同実体にDPoP束縛とTokenExchangerのDPoP失敗分類がある。「DPoP束縛またはLogin5派生Bearerの要求」が残る有力候補。
+- 当時の読み取り専用確認ではデスクトップ実体（1.3.1.234）のurl欄が `https://accounts.spotify.com/login/ott/v2#token=` 形式と分かった。DPoP束縛またはLogin5派生Bearerが原因という当時の候補は、後述の認可入口の違いと実機成功により主因ではないと判明した。
 - Pixelは診断後に公開v0.7.0（SHA-256一致・同一証明書）へ上書き復帰した記録がある。ただし同日21:49の端末照会では診断用debug版が再導入されていた。Pixelの保存ログインには触れていない。過去の診断は `session/09-25-16-19.md`。
 
 ### #18の新規認可経路と実音声の再検証（2026-09-25）
@@ -462,3 +462,10 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 - ログイン直後のdebug診断プローブが再生認証の事前取得を遅らせることを確認したため、原因調査を終えたプローブを製品経路から撤去した。最終debug版で`AudioOutputTest(liveAudio=true)`を再実行し、16〜30秒区間を含む検査が38.554秒で成功した。
 - 最終ソースの`testDebugUnitTest`、`lintDebug`、`assembleDebug`、`assembleDebugAndroidTest`、`assembleRelease`は成功。認可コールバックと再認可メニューの計装7件は、合成JSONと非マージ意味ツリーのテスト側修正後に全件個別の成功を確認した。認証情報をGitやログへ保存していない。
 - 再認可に使った`flow_ctx`の時刻形式はキャプチャ1例と当日の実機成功で確認した。将来の時刻・別アカウントでの結果は未検証。Pixelでは再認可・ログアウトを行っていない。
+
+## 公開前の依存・署名確認（2026-09-25）
+
+- 公式Mavenメタデータと各Actionsの公式リリースを照合した。安定版の更新対象はAndroidX Core 1.19.0→1.19.1のみで、ほかの直接依存、Gradle 9.7.1、ワークフローのActionsは現行版だった。Core 1.19.1の修正内容はAndroidX公式リリースノートを確認した。
+- OSV-Scanner 2.6.0を公式配布から取得し、公開SHA-256と一致確認。`gradle/verification-metadata.xml`の全依存をオンライン照会し、更新前592パッケージ、更新後596パッケージとも既知の脆弱性報告は0件。既存例外は`gradle/osv-scanner.toml`。
+- AndroidX Core更新の検証メタデータは6アーティファクトのみ追加、旧984ハッシュの変更・削除は0件。追加6ハッシュをGoogle Mavenの実ファイルと比較し一致を確認。`verifyPlatformTools`で現行AGP用のLinux/macOS/Windows AAPT2を解決した。
+- 空Gradle homeの検証は、このWindows環境でGradle 9.7.1の生成クラスコンパイルがJARのAccessDeniedで失敗した。昇格・一時ディレクトリ・JDK 21でも同じ。既存homeから`--refresh-dependencies`で全依存を再解決し、`testDebugUnitTest`、`lintDebug`、`assembleDebugAndroidTest`、`assembleRelease`が成功した。空homeそのもののCI再現は未検証として扱う。
