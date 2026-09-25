@@ -86,6 +86,8 @@ internal fun WebLoginScreen(onCaptured: (String) -> Unit, onClose: () -> Unit) {
             factory = { context ->
                 WebView(context).apply {
                     // Behave like the stock browser: the login flow spans accounts and open hosts.
+                    // Drop only the "; wv" embedding marker so site feature detection cannot single out WebView.
+                    settings.userAgentString = settings.userAgentString.replace("; wv", "")
                     CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                     setBackgroundColor(android.graphics.Color.WHITE)
                     settings.javaScriptEnabled = true
