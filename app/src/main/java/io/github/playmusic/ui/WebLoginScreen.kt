@@ -87,11 +87,25 @@ internal fun WebLoginScreen(onCaptured: (String) -> Unit, onClose: () -> Unit) {
                 WebView(context).apply {
                     // Behave like the stock browser: the login flow spans accounts and open hosts.
                     CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                    // Software rendering: hardware compositing stays black on some devices.
                     setBackgroundColor(android.graphics.Color.WHITE)
-                    setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // Console text can quote page state; keep only short classifications.
+                    webChromeClient = object : android.webkit.WebChromeClient() {
+                        override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
+                            val text = message.message().orEmpty()
+                            val safe = text.filter { it.code in 32..126 }.take(120)
+                            if (safe.isNotBlank()) {
+                                Log.i("PlayWebConsole",
+                                    "${message.messageLevel().name} ${redactForLog(safe)}")
+                            }
+                            return true
+                        }
+
+                        private fun redactForLog(value: String): String =
+                            value.replace(Regex("https?://\\S+"), "*")
+                                .replace(Regex("[A-Za-z0-9+/=_-]{24,}"), "*")
+                    }
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             if (!WebLoginCapture.isAllowedHost(request.url.host)) {
@@ -111,6 +125,16 @@ internal fun WebLoginScreen(onCaptured: (String) -> Unit, onClose: () -> Unit) {
                             trace("title=" + view.title?.take(80), null)
                             failure = null
                             harvest(view)
+                            if (io.github.playmusic.BuildConfig.DEBUG) {
+                                // Structural probe only: tag names and counts, never text or values.
+                                view.evaluateJavascript(
+                                    """(function(){var n=document.getElementById('__next');var m=n?n.firstElementChild:null;
+                                    function vis(e){try{var s=getComputedStyle(e);return s.opacity+'/'+s.visibility+'/'+s.display;}catch(x){return 'err';}}
+                                    var s=m&&m.children&&m.children.length>1?m.children[1]:null;
+                                    var f=s&&s.firstElementChild?s.firstElementChild:null;
+                                    return ['sectvis='+(s?vis(s):'-'),'first='+((f?f.tagName:'-')+'/'+(f?vis(f):'-')),'fonts='+document.fonts.status,'fg='+document.hasFocus()].join('|');})()""",
+                                ) { result -> trace("dom2=" + result?.take(300), null) }
+                            }
                         }
 
                         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
