@@ -8,6 +8,7 @@ import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.auth.LoginVerificationRequiredException
 import io.github.playmusic.data.auth.AuthException
 import io.github.playmusic.data.auth.BrowserAuthorizationClient
+import io.github.playmusic.data.auth.PlaybackAuthorizationDiagnostics
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.DetailSort
@@ -760,6 +761,9 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     private fun warmPlaybackAuthorization() {
         playbackWarmupJob?.cancel()
         playbackWarmupJob = viewModelScope.launch {
+            runCatching { PlaybackAuthorizationDiagnostics.run(container) }.getOrElse {
+                listOf("probe-failed ${it.javaClass.simpleName}")
+            }.forEach { android.util.Log.i("PlayAuthDiag", it) }
             runCatching { ensurePlaybackAuthorization() }
         }
     }

@@ -438,3 +438,12 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 実際の Dependabot PR がまだない場合、動作経路は未検証として扱う。実 PR 発生後に自動化ジョブ、CI の再試行、マージ結果を確認する。
 
 大量の Dependabot PR により CI 完了より分類が遅れる場合でも、分類後の `workflow_dispatch` が現在の PR 番号と head SHA を照合して再評価する。別の作成者、古い SHA、未完了の CI はマージしない。
+
+## イシュー#18の診断（2026-09-25）
+
+- 報告は転送段階の HTTP 403。診断用debug版（専用署名・上書き・データ保持）で実機ZY22JBMT9Dの転送POSTを分類記録した（秘密値は記録なし）。
+- 元Bearer・強制更新Bearer・Android client-token付与・版文字列1.3.0.277・実クライアント同様のOTT形式URL（`login/ott/v2#token=`）の全5種が `403 {"error":"invalid_request"}` で一致。期限切れ・client-token欠落・版の古さではない。
+- 同一Bearer＋同一デスクトップヘッダーで一覧表示は正常のため、失敗は転送経路に孤立する。製品の転送要求は09-15時点と同一形のため、サーバー側または資格情報側の変化が濃厚。
+- 現行デスクトップ実体（1.3.1.234）の読み取り専用確認で、実クライアントのurl欄は `https://accounts.spotify.com/login/ott/v2#token=` であることを確定。同実体にDPoP束縛とTokenExchangerのDPoP失敗分類がある。「DPoP束縛またはLogin5派生Bearerの要求」が残る有力候補。
+- 診断後は公開v0.7.0（SHA-256一致・同一証明書）へ上書き復帰し、DEBUGGABLEなし・データ保持を確認。詳細は `session/09-25-16-19.md`。
+- 未解決。次の切り分けは再ログイン（新規lineage）での転送再試行であり、本人操作の許可が必要。
