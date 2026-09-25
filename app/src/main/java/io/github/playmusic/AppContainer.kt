@@ -18,7 +18,8 @@ class AppContainer(
     context: Context,
     private val clientTokenClient: ClientTokenClient = ClientTokenClient(),
     val login5Client: Login5Client = Login5Client(AppConstants.CLIENT_ID, clientTokenClient),
-    val browserAuthorizationClient: BrowserAuthorizationClient = BrowserAuthorizationClient(),
+    val browserAuthorizationClient: BrowserAuthorizationClient =
+        BrowserAuthorizationClient(dpopKeys = io.github.playmusic.data.auth.DpopKeyStore()),
     apiConnection: (java.net.URI) -> java.net.HttpURLConnection = { it.toURL().openConnection() as java.net.HttpURLConnection },
 ) {
     val sessionStore = SecureSessionStore(context)

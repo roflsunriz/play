@@ -22,6 +22,7 @@ import kotlin.coroutines.coroutineContext
 class BrowserAuthorizationClient(
     private val openConnection: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
     private val now: () -> Long = System::currentTimeMillis,
+    private val dpopKeys: DpopKeys? = null,
 ) {
     class Pending internal constructor(
         val authorizationUrl: String,
@@ -30,11 +31,20 @@ class BrowserAuthorizationClient(
         internal val state: String,
         internal val expiresAt: Long,
         internal val server: ServerSocket,
+        internal val dpopKey: DpopProofs.Key? = null,
     ) : Closeable {
         override fun close() = server.close()
     }
 
-    class Tokens(val accessToken: String, val refreshToken: String?, val expiresInSeconds: Long)
+    class Tokens(
+        val accessToken: String,
+        val refreshToken: String?,
+        val expiresInSeconds: Long,
+        val tokenType: String = "Bearer",
+    ) {
+        init { require(tokenType.equals("Bearer", ignoreCase = true) || tokenType.equals("DPoP", ignoreCase = true)) }
+        override fun toString(): String = "BrowserAuthorizationClient.Tokens"
+    }
 
     suspend fun begin(): Pending {
         var opened: ServerSocket? = null
@@ -48,11 +58,14 @@ class BrowserAuthorizationClient(
                 val verifier = randomValue(32)
                 val state = randomValue(24)
                 val challenge = base64(MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)))
+                val dpopKey = dpopKeys?.getOrCreate()
                 val parameters = mapOf("client_id" to DesktopClientProfile.CLIENT_ID, "response_type" to "code",
                     "redirect_uri" to redirect, "code_challenge_method" to "S256", "code_challenge" to challenge,
-                    "state" to state, "scope" to SCOPES)
+                    "state" to state, "scope" to SCOPES) +
+                    (dpopKey?.let { mapOf("dpop_jkt" to DpopProofs.thumbprint(it.x, it.y)) } ?: emptyMap())
                 trace("callback listener ready")
-                Pending("$AUTHORIZE_URL?${form(parameters)}", redirect, verifier, state, now() + LOGIN_TIMEOUT_MS, server)
+                Pending("$AUTHORIZE_URL?${form(parameters)}", redirect, verifier, state, now() + LOGIN_TIMEOUT_MS,
+                    server, dpopKey)
             }
         } catch (exception: Exception) {
             opened?.close()
@@ -71,13 +84,14 @@ class BrowserAuthorizationClient(
                     trace("callback state verified")
                     withContext(Dispatchers.Main) { onCallback() }
                     if (result.error != null) throw AuthException("Login was declined")
+                    val code = checkNotNull(result.code)
                     val token = request(mapOf(
                         "client_id" to DesktopClientProfile.CLIENT_ID,
                         "grant_type" to "authorization_code",
-                        "code" to checkNotNull(result.code),
+                        "code" to code,
                         "redirect_uri" to pending.redirectUri,
                         "code_verifier" to pending.verifier,
-                    ))
+                    ), pending.dpopKey, accessTokenHashFor = code)
                     require(!token.refreshToken.isNullOrBlank()) { "Login did not return refresh credentials" }
                     trace("authorization token received")
                     return@withContext token
@@ -88,8 +102,16 @@ class BrowserAuthorizationClient(
 
     suspend fun refresh(refreshToken: String): Tokens {
         require(refreshToken.isNotBlank())
-        return request(mapOf("client_id" to DesktopClientProfile.CLIENT_ID, "grant_type" to "refresh_token",
-            "refresh_token" to refreshToken))
+        // A rotated-away device key must not break sign-in: fall back to a plain refresh.
+        val key = runCatching { dpopKeys?.current() }.getOrNull()
+        return try {
+            request(mapOf("client_id" to DesktopClientProfile.CLIENT_ID, "grant_type" to "refresh_token",
+                "refresh_token" to refreshToken), key)
+        } catch (error: AuthException) {
+            if (key == null) throw error
+            request(mapOf("client_id" to DesktopClientProfile.CLIENT_ID, "grant_type" to "refresh_token",
+                "refresh_token" to refreshToken))
+        }
     }
 
     private fun readCallback(socket: Socket, pending: Pending, message: String): Callback? {
@@ -128,37 +150,61 @@ class BrowserAuthorizationClient(
         return result
     }
 
-    private suspend fun request(parameters: Map<String, String>): Tokens = withContext(Dispatchers.IO) {
-        val connection = openConnection(URI(TOKEN_URL))
-        try {
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 15_000
-            connection.readTimeout = 20_000
-            connection.instanceFollowRedirects = false
-            connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            connection.doOutput = true
-            connection.outputStream.use { it.write(form(parameters).toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            if (status !in 200..299) {
-                val error = connection.errorStream?.bufferedReader()?.use { reader ->
-                    runCatching { JSONObject(reader.readText()).optString("error") }
-                        .getOrNull()?.takeIf { it.matches(Regex("[a-z_]{1,64}")) }
+    private suspend fun request(
+        parameters: Map<String, String>,
+        dpopKey: DpopProofs.Key? = null,
+        accessTokenHashFor: String? = null,
+    ): Tokens = withContext(Dispatchers.IO) {
+        val accessTokenHash = accessTokenHashFor?.let {
+            DpopProofs.base64Url(DpopProofs.sha256(it.toByteArray(Charsets.US_ASCII)))
+        }
+        var nonce: String? = null
+        repeat(2) { attempt ->
+            val connection = openConnection(URI(TOKEN_URL))
+            try {
+                connection.requestMethod = "POST"
+                connection.connectTimeout = 15_000
+                connection.readTimeout = 20_000
+                connection.instanceFollowRedirects = false
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                if (dpopKey != null) {
+                    connection.setRequestProperty("DPoP", DpopProofs.proof(
+                        dpopKey, "POST", TOKEN_URL, accessTokenHash = accessTokenHash, nonce = nonce))
                 }
-                throw AuthException("Login request failed ($status${error?.let { ": $it" }.orEmpty()})",
-                    requiresLogin = parameters["grant_type"] == "refresh_token" && error == "invalid_grant")
-            }
-            val json = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
-            require(json.getString("token_type").equals("Bearer", ignoreCase = true))
-            val refresh = if (json.isNull("refresh_token")) null else
-                (json.opt("refresh_token") as? String)?.takeIf { it.isNotBlank() && it != "null" }
-                    ?: throw AuthException("Login returned invalid refresh credentials")
-            trace("token response includes refresh credentials=${refresh != null}")
-            Tokens((json.opt("access_token") as? String)?.takeIf { it.isNotBlank() }
-                    ?: throw AuthException("Login returned invalid access credentials"),
-                refresh,
-                json.getLong("expires_in").also { require(it in 1..86_400) })
-        } finally { connection.disconnect() }
+                connection.doOutput = true
+                connection.outputStream.use { it.write(form(parameters).toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                if (status !in 200..299) {
+                    val error = connection.errorStream?.bufferedReader()?.use { reader ->
+                        runCatching { JSONObject(reader.readText()).optString("error") }
+                            .getOrNull()?.takeIf { it.matches(Regex("[a-z_]{1,64}")) }
+                    }
+                    val serverNonce = connection.getHeaderField("DPoP-Nonce")
+                        ?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{1,256}")) }
+                    if (attempt == 0 && dpopKey != null && !serverNonce.isNullOrBlank()) {
+                        nonce = serverNonce
+                        return@repeat
+                    }
+                    throw AuthException("Login request failed ($status${error?.let { ": $it" }.orEmpty()})",
+                        requiresLogin = parameters["grant_type"] == "refresh_token" && error == "invalid_grant")
+                }
+                val json = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
+                val tokenType = (json.opt("token_type") as? String)?.takeIf {
+                    it.equals("Bearer", ignoreCase = true) || it.equals("DPoP", ignoreCase = true)
+                } ?: throw AuthException("Login returned an unsupported credential type")
+                val refresh = if (json.isNull("refresh_token")) null else
+                    (json.opt("refresh_token") as? String)?.takeIf { it.isNotBlank() && it != "null" }
+                        ?: throw AuthException("Login returned invalid refresh credentials")
+                trace("token bound type=$tokenType refresh credentials=${refresh != null}")
+                return@withContext Tokens((json.opt("access_token") as? String)?.takeIf { it.isNotBlank() }
+                        ?: throw AuthException("Login returned invalid access credentials"),
+                    refresh,
+                    json.getLong("expires_in").also { require(it in 1..86_400) },
+                    tokenType)
+            } finally { connection.disconnect() }
+        }
+        throw AuthException("Login request failed (DPoP nonce retry exhausted)")
     }
 
     private fun randomValue(size: Int): String = base64(ByteArray(size).also(SecureRandom()::nextBytes))
@@ -177,6 +223,9 @@ class BrowserAuthorizationClient(
         private const val AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
         private const val TOKEN_URL = "https://accounts.spotify.com/api/token"
         internal const val LOGIN_TIMEOUT_MS = 600_000L
+        // NOTE (#18): requesting transfer-auth-session here was rejected with illegal scope at
+        // sign-in, so it is not an authorize-time scope for this client. The desktop token carries it,
+        // but it must be granted another way. Do not re-add without a verified authorize flow.
         private const val SCOPES = "playlist-read playlist-read-private playlist-read-collaborative streaming " +
             "user-library-read user-personalized user-read-private"
 

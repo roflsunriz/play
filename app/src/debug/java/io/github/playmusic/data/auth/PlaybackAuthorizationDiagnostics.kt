@@ -71,8 +71,179 @@ object PlaybackAuthorizationDiagnostics {
         } else {
             emit("refresh-failed ${describe(refreshed.exceptionOrNull()!!)}")
         }
+        emit(dpopRefreshProbe(container))
+        emit(dpopTransferProbe(bearer))
         lines
     }
+
+    /**
+     * Transfer with the DPoP scheme and the stored device key (the key bound at sign-in).
+     * A fresh key is never used: the server rejects proofs from any other key.
+     */
+    private fun dpopTransferProbe(accessToken: String): String {
+        val key = DpopKeyStore().current() ?: return "dpop-transfer no-device-key"
+        var currentNonce: String? = null
+        repeat(2) { attempt ->
+            val result = probeTransfer(
+                authorization = "DPoP $accessToken",
+                proof = DpopProofs.proof(key, "POST",
+                    "https://gae2-spclient.spotify.com/sessiontransfer/v1/token", nonce = currentNonce),
+            )
+            if (result is TransferResult.RetryWithNonce && attempt == 0) {
+                currentNonce = result.nonce
+            } else {
+                return "dpop-transfer ${result.describe()}"
+            }
+        }
+        return "dpop-transfer nonce-retry-exhausted"
+    }
+
+    /**
+     * Refreshes with a DPoP proof and, when the server binds the token, probes transfer with the
+     * DPoP scheme. The rotated session is persisted exactly like a normal refresh so the saved
+     * sign-in stays healthy. Logs token types and error codes only.
+     */
+    private fun dpopRefreshProbe(container: AppContainer): String {
+        val session = container.sessionStore.loadSession()
+            ?: return "dpop-skipped no-session"
+        val refreshToken = session.refreshToken
+            ?: return "dpop-skipped no-refresh-token"
+        val key = DpopKeyStore().current()
+            ?: return "dpop-skipped no-device-key"
+        var nonce: String? = null
+        repeat(2) { attempt ->
+            var connection: java.net.HttpURLConnection? = null
+            try {
+                connection = java.net.URI("https://accounts.spotify.com/api/token")
+                    .toURL().openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.instanceFollowRedirects = false
+                connection.connectTimeout = 15_000
+                connection.readTimeout = 20_000
+                connection.doOutput = true
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                connection.setRequestProperty("DPoP", DpopProofs.proof(
+                    key, "POST", "https://accounts.spotify.com/api/token", nonce = nonce))
+                val form = "client_id=${encode(DesktopClientProfile.CLIENT_ID)}" +
+                    "&grant_type=refresh_token&refresh_token=${encode(refreshToken)}"
+                connection.outputStream.use { it.write(form.toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                if (status !in 200..299) {
+                    val error = connection.errorStream?.bufferedReader()?.use { reader ->
+                        runCatching { JSONObject(reader.readText()).optString("error") }
+                            .getOrNull()?.takeIf { it.matches(Regex("[a-z_]{1,64}")) }
+                    } ?: "-"
+                    val serverNonce = connection.getHeaderField("DPoP-Nonce")
+                        ?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{1,256}")) }
+                    if (attempt == 0 && !serverNonce.isNullOrBlank()) {
+                        nonce = serverNonce
+                        return@repeat
+                    }
+                    return "dpop-refresh status=$status error=$error"
+                }
+                val json = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
+                val tokenType = (json.opt("token_type") as? String).orEmpty()
+                val accessToken = json.opt("access_token") as? String
+                if (accessToken.isNullOrBlank()) return "dpop-refresh status=$status token_type=$tokenType no-token"
+                val rotated = (json.opt("refresh_token") as? String)
+                    ?.takeIf { it.isNotBlank() } ?: refreshToken
+                val expiresIn = (json.opt("expires_in") as? Number)?.toLong()?.takeIf { it in 1..86_400 }
+                    ?: return "dpop-refresh status=$status token_type=$tokenType bad-expiry"
+                container.sessionStore.saveSession(session.copy(
+                    accessToken = accessToken,
+                    refreshToken = rotated,
+                    expiresAtEpochMs = System.currentTimeMillis() + expiresIn * 1_000L,
+                ))
+                if (!tokenType.equals("DPoP", ignoreCase = true)) {
+                    return "dpop-refresh status=$status token_type=$tokenType"
+                }
+                return "dpop-transfer ${probeDpop(accessToken, key, nonce)}"
+            } catch (error: Exception) {
+                if (error is InterruptedException) throw error
+                return "dpop-refresh network ${error.javaClass.simpleName}"
+            } finally {
+                connection?.disconnect()
+            }
+        }
+        return "dpop-refresh nonce-retry-exhausted"
+    }
+
+    /** Transfer probe with the DPoP authorization scheme and a fresh proof per attempt. */
+    private fun probeDpop(accessToken: String, key: DpopProofs.Key, nonce: String?): String {
+        var currentNonce = nonce
+        repeat(2) { attempt ->
+            val result = probeTransfer(
+                authorization = "DPoP $accessToken",
+                proof = DpopProofs.proof(key, "POST",
+                    "https://gae2-spclient.spotify.com/sessiontransfer/v1/token", nonce = currentNonce),
+            )
+            if (result is TransferResult.RetryWithNonce && attempt == 0) {
+                currentNonce = result.nonce
+            } else {
+                return result.describe()
+            }
+        }
+        return "nonce-retry-exhausted"
+    }
+
+    private sealed interface TransferResult {
+        fun describe(): String
+        data class Done(val text: String) : TransferResult {
+            override fun describe(): String = text
+        }
+        data class RetryWithNonce(val nonce: String) : TransferResult {
+            override fun describe(): String = "nonce-retry-exhausted"
+        }
+    }
+
+    private fun probeTransfer(authorization: String, proof: String): TransferResult {
+        var connection: java.net.HttpURLConnection? = null
+        return try {
+            connection = java.net.URI("https://gae2-spclient.spotify.com/sessiontransfer/v1/token")
+                .toURL().openConnection() as java.net.HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 15_000
+            connection.doOutput = true
+            connection.setRequestProperty("Accept", "*/*")
+            DesktopClientProfile.headers.forEach(connection::setRequestProperty)
+            connection.setRequestProperty("Authorization", authorization)
+            connection.setRequestProperty("DPoP", proof)
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0")
+            val payload = JSONObject().put("url", "https://open.spotify.com/").toString()
+                .toByteArray(Charsets.UTF_8)
+            connection.outputStream.use { it.write(payload) }
+            val status = connection.responseCode
+            if (status == 400 || status == 401) {
+                val serverNonce = connection.getHeaderField("DPoP-Nonce")
+                    ?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{1,256}")) }
+                if (!serverNonce.isNullOrBlank()) return TransferResult.RetryWithNonce(serverNonce)
+            }
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            val type = connection.getHeaderField("Content-Type")?.substringBefore(';')?.trim().orEmpty().ifBlank { "-" }
+            val www = connection.getHeaderField("WWW-Authenticate")?.take(80).orEmpty()
+            val hasNonce = connection.getHeaderField("DPoP-Nonce") != null
+            if (status in 200..299) {
+                val json = runCatching { JSONObject(text) }.getOrNull()
+                val hasToken = (json?.opt("token") as? String)?.isNotBlank() == true
+                val expires = (json?.opt("expires_in") as? Number)?.toLong()
+                TransferResult.Done("status=$status type=$type hasToken=$hasToken expiresIn=${expires ?: "-"}")
+            } else {
+                TransferResult.Done("status=$status type=$type len=${text.toByteArray(Charsets.UTF_8).size} " +
+                    "www=${redact(www)} nonce=$hasNonce body=${redact(text)}")
+            }
+        } catch (error: Exception) {
+            TransferResult.Done("network ${error.javaClass.simpleName}")
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    private fun encode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")
 
     /** Exact AuthException messages carry only stage/status classifications, never secrets. */
     private fun describe(error: Throwable): String =
