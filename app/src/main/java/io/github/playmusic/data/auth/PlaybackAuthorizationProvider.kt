@@ -48,6 +48,13 @@ class PlaybackAuthorizationProvider(
     private class Cached(val source: Source, val credentials: Credentials)
     private val mutex = Mutex()
     private var cached: Cached? = null
+    /**
+     * True when the transfer route refused the bearer while no imported web session exists.
+     * The UI uses this to guide sign-in users to the import instead of leaving them with a bare error.
+     */
+    @Volatile
+    var transferRefusedWithoutCookie = false
+        private set
 
     /**
      * Warms the short-lived credentials before the DRM thread needs them. A fresh sign-in
@@ -68,6 +75,7 @@ class PlaybackAuthorizationProvider(
         suspend fun finish(resolved: Source, credentials: Credentials): Map<String, String> {
             check(sourceToken(false).matches(resolved)) { "Sign-in changed while playback authorization was being prepared" }
             check(now() < credentials.refreshAtEpochMs) { "Playback authorization has expired" }
+            transferRefusedWithoutCookie = false
             return credentials.headers(uri).also { cached = Cached(resolved, credentials) }
         }
         val credentials = try { acquire(source.accessToken, forceRefresh) }
@@ -78,6 +86,7 @@ class PlaybackAuthorizationProvider(
             }
             val cookie = source.webCookie
             val cookieAcquire = cookieAcquire
+            if (error.status != 401 && cookie == null) transferRefusedWithoutCookie = true
             if (cookie != null && cookieAcquire != null && error.status != 401) {
                 // The transfer route categorically rejects this bearer (#18). Fall through to the
                 // imported web session instead of retrying a request the server will not honor.
@@ -96,6 +105,10 @@ class PlaybackAuthorizationProvider(
                     retry.failure == PlaybackAuthorizationClient.Failure.HTTP && retryCookie != null &&
                     cookieAcquire != null) {
                     return@withLock finish(source, cookieAcquire(retryCookie, true))
+                }
+                if (retry.stage == PlaybackAuthorizationClient.Stage.TRANSFER &&
+                    retry.failure == PlaybackAuthorizationClient.Failure.HTTP && retryCookie == null) {
+                    transferRefusedWithoutCookie = true
                 }
                 throw retry
             }

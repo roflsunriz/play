@@ -133,6 +133,20 @@ class PlaybackAuthorizationProviderTest {
         val provider = PlaybackAuthorizationProvider({ sourceSnapshot("own-source") },
             { _, _ -> throw rejectedTransferForbidden() }, { 1000 })
         assertFails { provider.headers(LICENSE) }
+        assertTrue(provider.transferRefusedWithoutCookie)
+    }
+
+    @Test fun successfulAuthorizationClearsTheTransferRefusalSignal() = runTest {
+        var calls = 0
+        val provider = PlaybackAuthorizationProvider({ sourceSnapshot("own-source") }, { _, _ ->
+            calls++
+            if (calls == 1) throw rejectedTransferForbidden()
+            credentials("web-recovered", 20_000)
+        }, { 1000 })
+        assertFails { provider.headers(LICENSE) }
+        assertTrue(provider.transferRefusedWithoutCookie)
+        assertEquals("Bearer web-recovered", provider.headers(LICENSE)["Authorization"])
+        assertTrue(!provider.transferRefusedWithoutCookie)
     }
 
     @Test fun cookieMismatchInvalidatesTheCachedAuthorization() = runTest {

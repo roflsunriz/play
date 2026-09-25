@@ -101,6 +101,7 @@ data class PlayUiState(
     val webSessionInvalid: Boolean = false,
     val webSessionSaved: Boolean = false,
     val webSessionSaveFailed: Boolean = false,
+    val webSessionAutoPrompted: Boolean = false,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -144,7 +145,10 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     init {
         viewModelScope.launch { container.localPlayback.state.collect { mutableState.value = mutableState.value.copy(playback = it) } }
         viewModelScope.launch { container.localPlayback.errors.collect {
-            if (mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, it))
+            if (mutableState.value.isLoggedIn) {
+                mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, it))
+                maybePromptWebSession()
+            }
         } }
         viewModelScope.launch { container.localPlayback.latestReport.collect {
             if (it != null && mutableState.value.isLoggedIn) mutableState.value = mutableState.value.copy(errorReport = it)
@@ -883,6 +887,17 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             webSessionInvalid = false, webSessionSaveFailed = false)
     }
 
+    /** Opens the import dialog once per need when playback fails for lack of a web session. */
+    private fun maybePromptWebSession() {
+        val current = mutableState.value
+        if (current.webSessionAutoPrompted || current.webSessionOpen) return
+        if (!container.playbackAuthorization.transferRefusedWithoutCookie) return
+        if (container.sessionStore.loadSession()?.webCookie != null) return
+        mutableState.value = current.copy(webSessionOpen = true, webSessionInput = "",
+            webSessionInvalid = false, webSessionSaveFailed = false, webSessionAutoPrompted = true,
+            webSessionSaved = false)
+    }
+
     fun updateWebSessionInput(value: String) {
         if (value.length > 4096) return
         mutableState.value = mutableState.value.copy(webSessionInput = value, webSessionInvalid = false)
@@ -918,7 +933,8 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             if (session != null) container.sessionManager.replaceSession(session.copy(webCookie = null))
         }.exceptionOrNull()
         mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = failure != null, webSessionSaved = false)
+            webSessionInvalid = false, webSessionSaveFailed = failure != null, webSessionSaved = false,
+            webSessionAutoPrompted = failure != null && mutableState.value.webSessionAutoPrompted)
         if (failure == null) warmPlaybackAuthorization()
     }
 
