@@ -201,8 +201,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
     if (state.webSessionOpen) WebSessionDialog(state.webSessionInput, state.webSessionInvalid,
         state.webSessionSaveFailed, state.webSessionSaved, viewModel::updateWebSessionInput,
         viewModel::saveWebSession, viewModel::clearWebSession, viewModel::closeWebSession,
-        viewModel::openWebLogin)
-    if (state.webViewOpen) WebLoginScreen(viewModel::importSpDcFromBrowser, viewModel::closeWebLogin)
+        { viewModel.closeWebSession(); onLogin() })
     if (sleepTimerOpen) SleepTimerDialog(viewModel.sleepTimer) { sleepTimerOpen = false }
     state.contentActions?.let { action ->
         ContentActionsDialog(action, viewModel::toggleFavorite, viewModel::choosePlaylists, viewModel::togglePlaylist,
@@ -414,9 +413,9 @@ internal fun HomeScreen(
                                     menuScope.launch { snackbarHost.showSnackbar(browserUnavailableMessage) }
                                 }
                             })
-                        if (!state.isLoggedIn) DropdownMenuItem(
+                        DropdownMenuItem(
                             modifier = Modifier.testTag("account-login-button"),
-                            text = { Text(stringResource(R.string.browser_login)) },
+                            text = { Text(stringResource(if (state.isLoggedIn) R.string.browser_reauthorize else R.string.browser_login)) },
                             onClick = { menuExpanded = false; onBrowserLogin() },
                         )
                         DropdownMenuItem(
@@ -629,6 +628,7 @@ private fun ErrorDialog(
     val message = when (error.kind) {
         ErrorKind.LOGIN -> stringResource(R.string.login_failed)
         ErrorKind.LOGIN_REQUIRED -> stringResource(R.string.login_required)
+        ErrorKind.REAUTHORIZE_REQUIRED -> stringResource(R.string.browser_reauthorize_required)
         ErrorKind.VERIFICATION_CODE -> stringResource(R.string.verification_code_failed)
         ErrorKind.REQUEST -> stringResource(R.string.request_failed)
     }
@@ -646,9 +646,10 @@ private fun ErrorDialog(
         },
         confirmButton = {
             Row {
-                if (error.kind == ErrorKind.LOGIN_REQUIRED) {
+                if (error.kind == ErrorKind.LOGIN_REQUIRED || error.kind == ErrorKind.REAUTHORIZE_REQUIRED) {
                     TextButton(onClick = onLogin, modifier = Modifier.testTag("error-login-button")) {
-                        Text(stringResource(R.string.browser_login))
+                        Text(stringResource(if (error.kind == ErrorKind.REAUTHORIZE_REQUIRED)
+                            R.string.browser_reauthorize else R.string.browser_login))
                     }
                 }
                 if (report != null) {

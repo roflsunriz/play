@@ -41,6 +41,7 @@ class BrowserAuthorizationClient(
         val refreshToken: String?,
         val expiresInSeconds: Long,
         val tokenType: String = "Bearer",
+        val grantedScopes: Set<String> = emptySet(),
     ) {
         init { require(tokenType.equals("Bearer", ignoreCase = true) || tokenType.equals("DPoP", ignoreCase = true)) }
         override fun toString(): String = "BrowserAuthorizationClient.Tokens"
@@ -61,7 +62,10 @@ class BrowserAuthorizationClient(
                 val dpopKey = dpopKeys?.getOrCreate()
                 val parameters = mapOf("client_id" to DesktopClientProfile.CLIENT_ID, "response_type" to "code",
                     "redirect_uri" to redirect, "code_challenge_method" to "S256", "code_challenge" to challenge,
-                    "state" to state, "scope" to SCOPES) +
+                    "state" to state, "scope" to SCOPES,
+                    "creation_flow" to "desktop", "creation_point" to CREATION_POINT,
+                    "utm_source" to "spotify", "utm_medium" to "desktop-win32", "utm_campaign" to "organic",
+                    "flow_ctx" to "${java.util.UUID.randomUUID()}:${(now() / 1_000) + 21_600}") +
                     (dpopKey?.let { mapOf("dpop_jkt" to DpopProofs.thumbprint(it.x, it.y)) } ?: emptyMap())
                 trace("callback listener ready")
                 Pending("$AUTHORIZE_URL?${form(parameters)}", redirect, verifier, state, now() + LOGIN_TIMEOUT_MS,
@@ -201,7 +205,8 @@ class BrowserAuthorizationClient(
                         ?: throw AuthException("Login returned invalid access credentials"),
                     refresh,
                     json.getLong("expires_in").also { require(it in 1..86_400) },
-                    tokenType)
+                    tokenType,
+                    json.optString("scope").split(' ').filter(String::isNotBlank).toSet())
             } finally { connection.disconnect() }
         }
         throw AuthException("Login request failed (DPoP nonce retry exhausted)")
@@ -220,14 +225,20 @@ class BrowserAuthorizationClient(
     internal class Callback(val code: String?, val error: String?)
 
     companion object {
-        private const val AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
+        private const val AUTHORIZE_URL = "https://accounts.spotify.com/oauth2/v2/auth"
         private const val TOKEN_URL = "https://accounts.spotify.com/api/token"
+        private const val CREATION_POINT = "https://login.app.spotify.com/?client_id=" +
+            DesktopClientProfile.CLIENT_ID + "&utm_source=spotify&utm_medium=desktop-win32&utm_campaign=organic"
         internal const val LOGIN_TIMEOUT_MS = 600_000L
-        // NOTE (#18): requesting transfer-auth-session here was rejected with illegal scope at
-        // sign-in, so it is not an authorize-time scope for this client. The desktop token carries it,
-        // but it must be granted another way. Do not re-add without a verified authorize flow.
-        private const val SCOPES = "playlist-read playlist-read-private playlist-read-collaborative streaming " +
-            "user-library-read user-personalized user-read-private"
+        // The captured desktop browser authorization requests these scopes through /oauth2/v2/auth.
+        // The older /authorize endpoint rejected transfer-auth-session for the same public client ID.
+        private const val SCOPES = "app-remote-control playlist-modify playlist-modify-private " +
+            "playlist-modify-public playlist-read playlist-read-collaborative playlist-read-private " +
+            "streaming transfer-auth-session sts-content-management ugc-image-upload " +
+            "user-follow-modify user-follow-read user-library-modify user-library-read user-modify " +
+            "user-modify-playback-state user-modify-private user-personalized user-read-birthdate " +
+            "user-read-currently-playing user-read-email user-read-play-history user-read-playback-position " +
+            "user-read-playback-state user-read-private user-read-recently-played user-top-read"
 
         internal fun callback(requestLine: String, expectedState: String): Callback? = runCatching {
             val request = requestLine.split(' ')

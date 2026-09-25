@@ -32,6 +32,8 @@
     <string name="verification_code_failed">Le code de vérification a été refusé. Saisissez le dernier code.</string>
     <string name="untitled_playlist">Playlist sans titre</string>
     <string name="browser_login">Se connecter</string>
+    <string name="browser_reauthorize">Se reconnecter</string>
+    <string name="browser_reauthorize_required">Votre connexion doit être renouvelée pour lire la musique. Reconnectez-vous.</string>
     <string name="browser_login_description">Connectez-vous pour accéder à votre bibliothèque et écouter de la musique sur cet appareil.</string>
     <string name="browser_login_waiting">Terminez la connexion dans le navigateur. Play continuera automatiquement.</string>
     <string name="back">Retour</string>
@@ -71,5 +73,4 @@
     <string name="web_session_saved">Session Web enregistrée.</string>
     <string name="web_session_invalid">Cette valeur est inutilisable. Collez la valeur complète du cookie sp_dc.</string>
     <string name="web_session_save_failed">La session Web n’a pas pu être enregistrée. Réessayez.</string>
-    <string name="web_session_browser">Obtenir dans le navigateur</string>
 </resources>

@@ -27,9 +27,12 @@ class BrowserAuthorizationClientTest {
         val client = BrowserAuthorizationClient(openConnection = { uri -> Connection(uri).also { request = it } })
         val pending = client.begin()
         val parameters = decode(URI(pending.authorizationUrl).rawQuery)
-        assertEquals("/authorize", URI(pending.authorizationUrl).path)
+        assertEquals("/oauth2/v2/auth", URI(pending.authorizationUrl).path)
         assertEquals("code", parameters["response_type"])
         assertEquals("S256", parameters["code_challenge_method"])
+        assertEquals("desktop", parameters["creation_flow"])
+        assertTrue(parameters.getValue("scope").split(' ').contains("transfer-auth-session"))
+        assertTrue(parameters.getValue("flow_ctx").matches(Regex("[0-9a-f-]{36}:[0-9]{10}")))
         assertFalse(parameters.containsKey("device_code"))
         assertEquals("127.0.0.1", URI(pending.redirectUri).host)
         val browser = async(Dispatchers.IO) {
@@ -44,6 +47,7 @@ class BrowserAuthorizationClientTest {
         assertTrue(returned)
         assertEquals("synthetic-access", tokens.accessToken)
         assertEquals("synthetic-refresh", tokens.refreshToken)
+        assertTrue("transfer-auth-session" in tokens.grantedScopes)
         assertTrue(pending.server.isClosed)
         assertTrue(browser.await().contains("&lt;Play&gt;"))
         val form = checkNotNull(request).form()
@@ -94,9 +98,12 @@ class BrowserAuthorizationClientTest {
         fun form() = decode(output.toString("UTF-8"))
         override fun getOutputStream() = output
         override fun getResponseCode() = 200
-        override fun getInputStream() = ByteArrayInputStream(
-            ("""{"access_token":"synthetic-access","token_type":"Bearer","expires_in":3600""" +
-                (if (includeRefresh) ""","refresh_token":$refreshJson}""" else "}")).toByteArray())
+        override fun getInputStream(): ByteArrayInputStream {
+            val base = "{\"access_token\":\"synthetic-access\",\"token_type\":\"Bearer\"," +
+                "\"expires_in\":3600,\"scope\":\"playlist-read transfer-auth-session\""
+            val refresh = if (includeRefresh) ",\"refresh_token\":$refreshJson" else ""
+            return ByteArrayInputStream((base + refresh + "}").toByteArray())
+        }
         override fun connect() = Unit
         override fun disconnect() { disconnected = true }
         override fun usingProxy() = false

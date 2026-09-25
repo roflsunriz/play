@@ -5,6 +5,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.MusicContent
+import io.github.playmusic.data.playback.StreamingApiClient
 import io.github.playmusic.data.playback.LocalPlayback
 import io.github.playmusic.data.audio.EqualizerSettings
 import io.github.playmusic.testing.AudioProbeService
@@ -16,6 +17,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
+import java.net.URI
 
 class AudioOutputTest {
     @Test fun decodedAudioRemainsAudibleBeyondTheOpening(): Unit = runBlocking {
@@ -36,6 +38,11 @@ class AudioOutputTest {
             if (exerciseEqualizer) app.audioEffects.setSettings(EqualizerSettings(true, -6f,
                 List(30) { if (it % 2 == 0) 3f else -3f }))
             ActivityScenario.launch(MainActivity::class.java).use {
+                // Follow the product's track-start path: finish deriving playback credentials
+                // before the DRM thread reaches the first encrypted boundary.
+                withTimeout(120_000) {
+                    app.playbackAuthorization.prepare(URI(StreamingApiClient.LICENSE_URL))
+                }
                 playback.play(listOf(track))
                 withTimeout(60_000) {
                     while (playback.state.value.progressMs < 32_000) {

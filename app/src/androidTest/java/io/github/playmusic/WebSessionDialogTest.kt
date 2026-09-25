@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import io.github.playmusic.ui.HomeScreen
@@ -24,13 +25,18 @@ class WebSessionDialogTest {
 
     @Test fun settingsMenuExposesTheWebSessionEntry() {
         var opened = false
+        var reauthorized = false
         composeRule.setContent {
             PlayTheme { HomeScreen(PlayUiState(isLoggedIn = true), {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+                onBrowserLogin = { reauthorized = true },
                 onWebSession = { opened = true }) }
         }
         composeRule.onNodeWithTag("settings-button").performClick()
         composeRule.onNodeWithTag("web-session-menu-item").assertIsDisplayed().performClick()
         composeRule.runOnIdle { assertTrue(opened) }
+        composeRule.onNodeWithTag("settings-button").performClick()
+        composeRule.onNodeWithTag("account-login-button").assertIsDisplayed().performClick()
+        composeRule.runOnIdle { assertTrue(reauthorized) }
     }
 
     @Test fun invalidValuesShowAnErrorAndNeverReachSaving() {
@@ -44,7 +50,8 @@ class WebSessionDialogTest {
             }
         }
         composeRule.onNodeWithTag("web-session-save").performClick()
-        composeRule.onNodeWithTag("web-session-error").assertIsDisplayed()
+        composeRule.onNodeWithTag("web-session-error", useUnmergedTree = true)
+            .performScrollTo().assertIsDisplayed()
         composeRule.runOnIdle { assertEquals("unset", saved) }
         composeRule.onNodeWithTag("web-session-input").performTextClearance()
         composeRule.onNodeWithTag("web-session-input").performTextInput("valid-cookie-value")

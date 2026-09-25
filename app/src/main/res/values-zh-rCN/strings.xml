@@ -32,6 +32,8 @@
     <string name="verification_code_failed">验证码未被接受，请输入最新验证码。</string>
     <string name="untitled_playlist">未命名播放列表</string>
     <string name="browser_login">登录</string>
+    <string name="browser_reauthorize">重新登录</string>
+    <string name="browser_reauthorize_required">播放音乐需要更新登录授权。请重新登录。</string>
     <string name="browser_login_description">登录以访问音乐库并在此设备上播放音乐。</string>
     <string name="browser_login_waiting">请在浏览器中完成登录。Play 将自动继续。</string>
     <string name="back">返回</string>
@@ -69,5 +71,4 @@
     <string name="web_session_saved">已保存网页会话。</string>
     <string name="web_session_invalid">此值不可用。请粘贴完整的 sp_dc Cookie 值。</string>
     <string name="web_session_save_failed">无法保存网页会话。请重试。</string>
-    <string name="web_session_browser">在浏览器中获取</string>
 </resources>

@@ -32,6 +32,8 @@
     <string name="verification_code_failed">O código de verificação não foi aceito. Digite o código mais recente.</string>
     <string name="untitled_playlist">Playlist sem título</string>
     <string name="browser_login">Entrar</string>
+    <string name="browser_reauthorize">Entrar novamente</string>
+    <string name="browser_reauthorize_required">É preciso renovar o login para reproduzir música. Entre novamente.</string>
     <string name="browser_login_description">Entre para acessar sua biblioteca e ouvir música neste dispositivo.</string>
     <string name="browser_login_waiting">Conclua o login no navegador. O Play continuará automaticamente.</string>
     <string name="back">Voltar</string>
@@ -71,5 +73,4 @@
     <string name="web_session_saved">Sessão Web salva.</string>
     <string name="web_session_invalid">Este valor não pode ser usado. Cole o valor completo do cookie sp_dc.</string>
     <string name="web_session_save_failed">Não foi possível salvar a sessão Web. Tente novamente.</string>
-    <string name="web_session_browser">Obter no navegador</string>
 </resources>

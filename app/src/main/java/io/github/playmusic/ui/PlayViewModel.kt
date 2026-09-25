@@ -8,7 +8,6 @@ import io.github.playmusic.data.api.BrowserAuthorizationRequiredException
 import io.github.playmusic.data.auth.LoginVerificationRequiredException
 import io.github.playmusic.data.auth.AuthException
 import io.github.playmusic.data.auth.BrowserAuthorizationClient
-import io.github.playmusic.data.auth.PlaybackAuthorizationDiagnostics
 import io.github.playmusic.data.model.ContentKind
 import io.github.playmusic.data.model.ContentDetail
 import io.github.playmusic.data.model.DetailSort
@@ -42,6 +41,7 @@ enum class LibrarySection(val kind: ContentKind?) {
 enum class ErrorKind {
     LOGIN,
     LOGIN_REQUIRED,
+    REAUTHORIZE_REQUIRED,
     VERIFICATION_CODE,
     REQUEST,
 }
@@ -101,8 +101,7 @@ data class PlayUiState(
     val webSessionInvalid: Boolean = false,
     val webSessionSaved: Boolean = false,
     val webSessionSaveFailed: Boolean = false,
-    val webSessionAutoPrompted: Boolean = false,
-    val webViewOpen: Boolean = false,
+    val reauthorizationPrompted: Boolean = false,
 )
 
 class PlayViewModel(private val container: AppContainer) : ViewModel() {
@@ -148,7 +147,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { container.localPlayback.errors.collect {
             if (mutableState.value.isLoggedIn) {
                 mutableState.value = mutableState.value.copy(error = UiError(ErrorKind.REQUEST, it))
-                maybePromptWebSession()
+                maybePromptReauthorization()
             }
         } }
         viewModelScope.launch { container.localPlayback.latestReport.collect {
@@ -771,9 +770,6 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
     private fun warmPlaybackAuthorization() {
         playbackWarmupJob?.cancel()
         playbackWarmupJob = viewModelScope.launch {
-            runCatching { PlaybackAuthorizationDiagnostics.run(container) }.onFailure {
-                android.util.Log.i("PlayAuthDiag", "probe-failed ${it.javaClass.simpleName}")
-            }
             runCatching { ensurePlaybackAuthorization() }
         }
     }
@@ -888,15 +884,14 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
             webSessionInvalid = false, webSessionSaveFailed = false)
     }
 
-    /** Opens the import dialog once per need when playback fails for lack of a web session. */
-    private fun maybePromptWebSession() {
+    /** Offers normal browser reauthorization once when an older sign-in lacks transfer access. */
+    private fun maybePromptReauthorization() {
         val current = mutableState.value
-        if (current.webSessionAutoPrompted || current.webSessionOpen) return
+        if (current.reauthorizationPrompted || current.isAuthorizing || current.webSessionOpen) return
         if (!container.playbackAuthorization.transferRefusedWithoutCookie) return
         if (container.sessionStore.loadSession()?.webCookie != null) return
-        mutableState.value = current.copy(webSessionOpen = true, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = false, webSessionAutoPrompted = true,
-            webSessionSaved = false)
+        mutableState.value = current.copy(error = UiError(ErrorKind.REAUTHORIZE_REQUIRED),
+            reauthorizationPrompted = true)
     }
 
     fun updateWebSessionInput(value: String) {
@@ -919,32 +914,6 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         warmPlaybackAuthorization()
     }
 
-    fun openWebLogin() {
-        mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = false, webViewOpen = true)
-    }
-
-    fun closeWebLogin() {
-        mutableState.value = mutableState.value.copy(webViewOpen = false)
-    }
-
-    fun importSpDcFromBrowser(value: String) {
-        val trimmed = value.trim()
-        if (!io.github.playmusic.data.auth.PlaybackAuthorizationClient.isValidWebCookie(trimmed)) {
-            mutableState.value = mutableState.value.copy(webViewOpen = false, webSessionOpen = true,
-                webSessionInvalid = true)
-            return
-        }
-        if (!persistWebCookie(trimmed)) {
-            mutableState.value = mutableState.value.copy(webViewOpen = false, webSessionOpen = true,
-                webSessionSaveFailed = true)
-            return
-        }
-        mutableState.value = mutableState.value.copy(webViewOpen = false, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = false, webSessionSaved = true)
-        warmPlaybackAuthorization()
-    }
-
     /** Persists a validated cookie. False covers no sign-in and storage failure. */
     private fun persistWebCookie(value: String): Boolean {
         val session = container.sessionStore.loadSession() ?: return false
@@ -961,7 +930,7 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         }.exceptionOrNull()
         mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
             webSessionInvalid = false, webSessionSaveFailed = failure != null, webSessionSaved = false,
-            webSessionAutoPrompted = failure != null && mutableState.value.webSessionAutoPrompted)
+            reauthorizationPrompted = failure != null && mutableState.value.reauthorizationPrompted)
         if (failure == null) warmPlaybackAuthorization()
     }
 

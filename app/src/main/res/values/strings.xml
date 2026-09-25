@@ -32,6 +32,8 @@
     <string name="verification_code_failed">The verification code was not accepted. Enter the latest code.</string>
     <string name="untitled_playlist">Untitled playlist</string>
     <string name="browser_login">Sign in</string>
+    <string name="browser_reauthorize">Sign in again</string>
+    <string name="browser_reauthorize_required">Your sign-in needs to be renewed for playback. Sign in again.</string>
     <string name="browser_login_description">Sign in to access your library and play music on this device.</string>
     <string name="browser_login_waiting">Complete the login process in your browser. Play will continue automatically.</string>
     <string name="back">Back</string>
@@ -70,5 +72,4 @@
     <string name="web_session_saved">Web session saved.</string>
     <string name="web_session_invalid">This value cannot be used. Paste the complete sp_dc cookie value.</string>
     <string name="web_session_save_failed">Could not save the web session. Try again.</string>
-    <string name="web_session_browser">Get in browser</string>
 </resources>

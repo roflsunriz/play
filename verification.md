@@ -444,12 +444,21 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 - 報告は転送段階の HTTP 403。診断用debug版（専用署名・上書き・データ保持）で実機ZY22JBMT9Dの転送POSTを分類記録した（秘密値は記録なし）。
 - 元Bearer・版1.3.0.277・OTT形式URL（`login/ott/v2#token=`）・wgホスト・wgホスト＋OTT形式URL・Android client-token付与・強制更新Bearer・JDK標準HTTPの全8種が `403 {"error":"invalid_request"}` で一致。期限・client-token欠落・版の古さ・url形状・ホスト（gae2／wg）・TLS実装および組み合わせではない。実体に`gae2`の文字はなくspclient系はすべてwgホストを使用。
 - 同一アカウントのWindows版実アプリは再生できるためアカウント側の問題は否定。Play側の再ログイン（新規lineage）でも同一403のためlineage固有の拒否も否定。新規セッションに保存認証情報はなくLogin5派生Bearerは検証不可。
-- 結論：転送経路はPlayが発行できる全資格情報をcategoricalに拒否。要求形は09-13頃の200報告時と同一のためサーバー側の変更が濃厚。実クライアントとの差分はDPoP束縛／Login5派生セッションに絞られ、修正にはその調査が必要。#18は当日報告。
-- DPoP検証の結果：保存鍵でのDPoP付き更新は200だが`token_type=Bearer`のまま束縛されず、DPoP方式での転送は401（`WWW-Authenticate: Bearer realm="spotify", error="invalid_token"`）。転送の方式はBearerでありDPoP方式は否定。不正鍵のproofは400で拒否されるため鍵束縛機構自体は動作している。残るBearer資格差異の有力候補は`transfer-auth-session` scopeだが、認可時の要求はillegal scopeで不可。実クライアントの転送呼び出し自体の捕捉が次の決定打。
-- 生データ解析の結果（`Downloads/flows*`、秘密値は記録なし）：3ファイルいずれにも転送呼び出しはなく、実アプリは通常起動・再生で転送を呼ばない。実アプリの更新応答からscope全28件を確定し`transfer-auth-session`を含む。更新要求にはDPoP proofとclient-token（Playと同一client_id）があり応答はBearerのまま。実UAはChrome/146・Spotify/1.3.1.234。OTT形式URLの3種も同一403のため`url`値ではなくBearer資格の拒否と確定。原因はscope欠落だが認可時要求がillegal scopeのため現経路では取得不可。
-- 解決確認（Pixel 10a・同一アカウント）：既存付与のセッションでは転送が全種200（token有・299秒）となり、公開版0.7.0で10秒以上の再生を確認。新規認可への同scope付与は停止中のため、新規ログインは当面再生不可。該当セッションの維持（ログアウト禁止）が最優先。
-- 新規lineageの解決確認（razr・同一アカウント）：取込済みsp_dcによるCookieフォールバックで製品経路の認証取得（`headers-ok`）を確認し、再生27秒超でシーク位置が進行、DRMエラーなし。新規ログインでも取込後に10秒以上再生できる。WebViewの黒画面は未解決のため取込は手動貼付け。razrは修正入り診断版のまま（公開版へ戻すと再生不能に戻る）。
-- 同一Bearer＋同一デスクトップヘッダーで一覧表示は正常のため、失敗は転送経路に孤立する。製品の転送要求は09-15時点と同一形のため、サーバー側または資格情報側の変化が濃厚。
+- 当時の結論：旧`/authorize`で作った資格情報は転送経路で拒否された。後述の別認可入口では同じclient IDでも必要な権限が付与されることを確認したため、サービスが新規付与全体を停止したという推定は取り下げる。#18は当日報告。
+- DPoP検証の結果：保存鍵でのDPoP付き更新は200だが`token_type=Bearer`のまま束縛されず、DPoP方式での転送は401。転送の方式はBearerでありDPoP方式は否定。不正鍵のproofは400で拒否されるため鍵束縛機構自体は動作している。`transfer-auth-session` scopeは旧`/authorize`では拒否されたが、後述の別認可入口では付与された。
+- 生データ解析の結果（`Downloads/flows*`、秘密値は記録なし）：最初の3ファイルに転送呼び出しはなく、参照アプリは通常起動・再生で転送を呼ばない。参照アプリの更新応答からscope全28件を確定し`transfer-auth-session`を含む。更新要求にはDPoP proofとclient-token（Playと同一client_id）があり応答はBearerのまま。旧`/authorize`で同scopeを要求すると拒否されたが、追加の`flows_chrome`で成功した別入口を確認した。
+- 旧セッション確認（Pixel 10a・同一アカウント）：既存付与のセッションでは転送が全種200（token有・299秒）となり、公開版0.7.0で10秒以上の再生を確認。Pixelの既存セッションは保持し、ログアウトしていない。
+- 当時の補助経路（razr・同一アカウント）：取込済みCookieによる製品経路の認証取得（`headers-ok`）を確認し、再生27秒超でシーク位置が進行、DRMエラーなし。旧WebViewは黒画面で使えず、当時は手動取込を使用した。後述の通常ブラウザー再認可ではCookieを使わずに完走した。
+- 旧資格情報では同一Bearer＋同一デスクトップヘッダーで一覧表示は正常だったため、失敗は転送権限に限られていた。製品の転送要求は09-15時点と同一形であり、認可で付与された権限の差が原因だった。
 - 現行デスクトップ実体（1.3.1.234）の読み取り専用確認で、実クライアントのurl欄は `https://accounts.spotify.com/login/ott/v2#token=` であることを確定。同実体にDPoP束縛とTokenExchangerのDPoP失敗分類がある。「DPoP束縛またはLogin5派生Bearerの要求」が残る有力候補。
-- 診断後は公開v0.7.0（SHA-256一致・同一証明書）へ上書き復帰し、DEBUGGABLEなし・データ保持を確認。詳細は `session/09-25-16-19.md`。
-- 未解決。次の切り分けは再ログイン（新規lineage）での転送再試行であり、本人操作の許可が必要。
+- Pixelは診断後に公開v0.7.0（SHA-256一致・同一証明書）へ上書き復帰した記録がある。ただし同日21:49の端末照会では診断用debug版が再導入されていた。Pixelの保存ログインには触れていない。過去の診断は `session/09-25-16-19.md`。
+
+### #18の新規認可経路と実音声の再検証（2026-09-25）
+
+- `Downloads/flows_chrome`の実クライアント認可を匿名化して追跡した。端末コード要求も行われていたが、成功した資格情報は`/oauth2/v2/auth`からの認可コード＋PKCE交換で発行され、同じ公開client IDに再生転送を含む28権限が付いた。旧`/authorize`で同権限が拒否されたことと矛盾しない。
+- razrの保存データを保持したまま、`DesktopAuthorizationAccountTest(liveDesktopAuth=true)`を2回実行した。どちらも新規トークンへ再生転送権限が付いた。2回目は取得した一時トークンで転送からWeb再生セッション生成まで成功した。テストは保存済みログインを変更しない。
+- 設定メニューの「ログインし直す」から通常のブラウザー再認可を行い、保存後の転送は全てHTTP 200だった。Cookie取込値が保存されていない状態を確認した。旧WebViewは黒画面になるため、画面から除き、このボタンを確認済みの再認可へ接続した。
+- `AudioOutputTest(liveAudio=true, fullTrack=true)`の初回は、テストが製品の再生前認証準備を通さず直接プレイヤーを開始し、DRMライセンス取得エラーで失敗した。製品と同じ事前取得をテストへ入れた後、razrで自然終端まで成功（309.94秒）。復号後の音声が冒頭15/15秒、中盤19/19秒、終盤20/20秒に存在することを確認した。再生位置だけではなく実音声の結果である。
+- ログイン直後のdebug診断プローブが再生認証の事前取得を遅らせることを確認したため、原因調査を終えたプローブを製品経路から撤去した。最終debug版で`AudioOutputTest(liveAudio=true)`を再実行し、16〜30秒区間を含む検査が38.554秒で成功した。
+- 最終ソースの`testDebugUnitTest`、`lintDebug`、`assembleDebug`、`assembleDebugAndroidTest`、`assembleRelease`は成功。認可コールバックと再認可メニューの計装7件は、合成JSONと非マージ意味ツリーのテスト側修正後に全件個別の成功を確認した。認証情報をGitやログへ保存していない。
+- 再認可に使った`flow_ctx`の時刻形式はキャプチャ1例と当日の実機成功で確認した。将来の時刻・別アカウントでの結果は未検証。Pixelでは再認可・ログアウトを行っていない。

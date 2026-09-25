@@ -32,6 +32,8 @@
     <string name="verification_code_failed">لم يُقبل رمز التحقق. أدخل أحدث رمز.</string>
     <string name="untitled_playlist">قائمة تشغيل بلا عنوان</string>
     <string name="browser_login">تسجيل الدخول</string>
+    <string name="browser_reauthorize">تسجيل الدخول مجددًا</string>
+    <string name="browser_reauthorize_required">يجب تجديد تسجيل الدخول لتشغيل الموسيقى. سجّل الدخول مجددًا.</string>
     <string name="browser_login_description">سجّل الدخول للوصول إلى مكتبتك وتشغيل الموسيقى على هذا الجهاز.</string>
     <string name="browser_login_waiting">أكمل تسجيل الدخول في المتصفح. سيتابع Play تلقائيًا.</string>
     <string name="back">رجوع</string>
@@ -74,5 +76,4 @@
     <string name="web_session_saved">تم حفظ جلسة الويب.</string>
     <string name="web_session_invalid">لا يمكن استخدام هذه القيمة. الصق قيمة sp_dc كاملة.</string>
     <string name="web_session_save_failed">تعذّر حفظ جلسة الويب. حاول مجددًا.</string>
-    <string name="web_session_browser">الحصول في المتصفح</string>
 </resources>

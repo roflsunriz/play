@@ -32,6 +32,8 @@
     <string name="verification_code_failed">Код подтверждения не принят. Введите последний код.</string>
     <string name="untitled_playlist">Плейлист без названия</string>
     <string name="browser_login">Войти</string>
+    <string name="browser_reauthorize">Войти снова</string>
+    <string name="browser_reauthorize_required">Для воспроизведения музыки нужно обновить вход. Войдите снова.</string>
     <string name="browser_login_description">Войдите, чтобы открыть медиатеку и слушать музыку на этом устройстве.</string>
     <string name="browser_login_waiting">Завершите вход в браузере. Play продолжит автоматически.</string>
     <string name="back">Назад</string>
@@ -72,5 +74,4 @@
     <string name="web_session_saved">Веб-сессия сохранена.</string>
     <string name="web_session_invalid">Это значение использовать нельзя. Вставьте полное значение cookie sp_dc.</string>
     <string name="web_session_save_failed">Не удалось сохранить веб-сессию. Повторите попытку.</string>
-    <string name="web_session_browser">Получить в браузере</string>
 </resources>

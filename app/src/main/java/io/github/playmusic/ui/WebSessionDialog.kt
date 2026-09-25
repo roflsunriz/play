@@ -31,7 +31,7 @@ internal fun WebSessionDialog(
     onSave: () -> Unit,
     onRemove: () -> Unit,
     onCancel: () -> Unit,
-    onBrowser: () -> Unit = {},
+    onReauthorize: () -> Unit = {},
 ) {
     AlertDialog(
         modifier = Modifier.testTag("web-session-dialog"),
@@ -60,8 +60,8 @@ internal fun WebSessionDialog(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.testTag("web-session-save-error")
                         .semantics { liveRegion = LiveRegionMode.Polite })
-                TextButton(onClick = onBrowser, modifier = Modifier.testTag("web-session-browser")) {
-                    Text(stringResource(R.string.web_session_browser))
+                TextButton(onClick = onReauthorize, modifier = Modifier.testTag("web-session-reauthorize")) {
+                    Text(stringResource(R.string.browser_reauthorize))
                 }
                 if (saved) TextButton(onClick = onRemove, modifier = Modifier.testTag("web-session-remove")) {
                     Text(stringResource(R.string.web_session_remove))

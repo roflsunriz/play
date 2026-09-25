@@ -32,6 +32,8 @@
     <string name="verification_code_failed">যাচাইকরণ কোড গ্রহণ করা হয়নি। সর্বশেষ কোড লিখুন।</string>
     <string name="untitled_playlist">শিরোনামহীন প্লেলিস্ট</string>
     <string name="browser_login">সাইন ইন করুন</string>
+    <string name="browser_reauthorize">আবার সাইন ইন করুন</string>
+    <string name="browser_reauthorize_required">গান চালাতে সাইন-ইন নবায়ন করতে হবে। আবার সাইন ইন করুন।</string>
     <string name="browser_login_description">এই ডিভাইসে লাইব্রেরি খুলতে ও গান চালাতে সাইন ইন করুন।</string>
     <string name="browser_login_waiting">ব্রাউজারে সাইন ইন সম্পূর্ণ করুন। Play স্বয়ংক্রিয়ভাবে এগিয়ে যাবে।</string>
     <string name="back">ফিরে যান</string>
@@ -70,5 +72,4 @@
     <string name="web_session_saved">ওয়েব সেশন সংরক্ষিত হয়েছে।</string>
     <string name="web_session_invalid">এই মান ব্যবহার করা যাবে না। সম্পূর্ণ sp_dc কুকির মান পেস্ট করুন।</string>
     <string name="web_session_save_failed">ওয়েব সেশন সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।</string>
-    <string name="web_session_browser">ব্রাউজারে নিন</string>
 </resources>
