@@ -34,6 +34,7 @@
     <string name="browser_login">Entrar</string>
     <string name="browser_reauthorize">Entrar novamente</string>
     <string name="browser_reauthorize_required">É preciso renovar o login para reproduzir música. Entre novamente.</string>
+    <string name="browser_session_notice">Sair do Play não encerra a sessão do serviço de música no navegador. Para entrar do zero, saia do site do serviço no navegador antes de continuar.</string>
     <string name="browser_login_description">Entre para acessar sua biblioteca e ouvir música neste dispositivo.</string>
     <string name="browser_login_waiting">Conclua o login no navegador. O Play continuará automaticamente.</string>
     <string name="back">Voltar</string>
@@ -66,11 +67,4 @@
     <string name="delete_playlist_confirmation">%1$s será removida da sua biblioteca. Pessoas com o link talvez ainda possam acessá-la.</string>
     <string name="playlist_delete_failed">Não foi possível excluir. Verifique a conexão e tente novamente.</string>
     <string name="playlist_text_limit">Use no máximo %1$d caracteres.</string>
-    <string name="web_session_title">Sessão Web</string>
-    <string name="web_session_description">Se o login por si só não reproduz música, cole o cookie sp_dc do player Web do seu navegador. Abra open.spotify.com no navegador, leia o valor do cookie sp_dc e cole aqui. Ele fica criptografado neste dispositivo.</string>
-    <string name="web_session_label">Valor do cookie sp_dc</string>
-    <string name="web_session_remove">Remover</string>
-    <string name="web_session_saved">Sessão Web salva.</string>
-    <string name="web_session_invalid">Este valor não pode ser usado. Cole o valor completo do cookie sp_dc.</string>
-    <string name="web_session_save_failed">Não foi possível salvar a sessão Web. Tente novamente.</string>
 </resources>

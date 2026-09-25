@@ -136,6 +136,37 @@ class SessionVerificationScreenTest {
         composeRule.runOnIdle { assertNull(viewModel.state.value.error) }
     }
 
+    @Test
+    fun accountActionsExplainTheBrowserSessionBeforeChangingSavedLogin() {
+        val (viewModel, _) = createModel(expired = false)
+        render(viewModel)
+        composeRule.waitUntil(5_000) { viewModel.state.value.items.isNotEmpty() }
+
+        composeRule.onNodeWithTag("settings-button").performClick()
+        composeRule.onNodeWithTag("account-login-button").performClick()
+        composeRule.onNodeWithTag("account-session-notice-dialog").assertIsDisplayed()
+        composeRule.onNodeWithTag("account-session-notice", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertTrue(!viewModel.state.value.isAuthorizing)
+            assertTrue(SecureSessionStore(context).loadSession() != null)
+        }
+        composeRule.onNodeWithTag("account-session-cancel").performClick()
+
+        composeRule.onNodeWithTag("settings-button").performClick()
+        composeRule.onNodeWithTag("logout-button").performClick()
+        composeRule.onNodeWithTag("account-session-notice-dialog").assertIsDisplayed()
+        composeRule.runOnIdle { assertTrue(SecureSessionStore(context).loadSession() != null) }
+        composeRule.onNodeWithTag("account-session-cancel").performClick()
+        composeRule.runOnIdle { assertTrue(viewModel.state.value.isLoggedIn) }
+
+        composeRule.onNodeWithTag("settings-button").performClick()
+        composeRule.onNodeWithTag("logout-button").performClick()
+        composeRule.onNodeWithTag("account-session-confirm").performClick()
+        composeRule.waitUntil(5_000) { !viewModel.state.value.isLoggedIn }
+        composeRule.onNodeWithTag("browser-session-notice").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle { assertNull(SecureSessionStore(context).loadSession()) }
+    }
+
     private fun render(viewModel: PlayViewModel) {
         composeRule.setContent { PlayTheme { PlayRoute(viewModel) } }
     }

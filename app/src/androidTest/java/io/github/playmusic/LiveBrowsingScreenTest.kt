@@ -48,7 +48,7 @@ class LiveBrowsingScreenTest {
         composeRule.onNodeWithTag("track-filter-input").assertTextEquals(checkNotNull(savedTrack.albumTitle))
         composeRule.onNodeWithTag("clear-library-filter").performClick()
         composeRule.onNodeWithTag("settings-button").performClick()
-        composeRule.onNodeWithTag("account-login-button").assertDoesNotExist()
+        composeRule.onNodeWithTag("account-login-button").assertIsDisplayed()
         androidx.test.espresso.Espresso.pressBack()
         composeRule.onNodeWithTag("section-search").performClick()
         composeRule.onNodeWithTag("suggested-heading").assertIsDisplayed()

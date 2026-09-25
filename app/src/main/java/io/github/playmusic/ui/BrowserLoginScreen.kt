@@ -57,6 +57,11 @@ internal fun BrowserLoginScreen(
         Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(16.dp))
         Text(stringResource(if (pending == null) R.string.browser_login_description else R.string.browser_login_waiting))
+        Spacer(Modifier.height(12.dp))
+        Text(stringResource(R.string.browser_session_notice),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag("browser-session-notice"))
         Spacer(Modifier.height(24.dp))
         Button(onClick = onBegin, enabled = !isAuthorizing,
             modifier = Modifier.fillMaxWidth().testTag("browser-login-button")) {

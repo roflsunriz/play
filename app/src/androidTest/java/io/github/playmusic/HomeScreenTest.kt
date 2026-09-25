@@ -181,7 +181,7 @@ class HomeScreenTest {
         composeRule.onNodeWithTag("section-playlists").performClick()
         composeRule.onNodeWithTag("refresh-button").performClick()
         composeRule.onNodeWithTag("settings-button").performClick()
-        composeRule.onNodeWithTag("account-login-button").assertDoesNotExist()
+        composeRule.onNodeWithTag("account-login-button").assertIsDisplayed()
         composeRule.onNodeWithTag("logout-button").performClick()
 
         composeRule.runOnIdle {

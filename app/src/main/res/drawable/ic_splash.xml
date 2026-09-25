@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="432dp"
+    android:height="432dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:name="disc" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="#1ED760"
+            android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18" />
+    </group>
+    <group android:name="play" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="#101010"
+            android:pathData="M45,36 L45,72 L73,54 Z" />
+    </group>
+</vector>

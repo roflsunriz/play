@@ -34,6 +34,7 @@
     <string name="browser_login">Sign in</string>
     <string name="browser_reauthorize">Sign in again</string>
     <string name="browser_reauthorize_required">Your sign-in needs to be renewed for playback. Sign in again.</string>
+    <string name="browser_session_notice">Signing out of Play does not sign you out of the music service in your browser. For a fresh sign-in, sign out on its website in the browser before continuing.</string>
     <string name="browser_login_description">Sign in to access your library and play music on this device.</string>
     <string name="browser_login_waiting">Complete the login process in your browser. Play will continue automatically.</string>
     <string name="back">Back</string>
@@ -65,11 +66,4 @@
     <string name="delete_playlist_confirmation">%1$s will be removed from your library. People with its link may still be able to access it.</string>
     <string name="playlist_delete_failed">Could not delete. Check your connection and try again.</string>
     <string name="playlist_text_limit">Character limit: %1$d</string>
-    <string name="web_session_title">Web session</string>
-    <string name="web_session_description">If sign-in alone cannot play music, paste the sp_dc cookie from your browser web player. Open open.spotify.com in your browser, read the sp_dc cookie value, and paste it here. It stays encrypted on this device.</string>
-    <string name="web_session_label">sp_dc cookie value</string>
-    <string name="web_session_remove">Remove</string>
-    <string name="web_session_saved">Web session saved.</string>
-    <string name="web_session_invalid">This value cannot be used. Paste the complete sp_dc cookie value.</string>
-    <string name="web_session_save_failed">Could not save the web session. Try again.</string>
 </resources>

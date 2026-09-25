@@ -34,6 +34,7 @@
     <string name="browser_login">সাইন ইন করুন</string>
     <string name="browser_reauthorize">আবার সাইন ইন করুন</string>
     <string name="browser_reauthorize_required">গান চালাতে সাইন-ইন নবায়ন করতে হবে। আবার সাইন ইন করুন।</string>
+    <string name="browser_session_notice">Play থেকে লগ আউট করলেও ব্রাউজারে সঙ্গীত পরিষেবা থেকে লগ আউট হয় না। নতুন করে সাইন ইন করতে, এগোনোর আগে ব্রাউজারে পরিষেবার ওয়েবসাইট থেকে লগ আউট করুন।</string>
     <string name="browser_login_description">এই ডিভাইসে লাইব্রেরি খুলতে ও গান চালাতে সাইন ইন করুন।</string>
     <string name="browser_login_waiting">ব্রাউজারে সাইন ইন সম্পূর্ণ করুন। Play স্বয়ংক্রিয়ভাবে এগিয়ে যাবে।</string>
     <string name="back">ফিরে যান</string>
@@ -65,11 +66,4 @@
     <string name="delete_playlist_confirmation">%1$s আপনার লাইব্রেরি থেকে সরানো হবে। লিঙ্ক থাকা ব্যক্তিরা এটি তখনও দেখতে পারেন।</string>
     <string name="playlist_delete_failed">মোছা যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।</string>
     <string name="playlist_text_limit">সর্বাধিক %1$dটি অক্ষর ব্যবহার করুন।</string>
-    <string name="web_session_title">ওয়েব সেশন</string>
-    <string name="web_session_description">শুধু সাইন-ইন দিয়ে গান না চললে, আপনার ব্রাউজারের ওয়েব প্লেয়ার থেকে sp_dc কুকি পেস্ট করুন। ব্রাউজারে open.spotify.com খুলুন, sp_dc কুকির মান দেখে এখানে পেস্ট করুন। এটি এই ডিভাইসে এনক্রিপ্টেড থাকে।</string>
-    <string name="web_session_label">sp_dc কুকির মান</string>
-    <string name="web_session_remove">মুছুন</string>
-    <string name="web_session_saved">ওয়েব সেশন সংরক্ষিত হয়েছে।</string>
-    <string name="web_session_invalid">এই মান ব্যবহার করা যাবে না। সম্পূর্ণ sp_dc কুকির মান পেস্ট করুন।</string>
-    <string name="web_session_save_failed">ওয়েব সেশন সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।</string>
 </resources>

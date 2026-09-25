@@ -46,6 +46,10 @@ osv-scanner scan source --lockfile gradle/verification-metadata.xml --config gra
 
 新規ブラウザー認可の権限を調べる場合は、Pixelの既存セッションを保持し、許可された別端末で`DesktopAuthorizationAccountTest`に`liveDesktopAuth=true`を指定する。テストは本人のブラウザー操作後に権限と再生セッション生成を確認し、保存済みログインを変更しない。製品画面では設定の「ログインし直す」を使い、成功時だけ保存認証を置き換える。実音声テストは製品と同じ再生認証の事前取得を経てから開始する。
 
+Playのログアウトは端末内の保存セッションを消すが、標準ブラウザー側のログイン状態は消さない。認証を最初からやり直す検証では、本人がブラウザーで音楽サービスからログアウトしてからPlayで再認可する。Playから他アプリのCookieを消す設定変更や、Pixelの旧セッションのログアウトを検証の代わりにしない。
+
+0.8.1以降はハンバーガーメニューの「Webセッション」入力画面を表示しない。旧版で保存したWebセッションは暗号化セッション形式4から読み込み、転送が拒否された場合の内部フォールバックだけに使用する。画面削除を理由に旧保存認証や既存のライブラリデータを消さない。起動画面はAndroidX SplashScreenを使い、Android 12以降ではベクターアイコンのアニメーション、Android 11以前では共通の終了アニメーションを確認する。
+
 特定の旧版だけが再生に失敗する場合は、検索で見つかる別版ではなく、実際に保存されている曲を確認する。`StreamingAccountTest`へ`liveStreaming=true`と`albumQuery`（保存アルバム名の一意な部分文字列）、または`playlistName`（完全一致）と`trackTitle`（曲名の部分文字列）を渡すと、元の一覧を変更せず再生情報を解決する。両組を指定すると2検査を実行する。検査ログにある元の曲URIを`AudioOutputTest`と`LivePlaybackTest`の`trackUri`へ渡して、音声・シーク・前後移動・リピートも確認する。配信情報だけの成功を再生成功と扱わない。
 
 ログインの自動復帰を変更した場合は `BrowserReturnTest` を `externalBrowserProbe=true` で確認する。

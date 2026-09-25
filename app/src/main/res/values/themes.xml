@@ -2,8 +2,15 @@
 <resources>
     <style name="Theme.Play" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@color/launcher_background</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:navigationBarColor">#101010</item>
         <item name="android:statusBarColor">#101010</item>
+    </style>
+    <style name="Theme.Play.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_animated</item>
+        <item name="windowSplashScreenAnimationDuration">750</item>
+        <item name="postSplashScreenTheme">@style/Theme.Play</item>
     </style>
 </resources>

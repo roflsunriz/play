@@ -57,6 +57,7 @@ class BrowserLoginScreenTest {
                 }
             }
         }
+        composeRule.onNodeWithTag("browser-session-notice").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("browser-login-button").performScrollTo().assertIsEnabled().performClick()
         composeRule.onNodeWithTag("browser-login-button").assertIsNotEnabled()
         composeRule.onNodeWithTag("browser-login-progress").performScrollTo().assertIsDisplayed()

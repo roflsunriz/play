@@ -96,11 +96,6 @@ data class PlayUiState(
     val playbackSettingsOpen: Boolean = false,
     val artistFollowBusy: Boolean = false,
     val artistRadioBusy: Boolean = false,
-    val webSessionOpen: Boolean = false,
-    val webSessionInput: String = "",
-    val webSessionInvalid: Boolean = false,
-    val webSessionSaved: Boolean = false,
-    val webSessionSaveFailed: Boolean = false,
     val reauthorizationPrompted: Boolean = false,
 )
 
@@ -873,65 +868,14 @@ class PlayViewModel(private val container: AppContainer) : ViewModel() {
         mutableState.value = mutableState.value.copy(error = null, errorReport = null)
     }
 
-    fun openWebSession() {
-        mutableState.value = mutableState.value.copy(webSessionOpen = true, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = false,
-            webSessionSaved = container.sessionStore.loadSession()?.webCookie != null)
-    }
-
-    fun closeWebSession() {
-        mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = false)
-    }
-
     /** Offers normal browser reauthorization once when an older sign-in lacks transfer access. */
     private fun maybePromptReauthorization() {
         val current = mutableState.value
-        if (current.reauthorizationPrompted || current.isAuthorizing || current.webSessionOpen) return
+        if (current.reauthorizationPrompted || current.isAuthorizing) return
         if (!container.playbackAuthorization.transferRefusedWithoutCookie) return
         if (container.sessionStore.loadSession()?.webCookie != null) return
         mutableState.value = current.copy(error = UiError(ErrorKind.REAUTHORIZE_REQUIRED),
             reauthorizationPrompted = true)
-    }
-
-    fun updateWebSessionInput(value: String) {
-        if (value.length > 4096) return
-        mutableState.value = mutableState.value.copy(webSessionInput = value, webSessionInvalid = false)
-    }
-
-    fun saveWebSession() {
-        val value = mutableState.value.webSessionInput.trim()
-        if (!io.github.playmusic.data.auth.PlaybackAuthorizationClient.isValidWebCookie(value)) {
-            mutableState.value = mutableState.value.copy(webSessionInvalid = true)
-            return
-        }
-        if (!persistWebCookie(value)) {
-            mutableState.value = mutableState.value.copy(webSessionSaveFailed = true)
-            return
-        }
-        mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = false, webSessionSaved = true)
-        warmPlaybackAuthorization()
-    }
-
-    /** Persists a validated cookie. False covers no sign-in and storage failure. */
-    private fun persistWebCookie(value: String): Boolean {
-        val session = container.sessionStore.loadSession() ?: return false
-        // commit() inside the store surfaces storage failures instead of reporting success.
-        return runCatching {
-            container.sessionManager.replaceSession(session.copy(webCookie = value))
-        }.exceptionOrNull() == null
-    }
-
-    fun clearWebSession() {
-        val session = container.sessionStore.loadSession()
-        val failure = runCatching {
-            if (session != null) container.sessionManager.replaceSession(session.copy(webCookie = null))
-        }.exceptionOrNull()
-        mutableState.value = mutableState.value.copy(webSessionOpen = false, webSessionInput = "",
-            webSessionInvalid = false, webSessionSaveFailed = failure != null, webSessionSaved = false,
-            reauthorizationPrompted = failure != null && mutableState.value.reauthorizationPrompted)
-        if (failure == null) warmPlaybackAuthorization()
     }
 
     /** Shares the anonymized report through the user's own apps; never uploads automatically. */

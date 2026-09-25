@@ -475,3 +475,18 @@ adb -s $liveDevice shell am instrument -w -e class io.github.playmusic.LibraryAc
 - 版番号は`versionCode=8`、`versionName=0.8.0`。`testDebugUnitTest`、`lintDebug`、`assembleDebug`、`assembleRelease`をJDK 17の昇格環境で成功させた。unsigned APKを既存の`tools/sign-release.ps1`で署名し、公開証明書SHA-256、APK署名v2/v3、非debuggable、隣接SHA-256ファイルを確認した。`extract-changelog.ps1`で0.8.0の本文を抽出した。
 - razrへ署名済みrelease APKを`adb install -r`で上書きし、認証データを保持したまま0.7.0 debug版から0.8.0 release版へ更新した。通常起動と保存ライブラリ表示を確認。画面の再生操作後、MediaSessionは再生位置36秒→69秒へ進み、DRMエラーなし。一時停止操作でPAUSED・速度0になった。Pixelには触れていない。
 - 既存のdebug向け`AudioOutputTest` APKをminify済みreleaseへinstrumentすると、開始前にテストランナーが`kotlin.jvm.internal.Intrinsics`と`androidx.tracing.Trace`を解決できずcrashした。製品の通常起動では再現していない。release版の復号後音声レベルはこの方法では未計測であり、同ソースdebug版の約310秒の実音声検証と区別する。
+
+## ブラウザー側に残るログインの案内（2026-09-26）
+
+- ユーザー報告では、Playからログアウトしても標準ブラウザーのWebログイン状態が残り、次のブラウザー認可で以前の認証が再利用される。`PlayViewModel.logout()`は`SessionManager.clearSession()`でPlayの暗号化保存セッションを消すが、ブラウザーのCookieは操作しない。別の認証を最初から行う場合は、本人がブラウザーの音楽サービスからログアウトしてからPlayでログインする。
+- ログアウトと「ログインし直す」の前には注意ダイアログを表示し、キャンセル時にPlayの保存認証を維持する。ログアウト後のログイン画面にも同じ注意を置く。再生エラーからの再認可も確認を通す。表示文言は11言語へ追加し、対象サービスの固有名をUIへ埋め込まない。
+- 0.8.1ではハンバーガーメニューの「Webセッション」と手動入力画面を削除した。旧版で保存したCookieの暗号化データと、転送失敗時の内部フォールバックは維持し、更新で既存利用者の再生を壊さない。
+
+## v0.8.1の検証（2026-09-26）
+
+- codexスレッド中断時は分離AVDの起動直後でboot未完了だった。エミュレータは起動中だったためそのまま継続し、`sys.boot_completed=1`を確認してから検証した。実機（razr・Pixel）には触れていない。
+- 分離AVD（play-splash-qa-0926）で起動直後に再生アイコンのスプラッシュ表示を確認し、続くログイン画面にブラウザー側ログイン残存の注意文が表示されることを目視確認した。
+- 計装テストは分離AVDで51件成功。注意文・確認ダイアログ・メニュー変更の16件と、残る標準セット35件。`SecureSessionStoreTest`の2件はv0.8.0時点からの既存失敗で、移行期待値と偽装Editorのテスト側不備を修正して8件成功を確認した（詳細はAGENTS.md）。
+- JVM単体テスト261件成功、`lintDebug`成功、`assembleDebug`・`assembleRelease`成功（JDK 17）。
+- プッシュ前にOSV-Scanner 2.6.0（配布SHA-256照合済み）で598パッケージを監査し、既知の脆弱性報告0件。新規のcore-splashscreen 1.2.0は公式Mavenメタデータで最新安定版と確認し、依存更新は不要。
+- 版番号は`versionCode=9`、`versionName=0.8.1`。

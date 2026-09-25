@@ -100,6 +100,8 @@ import kotlinx.coroutines.launch
 
 internal const val GITHUB_RELEASES_URL = "https://github.com/roflsunriz/play/releases"
 
+private enum class AccountNoticeAction { LOGOUT, REAUTHORIZE }
+
 @Composable
 fun PlayRoute(viewModel: PlayViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -107,11 +109,15 @@ fun PlayRoute(viewModel: PlayViewModel) {
     val context = LocalContext.current
     var sleepTimerOpen by rememberSaveable { mutableStateOf(false) }
     var previewReport by rememberSaveable { mutableStateOf(false) }
+    var accountNoticeAction by rememberSaveable { mutableStateOf<AccountNoticeAction?>(null) }
     val pickPlaylistImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) viewModel.loadPlaylistImage(context.contentResolver, uri)
     }
     val completedMessage = stringResource(R.string.browser_login_complete)
-    val onLogin: () -> Unit = { viewModel.beginBrowserLogin(completedMessage) }
+    val onLogin: () -> Unit = {
+        if (state.isLoggedIn) accountNoticeAction = AccountNoticeAction.REAUTHORIZE
+        else viewModel.beginBrowserLogin(completedMessage)
+    }
     val pending = state.loginPending
     if (pending != null) {
         CodeChallengeScreen(
@@ -157,7 +163,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onSearchChanged = viewModel::updateSearchQuery,
                 onSearch = viewModel::search,
                 onRefresh = viewModel::refreshAll,
-                onLogout = viewModel::logout,
+                onLogout = { accountNoticeAction = AccountNoticeAction.LOGOUT },
                 onPlay = viewModel::play,
                 onPlayPause = viewModel::togglePlayPause,
                 onStop = viewModel::stopPlayback,
@@ -178,7 +184,6 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onViewportChanged = viewModel::prefetchDetails,
                 onPlaylistSyncRetry = viewModel::retryPlaylistSync,
                 onAudioEffects = viewModel::openAudioEffects,
-                onWebSession = viewModel::openWebSession,
                 onSleepTimer = { sleepTimerOpen = true },
                 onContentActions = viewModel::openContentActions,
                 onSearchFilter = viewModel::selectSearchFilter,
@@ -198,10 +203,6 @@ fun PlayRoute(viewModel: PlayViewModel) {
         DeletePlaylistDialog(it, state.isDeletingPlaylist, state.playlistDeletionFailed,
             viewModel::deletePlaylist, viewModel::cancelPlaylistDeletion)
     }
-    if (state.webSessionOpen) WebSessionDialog(state.webSessionInput, state.webSessionInvalid,
-        state.webSessionSaveFailed, state.webSessionSaved, viewModel::updateWebSessionInput,
-        viewModel::saveWebSession, viewModel::clearWebSession, viewModel::closeWebSession,
-        { viewModel.closeWebSession(); onLogin() })
     if (sleepTimerOpen) SleepTimerDialog(viewModel.sleepTimer) { sleepTimerOpen = false }
     state.contentActions?.let { action ->
         ContentActionsDialog(action, viewModel::toggleFavorite, viewModel::choosePlaylists, viewModel::togglePlaylist,
@@ -209,13 +210,43 @@ fun PlayRoute(viewModel: PlayViewModel) {
     }
     if (state.artistChoices.isNotEmpty()) ArtistPicker(state.artistChoices,
         { viewModel.closeArtistChoices(); viewModel.openDetail(it) }, viewModel::closeArtistChoices)
-    state.error?.let { ErrorDialog(it, state.errorReport, viewModel::clearError, onLogin,
+    state.error?.let { ErrorDialog(it, state.errorReport, viewModel::clearError,
+        onLogin = { viewModel.clearError(); onLogin() },
         onShareReport = { previewReport = true }) }
+    accountNoticeAction?.let { action ->
+        AccountSessionNoticeDialog(action == AccountNoticeAction.LOGOUT,
+            onConfirm = {
+                accountNoticeAction = null
+                if (action == AccountNoticeAction.LOGOUT) viewModel.logout()
+                else viewModel.beginBrowserLogin(completedMessage)
+            },
+            onDismiss = { accountNoticeAction = null })
+    }
     if (previewReport) state.errorReport?.let {
         ReportPreviewDialog(it, onShare = { context -> viewModel.shareErrorReport(context) },
             onOpenIssue = { context -> viewModel.openErrorIssue(context) },
             onDismiss = { previewReport = false })
     }
+}
+
+@Composable
+internal fun AccountSessionNoticeDialog(isLogout: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        modifier = Modifier.testTag("account-session-notice-dialog"),
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (isLogout) R.string.logout else R.string.browser_reauthorize)) },
+        text = { Text(stringResource(R.string.browser_session_notice), Modifier.testTag("account-session-notice")) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, modifier = Modifier.testTag("account-session-confirm")) {
+                Text(stringResource(if (isLogout) R.string.logout else R.string.browser_reauthorize))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("account-session-cancel")) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
 }
 
 @Composable
@@ -317,7 +348,6 @@ internal fun HomeScreen(
     detailSort: DetailSort = DetailSort.TRACK_ORDER,
     detailSortOptions: List<DetailSort> = listOf(DetailSort.TRACK_ORDER),
     onDetailSortChanged: (DetailSort) -> Unit = {},
-    onWebSession: () -> Unit = {},
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
@@ -396,9 +426,6 @@ internal fun HomeScreen(
                             leadingIcon = { Icon(Icons.Default.Equalizer, null) },
                             modifier = Modifier.testTag("audio-effects-menu-item"),
                             onClick = { menuExpanded = false; onAudioEffects() })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.web_session_title)) },
-                            modifier = Modifier.testTag("web-session-menu-item"),
-                            onClick = { menuExpanded = false; onWebSession() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.github_download)) },
                             leadingIcon = { Icon(Icons.Default.Download, null) },
                             modifier = Modifier.testTag("github-download-menu-item"),

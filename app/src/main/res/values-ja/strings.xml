@@ -34,6 +34,7 @@
     <string name="browser_login">ログイン</string>
     <string name="browser_reauthorize">ログインし直す</string>
     <string name="browser_reauthorize_required">再生に必要なログイン権限を更新してください。ログインし直すと利用できます。</string>
+    <string name="browser_session_notice">Playからログアウトしても、ブラウザーの音楽サービスにはログインしたままです。認証を最初からやり直すには、先にブラウザーでそのWebサイトからログアウトしてください。</string>
     <string name="browser_login_description">ログインして、この端末でライブラリや楽曲を利用します。</string>
     <string name="browser_login_waiting">ブラウザーでログインを完了してください。完了後、自動で処理を続けます。</string>
     <string name="back">戻る</string>
@@ -64,11 +65,4 @@
     <string name="delete_playlist_confirmation">%1$s をライブラリから削除します。リンクを持つ人は引き続きアクセスできる場合があります。</string>
     <string name="playlist_delete_failed">削除できませんでした。通信状態を確認して再試行してください。</string>
     <string name="playlist_text_limit">%1$d文字以内で入力してください。</string>
-    <string name="web_session_title">Webセッション</string>
-    <string name="web_session_description">ログインだけでは再生できない場合、ブラウザーのWebプレイヤーのsp_dc Cookieを貼り付けます。ブラウザーでopen.spotify.comを開き、sp_dcのCookie値を確認して貼り付けてください。この端末に暗号化して保存します。</string>
-    <string name="web_session_label">sp_dc Cookie値</string>
-    <string name="web_session_remove">削除</string>
-    <string name="web_session_saved">Webセッションを保存しました。</string>
-    <string name="web_session_invalid">この値は使えません。sp_dcのCookie値をすべて貼り付けてください。</string>
-    <string name="web_session_save_failed">Webセッションを保存できませんでした。再試行してください。</string>
 </resources>

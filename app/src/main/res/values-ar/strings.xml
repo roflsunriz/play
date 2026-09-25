@@ -34,6 +34,7 @@
     <string name="browser_login">تسجيل الدخول</string>
     <string name="browser_reauthorize">تسجيل الدخول مجددًا</string>
     <string name="browser_reauthorize_required">يجب تجديد تسجيل الدخول لتشغيل الموسيقى. سجّل الدخول مجددًا.</string>
+    <string name="browser_session_notice">تسجيل الخروج من Play لا يسجّل خروجك من خدمة الموسيقى في المتصفح. لبدء تسجيل دخول جديد، سجّل الخروج من موقع الخدمة في المتصفح قبل المتابعة.</string>
     <string name="browser_login_description">سجّل الدخول للوصول إلى مكتبتك وتشغيل الموسيقى على هذا الجهاز.</string>
     <string name="browser_login_waiting">أكمل تسجيل الدخول في المتصفح. سيتابع Play تلقائيًا.</string>
     <string name="back">رجوع</string>
@@ -69,11 +70,4 @@
     <string name="delete_playlist_confirmation">ستتم إزالة %1$s من مكتبتك. قد يتمكن من يملك الرابط من الوصول إليها بعد ذلك.</string>
     <string name="playlist_delete_failed">تعذر الحذف. تحقق من اتصالك وحاول مجددًا.</string>
     <string name="playlist_text_limit">استخدم %1$d حرفًا كحد أقصى.</string>
-    <string name="web_session_title">جلسة ويب</string>
-    <string name="web_session_description">إذا كان تسجيل الدخول وحده لا يشغّل الموسيقى، فالصق ملف تعريف الارتباط sp_dc من مشغّل الويب في متصفحك. افتح open.spotify.com في متصفحك، وانسخ قيمة sp_dc والصقها هنا. تبقى مشفّرة على هذا الجهاز.</string>
-    <string name="web_session_label">قيمة ملف تعريف الارتباط sp_dc</string>
-    <string name="web_session_remove">إزالة</string>
-    <string name="web_session_saved">تم حفظ جلسة الويب.</string>
-    <string name="web_session_invalid">لا يمكن استخدام هذه القيمة. الصق قيمة sp_dc كاملة.</string>
-    <string name="web_session_save_failed">تعذّر حفظ جلسة الويب. حاول مجددًا.</string>
 </resources>

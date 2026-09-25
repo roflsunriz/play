@@ -34,6 +34,7 @@
     <string name="browser_login">سائن ان کریں</string>
     <string name="browser_reauthorize">دوبارہ سائن ان کریں</string>
     <string name="browser_reauthorize_required">موسیقی چلانے کے لیے سائن اِن کی تجدید ضروری ہے۔ دوبارہ سائن اِن کریں۔</string>
+    <string name="browser_session_notice">Play سے لاگ آؤٹ کرنے سے براؤزر میں موسیقی کی سروس سے لاگ آؤٹ نہیں ہوتا۔ نئے سرے سے سائن ان کرنے کے لیے آگے بڑھنے سے پہلے براؤزر میں اس کی ویب سائٹ سے لاگ آؤٹ کریں۔</string>
     <string name="browser_login_description">اس ڈیوائس پر اپنی لائبریری کھولنے اور موسیقی چلانے کے لیے سائن ان کریں۔</string>
     <string name="browser_login_waiting">براؤزر میں سائن ان مکمل کریں۔ Play خود بخود آگے بڑھے گا۔</string>
     <string name="back">واپس</string>
@@ -65,11 +66,4 @@
     <string name="delete_playlist_confirmation">%1$s آپ کی لائبریری سے ہٹا دی جائے گی۔ لنک رکھنے والے لوگ اس تک اب بھی رسائی حاصل کر سکتے ہیں۔</string>
     <string name="playlist_delete_failed">حذف نہیں ہو سکا۔ کنکشن چیک کر کے دوبارہ کوشش کریں۔</string>
     <string name="playlist_text_limit">زیادہ سے زیادہ %1$d حروف استعمال کریں۔</string>
-    <string name="web_session_title">ویب سیشن</string>
-    <string name="web_session_description">اگر صرف سائن ان سے موسیقی نہیں چلتی تو اپنے براؤزر کے ویب پلیئر سے sp_dc کوکی پیسٹ کریں۔ براؤزر میں open.spotify.com کھولیں، sp_dc کوکی کی قدر دیکھ کر یہاں پیسٹ کریں۔ یہ اس ڈیوائس پر خفیہ رہتی ہے۔</string>
-    <string name="web_session_label">sp_dc کوکی کی قدر</string>
-    <string name="web_session_remove">ہٹائیں</string>
-    <string name="web_session_saved">ویب سیشن محفوظ ہو گیا۔</string>
-    <string name="web_session_invalid">یہ قدر استعمال نہیں ہو سکتی۔ مکمل sp_dc کوکی قدر پیسٹ کریں۔</string>
-    <string name="web_session_save_failed">ویب سیشن محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔</string>
 </resources>
