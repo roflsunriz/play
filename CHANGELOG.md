@@ -2,7 +2,7 @@
 
 このプロジェクトの重要な変更は、[Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に従って記録します。
 
-## [Unreleased]
+## [0.8.1] - 2026-09-26
 
 ### Added
 
