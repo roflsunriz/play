@@ -144,6 +144,27 @@ class SecureSessionStoreTest {
         assertEquals(3, json.getInt("schemaVersion"))
     }
 
+    @Test fun schemaThreeWithoutACookieLoadsNullAndRoundTripsACookie() {
+        val store = SecureSessionStore(context)
+        store.saveSession(AuthSession("cookie-user", "cookie-access", null, Long.MAX_VALUE, "cookie-refresh"))
+        assertNull(checkNotNull(store.loadSession()).webCookie)
+        store.saveSession(AuthSession("cookie-user", "cookie-access", null, Long.MAX_VALUE, "cookie-refresh",
+            "synthetic-sp-dc"))
+        val loaded = checkNotNull(store.loadSession())
+        assertEquals("synthetic-sp-dc", loaded.webCookie)
+        val serialized = context.getSharedPreferences("unused", 0).all.values.joinToString()
+        assertFalse(serialized.contains("synthetic-sp-dc"))
+        val encoded = checkNotNull(context.getSharedPreferences("unused", 0).getString("play_session", null)).split('.')
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val key = checkNotNull(keyStore.getKey("play_session_key", null)) as SecretKey
+        val decrypt = Cipher.getInstance("AES/GCM/NoPadding").apply {
+            init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, Base64.decode(encoded[0], Base64.NO_WRAP)))
+        }
+        val json = JSONObject(String(decrypt.doFinal(Base64.decode(encoded[1], Base64.NO_WRAP))))
+        assertEquals(4, json.getInt("schemaVersion"))
+        assertEquals("synthetic-sp-dc", json.getString("webCookie"))
+    }
+
     @Test fun anOldRefreshCannotRestoreALoggedOutOrReplacedAccount(): Unit = runBlocking {
         for (replace in listOf(false, true)) {
             val store = SecureSessionStore(context)

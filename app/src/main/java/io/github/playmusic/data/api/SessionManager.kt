@@ -18,6 +18,7 @@ interface SessionTokens {
     suspend fun accessToken(forceRefresh: Boolean = false): String
     suspend fun clientToken(forceRefresh: Boolean = false): String
     suspend fun usesBrowserAuthorization(): Boolean = false
+    suspend fun webCookie(): String? = null
 }
 
 class SessionManager(
@@ -99,4 +100,6 @@ class SessionManager(
         ).token
 
     override suspend fun usesBrowserAuthorization(): Boolean = store.loadSession()?.refreshToken != null
+
+    override suspend fun webCookie(): String? = store.loadSession()?.webCookie
 }

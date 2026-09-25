@@ -63,4 +63,11 @@
     <string name="delete_playlist_confirmation">%1$s will be removed from your library. People with its link may still be able to access it.</string>
     <string name="playlist_delete_failed">Could not delete. Check your connection and try again.</string>
     <string name="playlist_text_limit">Character limit: %1$d</string>
+    <string name="web_session_title">Web session</string>
+    <string name="web_session_description">If sign-in alone cannot play music, paste the sp_dc cookie from your browser web player. Open open.spotify.com in your browser, read the sp_dc cookie value, and paste it here. It stays encrypted on this device.</string>
+    <string name="web_session_label">sp_dc cookie value</string>
+    <string name="web_session_remove">Remove</string>
+    <string name="web_session_saved">Web session saved.</string>
+    <string name="web_session_invalid">This value cannot be used. Paste the complete sp_dc cookie value.</string>
+    <string name="web_session_save_failed">Could not save the web session. Try again.</string>
 </resources>

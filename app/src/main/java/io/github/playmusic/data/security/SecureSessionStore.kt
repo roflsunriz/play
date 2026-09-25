@@ -48,6 +48,7 @@ class SecureSessionStore(context: Context) {
                     ?.let { Base64.decode(it, Base64.NO_WRAP) },
                 expiresAtEpochMs = json.getLong("expiresAtEpochMs"),
                 refreshToken = json.optString("refreshToken").takeIf(String::isNotBlank),
+                webCookie = json.optString("webCookie").takeIf(String::isNotBlank),
             )
             require(session.username.isNotBlank() && session.accessToken.isNotBlank())
             session to schema
@@ -69,6 +70,7 @@ class SecureSessionStore(context: Context) {
             .put("storedCredential", session.storedCredential?.let { Base64.encodeToString(it, Base64.NO_WRAP) }.orEmpty())
             .put("expiresAtEpochMs", session.expiresAtEpochMs)
             .put("refreshToken", session.refreshToken.orEmpty())
+            .put("webCookie", session.webCookie.orEmpty())
             .toString()
             .toByteArray(Charsets.UTF_8)
         val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
@@ -140,7 +142,7 @@ class SecureSessionStore(context: Context) {
         const val ANDROID_KEY_STORE = "AndroidKeyStore"
         const val CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
         const val GCM_TAG_BITS = 128
-        const val SESSION_SCHEMA_VERSION = 3
+        const val SESSION_SCHEMA_VERSION = 4
         const val DEVICE_ID_HEX_BYTES = 16
     }
 }

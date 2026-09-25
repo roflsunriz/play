@@ -104,6 +104,8 @@ data class AuthSession(
     val storedCredential: ByteArray?,
     val expiresAtEpochMs: Long,
     val refreshToken: String? = null,
+    /** Imported web-player cookie used only as a fallback playback-credential source. */
+    val webCookie: String? = null,
 ) {
     fun expiresSoon(nowEpochMs: Long = System.currentTimeMillis()): Boolean =
         expiresAtEpochMs - nowEpochMs <= TOKEN_REFRESH_SKEW_MS

@@ -112,9 +112,51 @@ class PlaybackAuthorizationProviderTest {
         assertEquals(1, acquisitions)
     }
 
+    @Test fun fallsBackToTheImportedWebSessionWhenTransferRejectsTheBearer() = runTest {
+        var acquisitions = 0
+        var cookieUses = 0
+        val provider = PlaybackAuthorizationProvider(
+            { PlaybackAuthorizationProvider.Source("owner", "bearer", "imported-cookie") },
+            { _, _ -> acquisitions++; throw rejectedTransferForbidden() },
+            { 1000 },
+            { cookie, _ -> cookieUses++; assertEquals("imported-cookie", cookie); credentials("web-cookie", 20_000) },
+        )
+        assertEquals("Bearer web-cookie", provider.headers(LICENSE)["Authorization"])
+        assertEquals(1, acquisitions)
+        assertEquals(1, cookieUses)
+        // The fallback result is cached like a normal acquisition.
+        assertEquals("Bearer web-cookie", provider.headers(LICENSE)["Authorization"])
+        assertEquals(1, cookieUses)
+    }
+
+    @Test fun transferRejectionFailsWithoutAnImportedCookie() = runTest {
+        val provider = PlaybackAuthorizationProvider({ sourceSnapshot("own-source") },
+            { _, _ -> throw rejectedTransferForbidden() }, { 1000 })
+        assertFails { provider.headers(LICENSE) }
+    }
+
+    @Test fun cookieMismatchInvalidatesTheCachedAuthorization() = runTest {
+        var cookie: String? = "first-cookie"
+        var cookieUses = 0
+        val provider = PlaybackAuthorizationProvider(
+            { PlaybackAuthorizationProvider.Source("owner", "bearer", cookie) },
+            { _, _ -> throw rejectedTransferForbidden() },
+            { 1000 },
+            { _, _ -> cookieUses++; credentials("web-$cookieUses", 20_000) },
+        )
+        assertEquals("Bearer web-1", provider.headers(LICENSE)["Authorization"])
+        cookie = "second-cookie"
+        assertEquals("Bearer web-2", provider.headers(LICENSE)["Authorization"])
+        assertEquals(2, cookieUses)
+    }
+
     private fun sourceSnapshot(token: String) = PlaybackAuthorizationProvider.Source(token, token)
     private fun rejectedTransfer() = PlaybackAuthorizationClient.PlaybackAuthorizationException(
         PlaybackAuthorizationClient.Stage.TRANSFER, PlaybackAuthorizationClient.Failure.HTTP, 401,
+    )
+
+    private fun rejectedTransferForbidden() = PlaybackAuthorizationClient.PlaybackAuthorizationException(
+        PlaybackAuthorizationClient.Stage.TRANSFER, PlaybackAuthorizationClient.Failure.HTTP, 403,
     )
 
     private suspend fun assertFails(block: suspend () -> Unit) {

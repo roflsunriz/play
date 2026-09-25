@@ -150,6 +150,35 @@ class PlaybackAuthorizationClientTest {
     }
 
     @Test
+    fun cookieSessionSendsTheImportedCookieAndDerivesWebCredentials() = runBlocking {
+        val server = Server()
+        server.diagnostic.connectWithCookie("synthetic-private-sp-dc").use { session ->
+            assertEquals("test.1", session.configuration().clientVersion)
+            val observation = session.requestToken(query())
+            assertTrue(observation.hasAccessToken)
+            assertEquals(false, observation.isAnonymous)
+            assertTrue(session.withAccessToken { it == WEB_TOKEN })
+        }
+        val home = server.requests.single { it.url.encodedPath == "/" }
+        assertTrue(checkNotNull(home.header("Cookie")).contains("sp_dc=synthetic-private-sp-dc"))
+        assertNull(home.header("Authorization"))
+        assertNull(home.header("Client-Token"))
+        assertFalse(server.requests.any { it.url.encodedPath == "/sessiontransfer/v1/token" })
+        assertFalse(server.diagnostic.toString().contains("sp-dc"))
+    }
+
+    @Test
+    fun malformedCookiesAreRejectedBeforeAnyRequest() = runBlocking {
+        val server = Server()
+        for (bad in listOf("", "has space", "semi;colon", "quo\"te", "x".repeat(4097))) {
+            val error = runCatching { server.diagnostic.connectWithCookie(bad) }.exceptionOrNull()
+            assertTrue(error is PlaybackAuthorizationClient.PlaybackAuthorizationException)
+            if (bad.length >= 8) assertFalse(error.toString().contains(bad.take(8)))
+        }
+        assertTrue(server.requests.isEmpty())
+    }
+
+    @Test
     fun anonymousAndExpiredTokensCannotBeUsedAsAuthenticatedPlaybackCredentials() = runBlocking {
         for (anonymous in listOf(true, false)) {
             val server = Server().apply { anonymousToken = anonymous; expiredToken = !anonymous }

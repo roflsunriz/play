@@ -102,6 +102,25 @@ class PlaybackAuthorizationClient(
         }
     }
 
+    /**
+     * Opens a web session from an imported browser cookie, bypassing the transfer chain.
+     * The cookie value is validated as RFC 6265 cookie-octets and never logged or exposed.
+     */
+    suspend fun connectWithCookie(spDc: String): Session = withTimeout(120_000) {
+        guarded(Stage.WEB) { require(isValidWebCookie(spDc)) }
+        val transport = Transport(calls)
+        try {
+            transport.seedCookie(Cookie.Builder().name("sp_dc").value(spDc)
+                .hostOnlyDomain("open.spotify.com").path("/").build())
+            val page = transport.getFollowing(Stage.WEB, OPEN)
+            if (page.url.host != "open.spotify.com") fail(Stage.WEB, Failure.REDIRECT)
+            Session(transport, page.body)
+        } catch (error: Throwable) {
+            transport.close()
+            throw error
+        }
+    }
+
     class Session internal constructor(private val transport: Transport, initialPage: String) : AutoCloseable {
         private val mutex = Mutex()
         private var page: String? = initialPage
@@ -212,7 +231,7 @@ class PlaybackAuthorizationClient(
     data class AppServerConfig(val clientVersion: String, val buildVersion: String, val serverTimeSeconds: Long, val pageKind: PageKind)
     data class TokenObservation(val status: Int, val hasAccessToken: Boolean, val isAnonymous: Boolean?, val expiresAtEpochMs: Long?, val clientId: String? = null)
     enum class PageKind { DESKTOP, MOBILE, UNKNOWN }
-    enum class Stage { TRANSFER, CSRF_PAGE, VERIFY, APPROVE, REDIRECT, CONFIGURATION, TOKEN, STATE }
+    enum class Stage { TRANSFER, CSRF_PAGE, VERIFY, APPROVE, REDIRECT, CONFIGURATION, TOKEN, STATE, WEB }
     enum class Failure { NETWORK, HTTP, SCHEMA, REDIRECT, CSRF, SIZE_LIMIT, CLOSED, UNUSABLE_TOKEN, TOKEN_USE }
     class PlaybackAuthorizationException internal constructor(
         val stage: Stage,
@@ -229,6 +248,12 @@ class PlaybackAuthorizationClient(
         private val cookies = mutableListOf<Cookie>()
 
         fun checkOpen() { if (closed.get()) fail(Stage.STATE, Failure.CLOSED) }
+
+        fun seedCookie(cookie: Cookie) = synchronized(this@Transport) {
+            checkOpen()
+            this@Transport.cookies.removeAll { it.name == cookie.name && it.domain == cookie.domain && it.path == cookie.path }
+            this@Transport.cookies += cookie
+        }
 
         suspend fun request(
             stage: Stage,
@@ -326,7 +351,13 @@ class PlaybackAuthorizationClient(
         override fun toString(): String = "PlaybackAuthorizationClient.Reply"
     }
 
-    private companion object {
+    companion object {
+        // RFC 6265 cookie-octets, without DQUOTE/comma/semicolon/backslash.
+        private val COOKIE_OCTETS = (0x21..0x7E).filter { it !in listOf(0x22, 0x2C, 0x3B, 0x5C) }.toSet()
+
+        /** Shared import validation so the UI and the client reject the same values. */
+        internal fun isValidWebCookie(value: String): Boolean =
+            value.length in 1..4096 && value.all { it.code in COOKIE_OCTETS }
         const val ACCOUNTS = "https://accounts.spotify.com"
         const val LOGIN = "$ACCOUNTS/login/ott/v2"
         const val OPEN = "https://open.spotify.com/"

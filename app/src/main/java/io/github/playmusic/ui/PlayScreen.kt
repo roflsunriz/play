@@ -178,6 +178,7 @@ fun PlayRoute(viewModel: PlayViewModel) {
                 onViewportChanged = viewModel::prefetchDetails,
                 onPlaylistSyncRetry = viewModel::retryPlaylistSync,
                 onAudioEffects = viewModel::openAudioEffects,
+                onWebSession = viewModel::openWebSession,
                 onSleepTimer = { sleepTimerOpen = true },
                 onContentActions = viewModel::openContentActions,
                 onSearchFilter = viewModel::selectSearchFilter,
@@ -197,6 +198,9 @@ fun PlayRoute(viewModel: PlayViewModel) {
         DeletePlaylistDialog(it, state.isDeletingPlaylist, state.playlistDeletionFailed,
             viewModel::deletePlaylist, viewModel::cancelPlaylistDeletion)
     }
+    if (state.webSessionOpen) WebSessionDialog(state.webSessionInput, state.webSessionInvalid,
+        state.webSessionSaveFailed, state.webSessionSaved, viewModel::updateWebSessionInput,
+        viewModel::saveWebSession, viewModel::clearWebSession, viewModel::closeWebSession)
     if (sleepTimerOpen) SleepTimerDialog(viewModel.sleepTimer) { sleepTimerOpen = false }
     state.contentActions?.let { action ->
         ContentActionsDialog(action, viewModel::toggleFavorite, viewModel::choosePlaylists, viewModel::togglePlaylist,
@@ -312,6 +316,7 @@ internal fun HomeScreen(
     detailSort: DetailSort = DetailSort.TRACK_ORDER,
     detailSortOptions: List<DetailSort> = listOf(DetailSort.TRACK_ORDER),
     onDetailSortChanged: (DetailSort) -> Unit = {},
+    onWebSession: () -> Unit = {},
 ) {
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val listStates = rememberSaveableStateHolder()
@@ -390,6 +395,9 @@ internal fun HomeScreen(
                             leadingIcon = { Icon(Icons.Default.Equalizer, null) },
                             modifier = Modifier.testTag("audio-effects-menu-item"),
                             onClick = { menuExpanded = false; onAudioEffects() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.web_session_title)) },
+                            modifier = Modifier.testTag("web-session-menu-item"),
+                            onClick = { menuExpanded = false; onWebSession() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.github_download)) },
                             leadingIcon = { Icon(Icons.Default.Download, null) },
                             modifier = Modifier.testTag("github-download-menu-item"),

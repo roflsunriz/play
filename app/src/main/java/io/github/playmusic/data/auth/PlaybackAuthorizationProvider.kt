@@ -15,10 +15,15 @@ class PlaybackAuthorizationProvider(
     private val sourceToken: suspend (Boolean) -> Source,
     private val acquire: suspend (String, Boolean) -> Credentials,
     private val now: () -> Long = System::currentTimeMillis,
+    private val cookieAcquire: (suspend (String, Boolean) -> Credentials)? = null,
 ) {
-    class Source(val owner: String, val accessToken: String) {
-        init { require(owner.isNotBlank() && accessToken.isNotBlank()) }
-        internal fun matches(other: Source): Boolean = owner == other.owner && accessToken == other.accessToken
+    class Source(val owner: String, val accessToken: String, val webCookie: String? = null) {
+        init {
+            require(owner.isNotBlank() && accessToken.isNotBlank())
+            require(webCookie == null || webCookie.isNotBlank())
+        }
+        internal fun matches(other: Source): Boolean =
+            owner == other.owner && accessToken == other.accessToken && webCookie == other.webCookie
         override fun toString(): String = "PlaybackAuthorizationProvider.Source"
     }
 
@@ -60,58 +65,93 @@ class PlaybackAuthorizationProvider(
             return@withLock previous.credentials.headers(uri)
         }
         cached = null
+        suspend fun finish(resolved: Source, credentials: Credentials): Map<String, String> {
+            check(sourceToken(false).matches(resolved)) { "Sign-in changed while playback authorization was being prepared" }
+            check(now() < credentials.refreshAtEpochMs) { "Playback authorization has expired" }
+            return credentials.headers(uri).also { cached = Cached(resolved, credentials) }
+        }
         val credentials = try { acquire(source.accessToken, forceRefresh) }
         catch (error: PlaybackAuthorizationClient.PlaybackAuthorizationException) {
             if (error.stage != PlaybackAuthorizationClient.Stage.TRANSFER ||
-                error.failure != PlaybackAuthorizationClient.Failure.HTTP || error.status != 401) {
+                error.failure != PlaybackAuthorizationClient.Failure.HTTP) {
                 throw error
             }
+            val cookie = source.webCookie
+            val cookieAcquire = cookieAcquire
+            if (cookie != null && cookieAcquire != null && error.status != 401) {
+                // The transfer route categorically rejects this bearer (#18). Fall through to the
+                // imported web session instead of retrying a request the server will not honor.
+                return@withLock finish(source, cookieAcquire(cookie, forceRefresh))
+            }
+            if (error.status != 401) throw error
             val owner = source.owner
             val current = sourceToken(false)
             check(current.owner == owner) { "Sign-in changed while playback authorization was being prepared" }
             source = if (!current.matches(source)) current else sourceToken(true)
             check(source.owner == owner) { "Sign-in changed while playback authorization was being prepared" }
-            acquire(source.accessToken, true)
+            try { acquire(source.accessToken, true) }
+            catch (retry: PlaybackAuthorizationClient.PlaybackAuthorizationException) {
+                val retryCookie = source.webCookie
+                if (retry.stage == PlaybackAuthorizationClient.Stage.TRANSFER &&
+                    retry.failure == PlaybackAuthorizationClient.Failure.HTTP && retryCookie != null &&
+                    cookieAcquire != null) {
+                    return@withLock finish(source, cookieAcquire(retryCookie, true))
+                }
+                throw retry
+            }
         }
-        check(sourceToken(false).matches(source)) { "Sign-in changed while playback authorization was being prepared" }
-        check(now() < credentials.refreshAtEpochMs) { "Playback authorization has expired" }
-        credentials.headers(uri).also { cached = Cached(source, credentials) }
+        finish(source, credentials)
     }
 
     companion object {
-        fun create(tokens: SessionTokens, device: WebClientDevice): PlaybackAuthorizationProvider =
-            PlaybackAuthorizationProvider(
+        fun create(tokens: SessionTokens, device: WebClientDevice): PlaybackAuthorizationProvider {
+            return PlaybackAuthorizationProvider(
                 sourceToken = { forceRefresh ->
                     if (!tokens.usesBrowserAuthorization()) throw BrowserAuthorizationRequiredException()
                     val owner = tokens.username()
                     val accessToken = tokens.accessToken(forceRefresh)
                     check(tokens.username() == owner) { "Sign-in changed while playback authorization was being prepared" }
-                    Source(owner, accessToken)
+                    Source(owner, accessToken, tokens.webCookie())
                 },
                 acquire = { bearer, forceRefresh ->
-                    PlaybackAuthorizationClient().connect(bearer).use { session ->
-                        val page = session.configuration()
-                        val script = readPublicScript(session.publicMainScriptUrls.single())
-                        PublicWebTokenConfiguration.parse(script).use { configuration ->
-                            val reason = if (forceRefresh) PublicWebTokenConfiguration.Reason.TRANSPORT
-                                else PublicWebTokenConfiguration.Reason.INITIAL
-                            val serverTime = if (forceRefresh) session.serverTime() else page.serverTimeSeconds
-                            val query = configuration.query(reason, page.pageKind, System.currentTimeMillis(), serverTime)
-                            val observation = session.requestToken(query, forceRefresh)
-                            check(observation.status == 200 && observation.hasAccessToken && observation.isAnonymous == false) {
-                                "Playback authorization could not be issued"
-                            }
-                            val clientId = checkNotNull(observation.clientId) { "Playback authorization has no client identity" }
-                            val client = WebClientTokenClient(device, clientId = clientId, clientVersion = page.clientVersion).acquire()
-                            val clientLifetime = listOf(client.expiresAfterSeconds, client.refreshAfterSeconds)
-                                .filter { it > 0 }.minOrNull() ?: error("Playback client authorization has no lifetime")
-                            val refreshAt = minOf(checkNotNull(observation.expiresAtEpochMs),
-                                System.currentTimeMillis() + clientLifetime * 1000L) - 30_000L
-                            session.withAccessToken { accessToken -> Credentials(accessToken, client, refreshAt) }
-                        }
+                    PlaybackAuthorizationClient().connect(bearer).use { session -> derive(session, device, forceRefresh) }
+                },
+                cookieAcquire = { spDc, forceRefresh ->
+                    PlaybackAuthorizationClient().connectWithCookie(spDc).use { session ->
+                        derive(session, device, forceRefresh)
                     }
                 },
             )
+        }
+
+        private suspend fun derive(
+            session: PlaybackAuthorizationClient.Session,
+            device: WebClientDevice,
+            forceRefresh: Boolean,
+        ): Credentials {
+            val page = session.configuration()
+            val script = readPublicScript(session.publicMainScriptUrls.single())
+            val configuration = PublicWebTokenConfiguration.parse(script)
+            try {
+                val reason = if (forceRefresh) PublicWebTokenConfiguration.Reason.TRANSPORT
+                    else PublicWebTokenConfiguration.Reason.INITIAL
+                val serverTime = if (forceRefresh) session.serverTime() else page.serverTimeSeconds
+                val query = configuration.query(reason, page.pageKind, System.currentTimeMillis(), serverTime)
+                val observation = session.requestToken(query, forceRefresh)
+                check(observation.status == 200 && observation.hasAccessToken && observation.isAnonymous == false) {
+                    "Playback authorization could not be issued"
+                }
+                val clientId = checkNotNull(observation.clientId) { "Playback authorization has no client identity" }
+                val client = WebClientTokenClient(device, clientId = clientId, clientVersion = page.clientVersion).acquire()
+                val clientLifetime = listOf(client.expiresAfterSeconds, client.refreshAfterSeconds)
+                    .filter { it > 0 }.minOrNull() ?: error("Playback client authorization has no lifetime")
+                val refreshAt = minOf(checkNotNull(observation.expiresAtEpochMs),
+                    System.currentTimeMillis() + clientLifetime * 1000L) - 30_000L
+                return session.withAccessToken { accessToken -> Credentials(accessToken, client, refreshAt) }
+            } finally {
+                configuration.close()
+            }
+        }
 
         private suspend fun readPublicScript(location: String): String = withContext(Dispatchers.IO) {
             val uri = URI(location)

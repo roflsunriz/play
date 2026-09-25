@@ -64,4 +64,11 @@
     <string name="delete_playlist_confirmation">%1$s se eliminará de tu biblioteca. Las personas con el enlace podrían seguir accediendo.</string>
     <string name="playlist_delete_failed">No se pudo eliminar. Comprueba la conexión e inténtalo de nuevo.</string>
     <string name="playlist_text_limit">Usa un máximo de %1$d caracteres.</string>
+    <string name="web_session_title">Sesión web</string>
+    <string name="web_session_description">Si el inicio de sesión por sí solo no permite reproducir música, pega la cookie sp_dc del reproductor web de tu navegador. Abre open.spotify.com en tu navegador, consulta el valor de la cookie sp_dc y pégalo aquí. Se guarda cifrado en este dispositivo.</string>
+    <string name="web_session_label">Valor de la cookie sp_dc</string>
+    <string name="web_session_remove">Eliminar</string>
+    <string name="web_session_saved">Sesión web guardada.</string>
+    <string name="web_session_invalid">Este valor no se puede usar. Pega el valor completo de la cookie sp_dc.</string>
+    <string name="web_session_save_failed">No se pudo guardar la sesión web. Inténtalo de nuevo.</string>
 </resources>

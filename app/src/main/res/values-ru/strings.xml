@@ -65,4 +65,11 @@
     <string name="delete_playlist_confirmation">%1$s будет удалён из вашей библиотеки. У пользователей со ссылкой может сохраниться доступ.</string>
     <string name="playlist_delete_failed">Не удалось удалить. Проверьте подключение и повторите попытку.</string>
     <string name="playlist_text_limit">Введите не более %1$d символов.</string>
+    <string name="web_session_title">Веб-сессия</string>
+    <string name="web_session_description">Если входа недостаточно для воспроизведения, вставьте cookie sp_dc из веб-плеера в браузере. Откройте open.spotify.com в браузере, скопируйте значение cookie sp_dc и вставьте сюда. Оно хранится на устройстве в зашифрованном виде.</string>
+    <string name="web_session_label">Значение cookie sp_dc</string>
+    <string name="web_session_remove">Удалить</string>
+    <string name="web_session_saved">Веб-сессия сохранена.</string>
+    <string name="web_session_invalid">Это значение использовать нельзя. Вставьте полное значение cookie sp_dc.</string>
+    <string name="web_session_save_failed">Не удалось сохранить веб-сессию. Повторите попытку.</string>
 </resources>
