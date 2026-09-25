@@ -88,6 +88,7 @@ class SecureSessionStoreTest {
         val preferences = object : SharedPreferences by backing {
             override fun edit(): SharedPreferences.Editor = object : SharedPreferences.Editor by backing.edit() {
                 override fun putString(key: String?, value: String?): SharedPreferences.Editor = this
+                override fun remove(key: String?): SharedPreferences.Editor = this
                 override fun commit() = false
                 override fun apply() { throw AssertionError("Session writes must finish before returning") }
             }
@@ -141,7 +142,7 @@ class SecureSessionStoreTest {
             init(Cipher.DECRYPT_MODE, currentKey, GCMParameterSpec(128, Base64.decode(migrated[0], Base64.NO_WRAP)))
         }
         val json = JSONObject(String(decrypt.doFinal(Base64.decode(migrated[1], Base64.NO_WRAP))))
-        assertEquals(3, json.getInt("schemaVersion"))
+        assertEquals(4, json.getInt("schemaVersion"))
     }
 
     @Test fun schemaThreeWithoutACookieLoadsNullAndRoundTripsACookie() {
