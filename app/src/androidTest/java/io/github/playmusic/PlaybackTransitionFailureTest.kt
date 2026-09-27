@@ -18,6 +18,7 @@ import io.github.playmusic.data.playback.AutomixResolver
 import io.github.playmusic.data.playback.AutomixTransition
 import io.github.playmusic.data.playback.PlaybackTransitionSettings
 import io.github.playmusic.data.playback.TransitionPlayer
+import io.github.playmusic.data.playback.LicenseHttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -34,6 +35,101 @@ import java.nio.ByteOrder
 
 @OptIn(UnstableApi::class)
 class PlaybackTransitionFailureTest {
+    @Test fun pauseAndStopWhileTheSelectionBuffersStopBothDecodersWithinTheFade(): Unit = runBlocking {
+        for (stop in listOf(false, true)) {
+            val gate = java.util.concurrent.CountDownLatch(1)
+            withSyntheticPlayer(AutomixResolver { _, _, _ -> null }, secondGate = gate) { player ->
+                try {
+                    await { player.audioEngines()[0].isPlaying && player.audioEngines()[0].volume > .99f }
+                    withContext(Dispatchers.Main) { player.seekToNextMediaItem() }
+                    await { player.currentMediaItem?.mediaId == TRACK2 && player.playbackState == Player.STATE_BUFFERING }
+                    withContext(Dispatchers.Main) {
+                        assertTrue(player.audioEngines().any { it.currentMediaItem?.mediaId == TRACK1 && it.isPlaying })
+                        if (stop) player.stop() else player.pause()
+                    }
+                    // The incoming decoder remains blocked. A one-second pause/stop fade must
+                    // advance from the outgoing audio instead of waiting for license readiness.
+                    withTimeout(2_500) {
+                        while (withContext(Dispatchers.Main) {
+                            player.audioEngines().any { it.isPlaying || it.playWhenReady }
+                        }) delay(20)
+                    }
+                    withContext(Dispatchers.Main) {
+                        assertFalse(player.playWhenReady)
+                        assertFalse(player.audioEngines().any { it.isPlaying || it.playWhenReady })
+                        if (stop) assertEquals(Player.STATE_IDLE, player.playbackState)
+                    }
+                    assertEquals("The incoming source must still be blocked when stopping finishes", 1L, gate.count)
+                } finally { gate.countDown() }
+            }
+        }
+    }
+
+    @Test fun nextDuringAReplacementQueueUsesThePendingQueueAndKeepsTheOutgoingDecoder(): Unit = runBlocking {
+        val gate = java.util.concurrent.CountDownLatch(1)
+        withSyntheticPlayer(AutomixResolver { _, _, _ -> null }, secondGate = gate,
+            trackIds = listOf(TRACK1)) { player ->
+            try {
+                await { player.isPlaying }
+                withContext(Dispatchers.Main) {
+                    val template = checkNotNull(player.currentMediaItem)
+                    player.setMediaItems(listOf(TRACK2, TRACK3).map { uri ->
+                        template.buildUpon().setMediaId(uri).setUri(uri).build()
+                    }, 0, 0)
+                    player.prepare()
+                    player.play()
+                }
+                await { player.currentMediaItem?.mediaId == TRACK2 && player.playbackState == Player.STATE_BUFFERING }
+                withContext(Dispatchers.Main) {
+                    player.seekToNextMediaItem()
+                    assertEquals("Next belongs to the newly selected queue", TRACK3, player.currentMediaItem?.mediaId)
+                    assertEquals(2, player.mediaItemCount)
+                    assertEquals(TRACK2, player.getMediaItemAt(0).mediaId)
+                    assertEquals(TRACK3, player.getMediaItemAt(1).mediaId)
+                    assertTrue("Replacing the pending queue must preserve the song still sounding",
+                        player.audioEngines().any { it.currentMediaItem?.mediaId == TRACK1 && it.isPlaying })
+                }
+                gate.countDown()
+                await { player.currentMediaItem?.mediaId == TRACK3 && player.isPlaying }
+            } finally { gate.countDown() }
+        }
+    }
+
+    @Test fun nextWhileTheSelectionBuffersKeepsTheOutgoingDecoder(): Unit = runBlocking {
+        val gate = java.util.concurrent.CountDownLatch(1)
+        withSyntheticPlayer(AutomixResolver { _, _, _ -> null }, secondGate = gate,
+            trackIds = listOf(TRACK1, TRACK2, TRACK3)) { player ->
+            await { player.isPlaying }
+            withContext(Dispatchers.Main) { player.seekToNextMediaItem() }
+            await { player.currentMediaItem?.mediaId == TRACK2 && player.playbackState == Player.STATE_BUFFERING }
+            withContext(Dispatchers.Main) {
+                player.seekToNextMediaItem()
+                assertTrue("The audible outgoing decoder must survive replacement of a pending selection",
+                    player.audioEngines().any { it.currentMediaItem?.mediaId == TRACK1 && it.isPlaying })
+            }
+            gate.countDown()
+            await { player.currentMediaItem?.mediaId == TRACK3 && player.isPlaying }
+        }
+    }
+
+    @Test fun incomingRateLimitKeepsTheAudibleOutgoingSong(): Unit = runBlocking {
+        var abandoned = 0
+        withSyntheticPlayer(AutomixResolver { _, _, _ -> null }, failSecond = true,
+            abandoned = { abandoned++ }) { player ->
+            await { player.isPlaying && player.volume > .99f }
+            withContext(Dispatchers.Main) { player.seekToNextMediaItem() }
+            await { abandoned == 1 }
+            withContext(Dispatchers.Main) {
+                assertEquals(TRACK1, player.currentMediaItem?.mediaId)
+                assertTrue(player.isPlaying)
+                assertTrue(player.playWhenReady)
+                assertNull(player.playerError)
+            }
+            delay(300)
+            withContext(Dispatchers.Main) { assertTrue(player.isPlaying); assertEquals(1, abandoned) }
+        }
+    }
+
     @Test fun schedulerStallInsideTheOutroKeepsAutomixAndAdvancesTheEntry(): Unit = runBlocking {
         withSyntheticPlayer(AutomixResolver { _, from, to ->
             AutomixTransition(from, to, 8_000, 2_000, 5_000, 1.02f)
@@ -172,6 +268,8 @@ class PlaybackTransitionFailureTest {
     }
 
     private suspend fun withSyntheticPlayer(resolver: AutomixResolver, warning: () -> Unit = {}, crossfadeSeconds: Int = 2,
+        failSecond: Boolean = false, abandoned: () -> Unit = {},
+        secondGate: java.util.concurrent.CountDownLatch? = null, trackIds: List<String> = listOf(TRACK1, TRACK2),
         block: suspend (TransitionPlayer) -> Unit) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val wav = ByteBuffer.allocate(8_000 * 12 * 2 + 44).order(ByteOrder.LITTLE_ENDIAN).apply {
@@ -183,11 +281,22 @@ class PlaybackTransitionFailureTest {
         ActivityScenario.launch(PlaylistUiTestActivity::class.java).use {
             val player = withContext(Dispatchers.Main) {
                 fun engine() = ExoPlayer.Builder(context).setMediaSourceFactory(
-                    ProgressiveMediaSource.Factory(DataSource.Factory { ByteArrayDataSource(wav) })).build()
+                    ProgressiveMediaSource.Factory(DataSource.Factory {
+                        val source = ByteArrayDataSource(wav)
+                        object : DataSource by source {
+                            override fun open(dataSpec: androidx.media3.datasource.DataSpec): Long {
+                                if (dataSpec.uri.toString() == TRACK2) secondGate?.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                                if (failSecond && dataSpec.uri.toString() == TRACK2) {
+                                    throw LicenseHttpClient.LicenseHttpException(LicenseHttpClient.Failure.HTTP, 429)
+                                }
+                                return source.open(dataSpec)
+                            }
+                        }
+                    }).setLoadErrorHandlingPolicy(io.github.playmusic.data.playback.DrmRetryPolicy)).build()
                 TransitionPlayer(context, engine(), engine(),
                     { PlaybackTransitionSettings(fadeInSeconds = 1, fadeOutSeconds = 1, crossfadeSeconds = crossfadeSeconds) },
-                    resolver, onAutomixFailure = warning).apply {
-                    setMediaItems(listOf(TRACK1, TRACK2).map { uri -> MediaItem.Builder().setMediaId(uri).setUri(uri)
+                    resolver, onAutomixFailure = warning, onSwitchAbandoned = abandoned).apply {
+                    setMediaItems(trackIds.map { uri -> MediaItem.Builder().setMediaId(uri).setUri(uri)
                         .setMimeType(MimeTypes.AUDIO_WAV).setMediaMetadata(MediaMetadata.Builder().setExtras(Bundle().apply {
                             putString("contextUri", "spotify:playlist:0000000000000000000001"); putLong("durationMs", 12_000)
                         }).build()).build() })
@@ -201,5 +310,6 @@ class PlaybackTransitionFailureTest {
     companion object {
         private const val TRACK1 = "spotify:track:0000000000000000000001"
         private const val TRACK2 = "spotify:track:0000000000000000000002"
+        private const val TRACK3 = "spotify:track:0000000000000000000003"
     }
 }

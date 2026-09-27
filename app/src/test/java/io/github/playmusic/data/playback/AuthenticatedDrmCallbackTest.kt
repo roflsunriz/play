@@ -14,6 +14,41 @@ import java.net.URI
 
 class AuthenticatedDrmCallbackTest {
     @Test
+    fun closedPlatformSessionCancelsBusyRetryBeforeAnotherPost() {
+        val lifetime = DrmRequestLifetime()
+        val session = byteArrayOf(7)
+        lifetime.opened(session)
+        val request = ExoMediaDrm.KeyRequest(REQUEST, LICENSE.toString())
+        lifetime.register(session, request)
+        var attempts = 0
+        var clock = 0L
+        val http = LicenseHttpClient(
+            openConnection = { uri -> Connection(uri, 429, RESPONSE, onSend = { attempts++ }) },
+            sleepMs = { delay -> clock += delay; lifetime.closed(session) },
+            pacer = LicensePacer { clock },
+        )
+        val callback = AuthenticatedDrmCallback(provider(transfer = null), http, ::wrap, lifetime)
+        val error = runCatching { callback.executeKeyRequest(C.WIDEVINE_UUID, request) }.exceptionOrNull()
+        assertTrue(error is kotlinx.coroutines.CancellationException)
+        assertEquals(1, attempts)
+    }
+
+    @Test
+    fun queuedCallbackAfterSessionCloseDoesNotAuthenticateOrSend() {
+        val lifetime = DrmRequestLifetime()
+        val session = byteArrayOf(7)
+        lifetime.opened(session)
+        val request = ExoMediaDrm.KeyRequest(REQUEST, LICENSE.toString())
+        lifetime.register(session, request)
+        lifetime.closed(session)
+        val http = LicenseHttpClient(openConnection = { error("Unexpected network request") })
+        val callback = AuthenticatedDrmCallback(provider(transfer = IllegalStateException("Unexpected authorization")),
+            http, ::wrap, lifetime)
+        val error = runCatching { callback.executeKeyRequest(C.WIDEVINE_UUID, request) }.exceptionOrNull()
+        assertTrue(error is kotlinx.coroutines.CancellationException)
+    }
+
+    @Test
     fun successfulLicensesPassThrough() {
         val callback = AuthenticatedDrmCallback(provider(transfer = null), licenseHttp(reply = RESPONSE), ::wrap)
         val response = callback.executeKeyRequest(C.WIDEVINE_UUID, ExoMediaDrm.KeyRequest(REQUEST, LICENSE.toString()))
@@ -75,10 +110,11 @@ class AuthenticatedDrmCallbackTest {
         return LicenseHttpClient(openConnection = { uri -> Connection(uri, status, reply) })
     }
 
-    private class Connection(uri: URI, private val status: Int, private val reply: ByteArray) :
+    private class Connection(uri: URI, private val status: Int, private val reply: ByteArray,
+        private val onSend: () -> Unit = {}) :
         HttpURLConnection(uri.toURL()) {
         val sent = ByteArrayOutputStream()
-        override fun getOutputStream() = sent
+        override fun getOutputStream() = sent.also { onSend() }
         override fun getResponseCode() = status
         override fun getInputStream() = ByteArrayInputStream(reply)
         override fun getErrorStream() = ByteArrayInputStream(ByteArray(0))

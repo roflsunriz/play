@@ -43,6 +43,7 @@ class TransitionPlayer(
     private val beforeAudioFocus: suspend () -> Unit = {},
     private val onAutomixFailure: () -> Unit = {},
     private val onSwitchAbandoned: () -> Unit = {},
+    private val onClearDrmSessions: () -> Unit = {},
 ) : ForwardingSimpleBasePlayer(first) {
     private val engines = listOf(first, second)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -118,6 +119,12 @@ class TransitionPlayer(
             }
             override fun onPlayerError(error: PlaybackException) {
                 if (!released && engine === active) {
+                    val outgoing = tail
+                    if (outgoing?.isPlaying == true && isLicenseRateLimited(error)) {
+                        overlap?.cancel()
+                        abandonOverlap(engine, outgoing)
+                        return
+                    }
                     desiredPlaying = false; ramp?.cancel(); ramp = null
                     stopTail(); focus.release(); invalidateState()
                 }
@@ -218,12 +225,15 @@ class TransitionPlayer(
         if (duration <= 0 || from == target) { envelope = target; applyVolumes(); ramp = null; finished(); return }
         ramp = scope.launch {
             var elapsed = 0L
-            var previous = active.currentPosition
+            var clock = active.takeIf { it.isPlaying } ?: tail?.takeIf { it.isPlaying } ?: active
+            var previous = clock.currentPosition
             while (elapsed < duration) {
                 delay(20)
-                val position = active.currentPosition
+                val sounding = active.takeIf { it.isPlaying } ?: tail?.takeIf { it.isPlaying } ?: active
+                val position = sounding.currentPosition
                 // Advance by rendered audio, not buffering time; a new song may reset position.
-                val delta = (position - previous).takeIf { it in 0..500 } ?: 20
+                val delta = if (sounding === clock) (position - previous).takeIf { it in 0..500 } ?: 20 else 20
+                clock = sounding
                 previous = position
                 if (active.isPlaying || tail?.isPlaying == true) elapsed += delta
                 else if (target == 0f) break
@@ -245,6 +255,8 @@ class TransitionPlayer(
     }
 
     override fun handleSetMediaItems(mediaItems: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long): ListenableFuture<*> {
+        if (mediaItems.isEmpty()) onClearDrmSessions()
+        restoreAudibleTailWhileBuffering()
         cancelTransition(); ramp?.cancel(); ramp = null
         lastExplicitSeekPositionMs = startPositionMs.takeIf { it >= 0 }; skippedRecipeForSeek = false
         val selectedIndex = if (startIndex == C.INDEX_UNSET) 0 else startIndex
@@ -283,6 +295,13 @@ class TransitionPlayer(
             Player.COMMAND_SEEK_TO_PREVIOUS -> if (active.currentPosition > active.maxSeekToPreviousPosition) active.currentMediaItemIndex else active.previousMediaItemIndex
             else -> mediaItemIndex
         }
+        if (targetIndex != C.INDEX_UNSET && targetIndex != active.currentMediaItemIndex &&
+            tail?.isPlaying == true && !active.isPlaying) {
+            val pendingQueue = MutableList(active.mediaItemCount, active::getMediaItemAt)
+            if (restoreAudibleTailWhileBuffering()) {
+                return handleSetMediaItems(pendingQueue, targetIndex, positionMs.takeIf { it >= 0 } ?: 0)
+            }
+        }
         if (targetIndex != C.INDEX_UNSET && targetIndex != active.currentMediaItemIndex && active.isPlaying &&
             settings().crossfadeMs > 0 && !sleeping) {
             prepare(targetIndex, manual = true)
@@ -291,7 +310,7 @@ class TransitionPlayer(
         val sameItem = targetIndex == active.currentMediaItemIndex ||
             (targetIndex == C.INDEX_UNSET && seekCommand in setOf(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
                 Player.COMMAND_SEEK_TO_DEFAULT_POSITION, Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD))
-        if (sameItem && tail == null) {
+        if (sameItem) {
             val seekFadeMs = settings().takeIf { active.isPlaying && !sleeping }?.seekCrossfadeMs ?: 0
             if (seekFadeMs > 0 && (positionMs == C.TIME_UNSET || abs(positionMs - active.currentPosition) >= 500)) {
                 // A same-song seek must stay instant: a spare-decoder overlap would need a new
@@ -325,6 +344,7 @@ class TransitionPlayer(
         return super.handleSetRepeatMode(repeatMode)
     }
     override fun handleRemoveMediaItems(fromIndex: Int, toIndex: Int): ListenableFuture<*> {
+        if (fromIndex == 0 && toIndex >= active.mediaItemCount) onClearDrmSessions()
         cancelTransition()
         return super.handleRemoveMediaItems(fromIndex, toIndex)
     }
@@ -414,6 +434,18 @@ class TransitionPlayer(
     }
 
     private fun prepare(index: Int, manual: Boolean) {
+        if (manual && preparedFor == active.currentMediaItem && preparedIndex == index &&
+            spare().currentMediaItem?.mediaId == active.getMediaItemAt(index).mediaId &&
+            spare().playbackState in listOf(Player.STATE_READY, Player.STATE_BUFFERING)) {
+            preparation?.cancel(); preparation = null
+            val incoming = spare()
+            incoming.playbackParameters = active.playbackParameters
+            incoming.seekTo(0)
+            beginOverlap(incoming, TransitionEnvelope.overlapMs(settings().crossfadeMs,
+                (active.duration - active.currentPosition).coerceAtLeast(0) * 2,
+                incoming.duration.takeIf { it > 0 } ?: settings().crossfadeMs * 2), null)
+            return
+        }
         cancelPreparation()
         if (overlap != null) stopTail()
         if (index !in 0 until active.mediaItemCount) return
@@ -503,7 +535,8 @@ class TransitionPlayer(
         setPlayer(incoming)
         applyVolumes()
         overlap = scope.launch(start = CoroutineStart.LAZY) {
-            val start = incoming.currentPosition
+            var elapsed = 0L
+            var previous = incoming.currentPosition
             while (isActive && active === incoming) {
                 val incomingError = incoming.playerError
                 if (incomingError != null) {
@@ -517,10 +550,13 @@ class TransitionPlayer(
                     // different item or allow its outgoing tail to keep playing indefinitely.
                     break
                 }
-                val elapsed = ((incoming.currentPosition - start) / (recipe?.incomingSpeed ?: 1f)).toLong()
+                val position = incoming.currentPosition
+                if (incoming.isPlaying) elapsed += ((position - previous).takeIf { it in 0..500 } ?: 0)
+                    .let { (it / (recipe?.incomingSpeed ?: 1f)).toLong() }
+                previous = position
                 val gain = TransitionEnvelope.gain(0f, 1f, elapsed, duration)
                 if (incoming.isPlaying) { headGain = gain; tailGain = 1f - gain; applyVolumes() }
-                if (gain >= 1f || (outgoing.playbackState == Player.STATE_ENDED && incoming.isPlaying)) break
+                if (incoming.isPlaying && (gain >= 1f || outgoing.playbackState == Player.STATE_ENDED)) break
                 delay(20)
             }
             outgoing.pause(); outgoing.stop(); outgoing.clearMediaItems(); outgoing.pauseAtEndOfMediaItems = false
@@ -532,6 +568,17 @@ class TransitionPlayer(
     }
 
     private fun spare(): ExoPlayer = if (active === engines[0]) engines[1] else engines[0]
+    /** A newer selection replaces the silent pending decoder, not the song still sounding. */
+    private fun restoreAudibleTailWhileBuffering(): Boolean {
+        val outgoing = tail?.takeIf { it.isPlaying && !active.isPlaying } ?: return false
+        overlap?.cancel(); overlap = null
+        active.pause(); active.stop(); active.clearMediaItems()
+        active = outgoing; tail = null
+        headGain = 1f; tailGain = 0f; envelope = 1f
+        outgoing.pauseAtEndOfMediaItems = false
+        setPlayer(outgoing); applyVolumes()
+        return true
+    }
     private fun abandonOverlap(incoming: ExoPlayer, outgoing: ExoPlayer) {
         incoming.pause(); incoming.stop(); incoming.clearMediaItems(); incoming.pauseAtEndOfMediaItems = false
         incoming.playbackParameters = PlaybackParameters.DEFAULT
@@ -588,6 +635,7 @@ class TransitionPlayer(
 
     override fun handleRelease(): ListenableFuture<*> {
         released = true
+        onClearDrmSessions()
         scope.cancel(); focus.release(); engines.forEach(ExoPlayer::release)
         return Futures.immediateVoidFuture()
     }

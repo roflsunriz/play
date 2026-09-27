@@ -19,6 +19,6 @@ class DrmRetryPolicyTest {
         assertEquals(C.TIME_UNSET, DrmRetryPolicy.getRetryDelayMsFor(info))
         assertEquals(0, DrmRetryPolicy.getMinimumLoadableRetryCount(0))
         assertNull(DrmRetryPolicy.getFallbackSelectionFor(
-            LoadErrorHandlingPolicy.FallbackOptions(1, 0, 1, 0), info))
+            LoadErrorHandlingPolicy.FallbackOptions(1, 0, 1, 0, false), info))
     }
 }

@@ -21,6 +21,7 @@ internal class AuthenticatedDrmCallback(
     private val licenseHttp: LicenseHttpClient = LicenseHttpClient(),
     private val wrapFailure: (cause: Exception, bytesLoaded: Long) -> Exception =
         { cause, loaded -> defaultFailure(cause, loaded) },
+    private val lifetime: DrmRequestLifetime? = null,
 ) : MediaDrmCallback {
     private val http by lazy { DefaultHttpDataSource.Factory().setConnectTimeoutMs(15_000).setReadTimeoutMs(20_000) }
 
@@ -30,7 +31,8 @@ internal class AuthenticatedDrmCallback(
     override fun executeKeyRequest(uuid: UUID, request: ExoMediaDrm.KeyRequest): MediaDrmCallback.Response {
         val uri = URI(StreamingApiClient.LICENSE_URL)
         return try {
-            val response = licenseHttp.post(uri, request.data) { refresh ->
+            val response = licenseHttp.post(uri, request.data,
+                isCancelled = lifetime?.cancellation(request) ?: { false }) { refresh ->
                 runBlocking { authorization.headers(uri, refresh) }
             }
             // LoadEventInfo is optional in Media3 1.11.1; do not expose request secrets through analytics.
@@ -42,6 +44,8 @@ internal class AuthenticatedDrmCallback(
         } catch (error: Exception) {
             // Authorization failures carry only stage/failure/status, never tokens or message bytes.
             throw wrapFailure(error, 0)
+        } finally {
+            lifetime?.completed(request)
         }
     }
 

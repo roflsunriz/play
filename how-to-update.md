@@ -166,3 +166,13 @@ $version = $metadata.elements[0].versionName
 設定を変えたときは `actionlint .github/workflows/dependabot-automation.yml` と実際の PR の Actions 結果を確認します。問題があれば呼び出し先の共通 workflow SHA を直前の検証済み値へ戻すコミットを push します。取り込まれた依存更新に問題があれば通常の revert コミットで復旧します。
 
 CI 完了より Dependabot の分類が遅れる場合は、`callback_workflow_file` が指す呼び出し側 workflow を `workflow_dispatch` し、同じ PR 番号・head SHA・全チェックを再確認する。呼び出し側のファイル名を変える際はこの入力も一緒に更新する。
+
+## 連続再生操作の回帰検証
+
+ライセンスや曲切替を変更した場合は、JVMの`LicenseHttpClientTest`、`AuthenticatedDrmCallbackTest`、`DrmRequestLifetimeTest`、`RetainedDrmSessionManagerTest`と、端末上の`PlaybackTransitionFailureTest`を実行する。取得待ちの連続選曲、異なる一覧への選曲中の次曲操作、待機中の一時停止・停止、切替失敗時の元の音声維持を含める。
+
+許可されたログイン済み端末だけで`LivePlaybackBurstTest`へ`liveBurst=true`を渡す。同曲の連続シークに追加ライセンス要求がないこと、短時間のA→B→Aで再利用すること、連続選曲後に古い要求が再送されないこと、復号後の非無音を確認する。テストは数値だけを計測し、再生設定を端末内の専用ジャーナルへ退避して終了時に復元する。途中でプロセスが落ちた場合は同じテストを再実行して退避設定を復元し、退避記録を勝手に消さない。実音声の自然終端は別途`AudioOutputTest(liveAudio=true, fullTrack=true)`で確認する。
+
+短い連打だけで通常の連続切替を検証済みとしない。`LivePlaybackSequenceTest(liveSequence=true)`で異なる6曲を先頭から約15秒ずつ聴き、「次へ」で順番に切り替える。ユーザーの再生設定をそのまま使用し、各曲の10〜15秒に復号後の非無音があること、初回音声までの時間、曲ごとのPOSTが1回であること、429がないことを確認する。曲名・URI・音声本文はログへ残さない。
+
+耐久性は同クラスの`tenDifferentTracksWithRandomMiddleAndLateSeeksRemainAudible`だけへ`liveEndurance=true`を渡す。異なる10曲を各15秒以上再生したうえで、中盤2回・終盤2回へ交互にランダムシークし、40回すべての移動後に別々の非無音窓を10件以上確認する。乱数の種は20260927で再現可能にし、位置は曲長に応じて計算する。終盤で明示的な次曲準備が始まることは許容するが、POST合計は10曲に対して10回であり、同曲シークのたびに要求が増えないことを検査する。

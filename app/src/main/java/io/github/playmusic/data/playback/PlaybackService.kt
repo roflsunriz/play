@@ -50,6 +50,7 @@ open class PlaybackService : MediaSessionService() {
     private var database: StandaloneDatabaseProvider? = null
     private var foregroundReady: CompletableDeferred<Unit>? = null
     private var destroying = false
+    private val drmManagers = mutableListOf<RetainedDrmSessionManager>()
 
     override fun onCreate() {
         super.onCreate()
@@ -60,6 +61,7 @@ open class PlaybackService : MediaSessionService() {
         val player = TransitionPlayer(this, createEngine(mediaCache), createEngine(mediaCache),
             { (application as PlayApplication).container.playbackTransitions.state.value.settings }, createAutomixResolver(),
             beforeAudioFocus = ::awaitPlaybackForeground,
+            onClearDrmSessions = { drmManagers.forEach { it.invalidate() } },
             onAutomixFailure = {
                 (application as PlayApplication).container.localPlayback.reportWarning(getString(R.string.playback_automix_failed))
             },
@@ -138,10 +140,13 @@ open class PlaybackService : MediaSessionService() {
             .setConnectTimeoutMs(15_000).setReadTimeoutMs(20_000)
         val cacheFactory = CacheDataSource.Factory().setCache(mediaCache).setUpstreamDataSourceFactory(http)
         val dataSources = DataSource.Factory { CachedAudioDataSource(api, cacheFactory) }
-        val drm = DefaultDrmSessionManager.Builder().setUuidAndExoMediaDrmProvider(C.WIDEVINE_UUID,
-            FrameworkMediaDrm.DEFAULT_PROVIDER).setMultiSession(true).setSessionKeepaliveMs(C.TIME_UNSET)
+        val lifetime = DrmRequestLifetime()
+        val platformDrm = DefaultDrmSessionManager.Builder().setUuidAndExoMediaDrmProvider(C.WIDEVINE_UUID,
+            { uuid -> LifetimeMediaDrm(FrameworkMediaDrm.DEFAULT_PROVIDER.acquireExoMediaDrm(uuid), lifetime) })
+            .setMultiSession(true).setSessionKeepaliveMs(C.TIME_UNSET)
             .setLoadErrorHandlingPolicy(DrmRetryPolicy)
-            .build(AuthenticatedDrmCallback(container.playbackAuthorization))
+            .build(AuthenticatedDrmCallback(container.playbackAuthorization, lifetime = lifetime))
+        val drm = RetainedDrmSessionManager(platformDrm, lifetime).also(drmManagers::add)
         return ProgressiveMediaSource.Factory(dataSources).setDrmSessionManagerProvider { drm }
     }
 
@@ -180,6 +185,7 @@ open class PlaybackService : MediaSessionService() {
         session?.player?.let { (application as PlayApplication).container.sleepTimer.detach(it) }
         session?.run { player.release(); release() }
         session = null
+        drmManagers.clear()
         cache?.release()
         database?.close()
         super.onDestroy()

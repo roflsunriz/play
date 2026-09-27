@@ -1,5 +1,21 @@
 # 検証手順と結果
 
+## 2026-09-27の結果
+
+### #19 連続シーク・曲切替のライセンス要求削減
+
+- 対象は許可されたPixel 10a（Android 17）、開始時の公開版0.8.1。同じ専用証明書の検証APKを`install -r`し、既存ログインを保持した。ログアウト、アカウントのコレクション変更、鍵・ライセンス本文・PCMの保存は行わない。
+- 10aの合成回帰で、切替先の429相当エラー通知が元の音声を先に停止し、復帰処理を取り消す不具合を修正前に再現した。修正後は元の音声を維持する。読込中の連続選曲、異なる一覧への選曲中の「次へ」、読込中の一時停止・停止も回帰へ追加した。`issue19-baseline-test.log`、`issue19-synthetic-final.log`。
+- 実音源の初回検査で、追加したDRM管理wrapperのJava defaultメソッドがKotlinの委譲では転送されず、prepare前のgetCryptoTypeでクラッシュする問題を検出した。明示委譲へ直し、未初期化の呼び出しを失敗させるJVM回帰を追加した。クラッシュ後の再生設定はユーザー指定の全項目有効・64GB（秒数3/3/5/3）へ復元した。以降の実音源テストは設定を同期書込のジャーナルへ退避してから変更する。
+- 実音源で同曲シークの追加POSTを検出し、診断で現曲のセッションは維持されている一方、後続2曲のpreacquireがセッションを繰り返し作っていることを確認した。任意のDRM先行取得だけを止め、暗号化音源のバッファを維持した。診断コードは原因確定後に除去した。`issue19-drm-trace.log`と`issue19-drm-trace-fixed.log`。
+- 診断を除いた0.8.2候補の`LivePlaybackBurstTest(liveBurst=true)`が87.825秒で成功。同曲の連続シーク6回と短時間のA→B→Aはいずれも追加POST 0件。5回の連続選曲、次曲の連打、一時停止・再開、ユーザー指定設定でも操作を確認し、各選択曲の16秒以降で異なる10窓以上の非無音を確認した。操作終了後5秒間の不要な再送も0件。今回の実機検査では429は発生せず、429時の共有待機・取消・元曲復帰は合成検査で確認している。`issue19-live-final.log`。
+- JVM281件失敗0、lintエラー0（既存警告6件）、debug・テストAPK・最適化releaseのビルドが成功。10aの合成再生回帰は12件成功、AVD専用の背景復帰1件は条件により対象外。`issue19-candidate-build.log`、`issue19-synthetic-final.log`。
+- 依存の安定最新版を公式Google Maven/Maven Centralで照合し、直接依存は更新不要。CIアクション5種も公式リリースと一致。OSV-Scanner 2.6.0で公開DBと依存598件を照合し、該当する既知脆弱性0件。`issue19-dependency-updates.txt`（日付型版番号のJSONは別途20260814と照合）、`issue19-osv.json`、`issue19-osv.log`。
+- `AudioOutputTest(liveAudio=true, fullTrack=true)`は308.355秒で成功。ホーム画面へ移動した状態でも自然終端まで再生し、冒頭15/15秒、中盤19/19秒、終盤20/20秒で非無音を確認した。`issue19-full-audio.log`。
+- ユーザーが追加指定した別曲の通常連続切替を`LivePlaybackSequenceTest(liveSequence=true)`で検査し、103.071秒で成功した。異なる6曲を先頭から15.0〜15.3秒ずつ再生し、各曲の10〜15秒に27〜29窓の非無音を確認。初回音声まで0.800〜2.938秒、POSTは曲ごと1回・計6回、429/503は0件。全項目有効・64GBの設定を変えず実行した。`issue19-six-track-sequence.log`、`issue19-six-track-metrics.log`。
+- 追加指定の耐久性検査`tenDifferentTracksWithRandomMiddleAndLateSeeksRemainAudible(liveEndurance=true)`は357.317秒で成功。異なる10曲を各15秒以上再生した後、乱数種20260927で中盤2回・終盤2回へ交互にシークした。計40回の全移動後に10件以上の異なる非無音窓を確認し、POSTは10曲で計10回、429/503は0件だった。終盤で明示的に先行準備された次曲も実際の切替で再利用された。`issue19-endurance.log`、`issue19-endurance-metrics.log`。
+- 専用署名・debuggable無効の0.8.2公開候補へ10aをデータ保持更新し、保存ライブラリと通常画面からの再生を確認。再生位置は48秒以降も進行し、MediaSessionのerrorはnullだった。復号後音声の検証は同ソースのdebug版で行った前記テストと区別する。全項目有効・64GBの設定を確認し、設定退避ジャーナル・テスト専用音源キャッシュ・テストAPKを片付けた。
+
 ## 2026-09-25の結果
 
 ### v0.7.0の公開（匿名化エラー報告）
