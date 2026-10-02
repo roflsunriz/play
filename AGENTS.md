@@ -36,6 +36,8 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 
 ## 調査・検証で確認した注意点
 
+- 2026-10-02、Gradle 9.8.0のPR #20は内部ビルドクラスパスの`kotlin-reflect`・`kotlin-stdlib` 2.4.10の検証値不足でCIが失敗した。アプリのKotlin Gradle Plugin 2.4.20は更新不要でもWrapper更新時に検証メタデータ生成が必要。`--write-verification-metadata sha256`で生成し、旧ハッシュ不変と公式配布物の一致を確認する。詳細は`how-to-update.md`。
+
 - 2026-09-15、「トリッカル」の検索は所有者ProfileのURIがpercent encoded、要求usernameがdecodedで、文字列一致が同一人物を拒否していた。URIの識別子だけを1回decodeし、`+`を空白へ変換せず照合する。別人・不正escapeは拒否を維持する。カタログだけの成功で検索画面の成功とせず、Repositoryの所有者名取得まで実機検査する。
 - 同日、「インターネット」の`searchGenres`に`GenreResponseWrapper/Genre`の「お気に入りの曲」カードが含まれた。通常ジャンルとは別の現ユーザーcollectionリンクを、既存の専用お気に入りURIへ接続する。未知のURIを包括的に無視しない。型・具体値・再現検査は`CatalogJsonTest`、`MusicRepositoryCacheTest`、`docs/api-contracts.md`。
 - 2026-09-15、ユーザーが未フォローのアーティスト1組だけの一時フォロー・解除を明示許可した。`ArtistFollowAccountTest`の`liveArtistFollow=true`は対象URIのchecked journalとアカウント照合を維持し、既存のフォロー・コレクションを変更しない。
