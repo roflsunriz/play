@@ -3,7 +3,7 @@ name = "org.apache.commons:commons-lang3"
 version = "3.16.0"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "AGP requests 3.16.0 metadata, but the build classpath resolves and executes 3.20.0."
+reason = "AGP requests 3.16.0 metadata, but the build classpath resolves and executes 3.21.0."
 
 [[PackageOverrides]]
 name = "org.apache.httpcomponents:httpclient"

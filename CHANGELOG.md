@@ -2,6 +2,16 @@
 
 このプロジェクトの重要な変更は、[Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に従って記録します。
 
+## [Unreleased]
+
+### Changed
+
+- 現行のビルドツールへ追従するため、Gradle Wrapperを9.7.1から9.8.0へ、ビルド用Commons Langを3.20.0から3.21.0へ更新した。
+
+### Fixed
+
+- Gradle更新後もアーティファクト検証を維持したままCIでビルドできるよう、Gradle内部のKotlin依存と更新したCommons Langの検証メタデータを再生成した。
+
 ## [0.8.2] - 2026-09-27
 
 ### Fixed

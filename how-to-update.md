@@ -31,6 +31,8 @@ WindowsでSDK・コンパイラの共有キャッシュにAccessDeniedException�
 
 親POMやBOMの検証値は、既存の依存キャッシュがあると生成対象から抜けることがある。CIだけで不足する場合は、空の検証専用ディレクトリを`-g`へ指定し、`--no-configuration-cache --write-verification-metadata sha256`で全ビルドと検証を実行する。同じ専用homeで`verifyPlatformTools`も実行し、生成前後で既存のハッシュが変わっていないこと、削除されていないこと、新しい値の取得元が正しいことを確認する。
 
+Gradle Wrapperの更新でも、Gradle内部で使うKotlinの依存が変わる場合がある。アプリのKotlin版が変わらなくても、通常ビルドと`verifyPlatformTools`によるメタデータ生成・検証を行う。Gradle 9.8.0への更新では、ビルドクラスパスの`kotlin-reflect`・`kotlin-stdlib` 2.4.10の検証値が必要だった。アプリのKotlin Gradle Plugin 2.4.20とは区別し、検証無効化や一律の信頼設定で回避しない。
+
 2026-09-25のこのWindows環境では、Gradle 9.7.1の空homeで`GeneratedClassCompilationException`が発生し、内側の原因は展開済みGradle JARへの`AccessDeniedException`だった。昇格と別ディレクトリでも同じため、既存homeから`--refresh-dependencies --no-configuration-cache --write-verification-metadata sha256`で全ビルドを行い、旧ハッシュの変更・削除がないことと新規ハッシュを公式Google Mavenの実ファイルで確認した。`tools/verify-platform-tools.init.gradle.kts`は版カタログの現行AGPに対応するAAPT2だけを選び、過去版がメタデータに残っていてもLinux/macOS/Windowsの3種を検証する。
 
 7. OSV-Scannerで依存関係を監査する。依存情報の外部送信を伴う照会が許可されない環境では、公開DBをダウンロードしてローカルで照合する。DBの更新日時も記録する。既存の例外と緩和策は`gradle/osv-scanner.toml`および`SECURITY.md`を確認する。

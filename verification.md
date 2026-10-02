@@ -1,5 +1,16 @@
 # 検証手順と結果
 
+## 2026-10-02の結果
+
+### #20 Gradleとビルド依存の更新
+
+- Gradle Wrapper 9.7.1→9.8.0、ビルドクラスパスのCommons Lang 3.20.0→3.21.0を更新した。直接依存22系列を公式Google Maven/Maven Centralの安定版と比較し、ほかの更新は不要。CI・Releaseで利用するActions 5種も公式最新版と一致した。[Gradleの変更点](https://docs.gradle.org/9.8.0/release-notes.html)と[Commons Langの公式リリース](https://github.com/apache/commons-lang/blob/rel/commons-lang-3.21.0/RELEASE-NOTES.txt)を確認した。
+- 元のPR CIは、Gradle内部のKotlin 2.4.10のJAR・POM・module計4ファイルの検証値不足で失敗していた。検証メタデータはGradleの生成コマンドで更新し、既存993アーティファクトのハッシュは変更・削除なし。追加11ファイルはMaven Centralの実ファイルとSHA-256を独立照合して一致した。Wrapper JARもGradle公式v9.8.0のGit blob SHAと一致した。
+- JDK 17の昇格環境で`testDebugUnitTest`は281件成功、失敗0。`lintDebug`はエラー0、既存警告6件。`assembleDebug`、`assembleDebugAndroidTest`、R8最適化を含む`assembleRelease`が成功し、`verifyPlatformTools`でLinux/macOS/Windows用AAPT2も確認した。Commons Lang 3.21.0が実際のビルドクラスパスに選ばれることを`buildEnvironment`で確認した。
+- OSV-Scanner 2.6.0の公式配布SHA-256を検証し、取得した公開DBをローカル照合した。更新後の検証メタデータ605依存に対する既知脆弱性の検出0件。GitHubの未処理Dependabotアラートも0件。既存の限定的な例外は`gradle/osv-scanner.toml`を参照する。
+- 生成モードを外した通常の依存検証でも、同じテスト・Lint・全APKビルドと3OS用AAPT2解決が成功した。Gradleの`Configuration.setVisible(boolean)`非推奨警告は、スタックトレースで現行安定版AGP 9.4.1の`BasePlugin.createAndroidJdkImageConfiguration`由来と確認した。Gradle 11での削除予定であり、プロジェクト側の検証や警告を無効化していない。ほかの既存Kotlin・Lint警告と合わせて、今後のAGP更新時に再確認する。
+- 実機へのインストール、ログイン変更、実音源の検証は行っていない。今回はアプリの実行時依存を変更しておらず、ビルドツールと検証メタデータの更新を対象にした。公開リリース・タグの作成も行っていない。
+
 ## 2026-09-27の結果
 
 ### #19 連続シーク・曲切替のライセンス要求削減
