@@ -113,3 +113,8 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 2026-09-27、#19の検証でKotlinの`interface by delegate`がJava interfaceのdefault methodを転送せず、`DrmSessionManager.prepare/release`が空実装になって実音源初回でクラッシュすることを確認した。DRM wrapperでは初期化・解放・preacquire等のdefault methodを明示委譲し、`getCryptoType`より前にprepareが届く回帰を維持する。`RetainedDrmSessionManagerTest`と`DrmRequestLifetimeTest`。
 - 2026-09-27、#19では429/503の待機期限を全エンジンで共有する。60秒超のRetry-Afterは短縮再送せず失敗を返し期限を維持する（09-16の60秒上限より優先）。成功した標準DRMセッションだけ30秒・engine最大2件保持し、取得待ちは保持せずcloseSessionからHTTP待機を取り消す。ログアウト等の全消去は世代を更新し、遅れたreleaseで旧セッションを再保持しない。鍵・PCMは保存しない。`docs/playback-transitions.md`。
 - 2026-09-27、10aの#19実音源診断で、同曲シークの追加ライセンス要求は現曲ではなく後続曲の`preacquireSession`だった。600秒の音源バッファが後続曲を読み込み、シークごとに後続曲の先行DRMセッションをclose/openしていた。任意のpreacquireはEMPTYにし、decoderの通常acquireと明示したcrossfade準備へ取得を限定する。暗号化音源キャッシュは維持する。`LivePlaybackBurstTest`で同曲連続シーク追加POST 0を検査する。
+
+
+## Dependabotラベルの運用
+
+- 明示指定のラベルはDependabotが自動初期化するとは限らない。既定ブランチの設定を正本とする専用workflowで不足分だけ維持する。検証と復旧は `how-to-update.md` のDependabotラベル節、回帰は `.github/tests/test-dependabot-labels.py`。既存の自動マージ・承認は別のworkflowであり、ラベルの変更で回避しない。

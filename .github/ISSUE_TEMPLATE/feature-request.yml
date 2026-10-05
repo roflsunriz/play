@@ -1,4 +1,7 @@
-title: '[Feature] '
+name: 機能提案
+description: 新機能や改善を提案します。
+labels:
+  - enhancement
 body:
   - type: markdown
     attributes:
@@ -6,6 +9,15 @@ body:
         誰のどの問題を解決するかと、提案・代替案・互換性を共有してください。
         導入・利用・開発方法は [README](https://github.com/roflsunriz/play/blob/HEAD/README.md) を確認してください。
         本文と添付に秘密情報や個人情報を含めないでください。脆弱性の詳細は公開せず、[セキュリティ方針](https://github.com/roflsunriz/play/blob/HEAD/SECURITY.md) を確認してください。
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 事前確認
+      options:
+        - label: 同じ内容の既存Issueを検索しました。
+          required: true
+        - label: READMEと関連する利用・更新手順を確認しました。
+          required: true
   - type: textarea
     id: problem
     attributes:
@@ -13,20 +25,10 @@ body:
       description: 現在の利用場面、困っていること、対象の利用者を説明してください。
     validations:
       required: true
-  - type: markdown
-    attributes:
-      value: 利用者価値のある提案を共有します
   - type: textarea
-    id: value
-    attributes:
-      label: 利用者への価値
-    validations:
-      required: true
-  - type: textarea
-    id: idea
+    id: proposal
     attributes:
       label: 提案する解決方法
-      description: アイデアを具体的に記載してください。
     validations:
       required: true
   - type: textarea
@@ -46,3 +48,4 @@ body:
       options:
         - label: 本文・ログ・画像・添付から、認証情報、Cookie、トークン、秘密鍵、個人情報を除いたことを確認しました。
           required: true
+title: '[Feature] '

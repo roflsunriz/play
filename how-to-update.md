@@ -178,3 +178,20 @@ CI 完了より Dependabot の分類が遅れる場合は、`callback_workflow_f
 短い連打だけで通常の連続切替を検証済みとしない。`LivePlaybackSequenceTest(liveSequence=true)`で異なる6曲を先頭から約15秒ずつ聴き、「次へ」で順番に切り替える。ユーザーの再生設定をそのまま使用し、各曲の10〜15秒に復号後の非無音があること、初回音声までの時間、曲ごとのPOSTが1回であること、429がないことを確認する。曲名・URI・音声本文はログへ残さない。
 
 耐久性は同クラスの`tenDifferentTracksWithRandomMiddleAndLateSeeksRemainAudible`だけへ`liveEndurance=true`を渡す。異なる10曲を各15秒以上再生したうえで、中盤2回・終盤2回へ交互にランダムシークし、40回すべての移動後に別々の非無音窓を10件以上確認する。乱数の種は20260927で再現可能にし、位置は曲長に応じて計算する。終盤で明示的な次曲準備が始まることは許容するが、POST合計は10曲に対して10回であり、同曲シークのたびに要求が増えないことを検査する。
+
+
+## Dependabotラベルの維持
+
+`.github/workflows/dependabot-labels.yml` は既定ブランチのDependabot設定を読み、`updates` と `multi-ecosystem-groups` が明示指定するラベルの不足分だけ作成します。設定変更、ラベルの編集・削除、毎日04:17 UTC、手動実行で検査します。既存ラベルの色・説明やPRへの付与状態は変更しません。書込権限は専用ジョブの `issues: write` に限定し、PRの検証ジョブは読み取り専用です。
+
+ラベルが不足する場合、Actionsの「Maintain Dependabot labels」を既定ブランチで手動実行し、`All configured Dependabot labels exist` を確認します。権限エラーやarchivedラベルとの競合は失敗として通知されます。Dependabot設定のラベル名を別名へ付け替えたり、CI・承認条件を無効化して回避しないでください。
+
+変更時は次を実行し、Actions上でも検証してください。
+
+```powershell
+python -m pip install PyYAML==6.0.3
+python .github/tests/test-dependabot-labels.py
+actionlint .github/workflows/dependabot-labels.yml
+```
+
+Dependabot更新そのものの成功は、更新ジョブのログと結果で確認します。指定ラベルが無い場合はGitHubの仕様では無視されるため、実際のジョブ失敗をラベル不足だけと決めつけないでください。更新チェックの手動実行はGitHubのDependabot更新画面で提供される場合に使用し、Actions APIが再試行不可と返す実行は成功扱いしません。

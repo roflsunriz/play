@@ -22,7 +22,7 @@ Playからログアウトしても、ブラウザー側の音楽サービスに�
 
 ## ビルド
 
-前提:
+ビルドには次の環境が必要です。
 
 - JDK 17以上
 - Android SDK Platform 37 / Build Tools 37.0.0
