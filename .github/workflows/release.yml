@@ -57,7 +57,7 @@ jobs:
             Remove-Item -LiteralPath $keystore -ErrorAction SilentlyContinue
           }
       - name: Upload verified release artifacts
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: play-${{ github.ref_name }}
           path: |
