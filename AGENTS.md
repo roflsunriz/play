@@ -119,3 +119,4 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 ## Dependabotラベルの運用
 
 - 明示指定のラベルはDependabotが自動初期化するとは限らない。既定ブランチの設定を正本とする専用workflowで不足分だけ維持する。検証と復旧は `how-to-update.md` のDependabotラベル節、回帰は `.github/tests/test-dependabot-labels.py`。既存の自動マージ・承認は別のworkflowであり、ラベルの変更で回避しない。
+- 2026-10-15、#23はPR CI成功後に既存の自動処理でマージ・ブランチ削除されたが、そのmainコミットのCIは新規起動しなかった。自動マージ済みを手動マージし直さず、`mergedBy`・`mergeCommit`と検証済みheadとのツリー一致を確認する。PR CIとmain CIを区別し、mainの確認には対象SHAのrunを使う。

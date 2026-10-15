@@ -11,6 +11,7 @@
 - 直接・ビルド依存22系列を公式Google Maven/Maven Centralの安定版と照合し、Kotlin以外の更新は不要。CIの`actions/setup-java`は[公式6.1.0](https://github.com/actions/setup-java/releases/tag/v6.1.0)へ更新し、CIとReleaseの両方へ反映した。ほかのActionsとGradle 9.8.1は公式最新版と一致した。前回までにマージ済みのGradle 9.8.1と成果物アップロード7.0.2の変更履歴も補正した。`pr23-dependency-updates.json`。
 - 公式SHA-256を照合したOSV-Scanner 2.7.0と当日取得のMaven公開DBを使用し、更新後634依存のローカル照合で既知脆弱性の検出0件。GitHubの未処理Dependabotアラートも0件。既存の版限定例外は`gradle/osv-scanner.toml`を維持し、検証自体を無効化していない。`pr23-osv.json`、`pr23-osv.log`。
 - workflow YAML全4件の構文確認とDependabotラベルのオフラインテストが成功した（10件成功、Bun非利用のため1件は対象外）。実機での表示・音声再生、インストール、ログイン変更は実行していない。公開リリース・タグも作成していない。
+- 修正後の[PR CI](https://github.com/roflsunriz/play/actions/runs/38674530525)は7分31秒で成功した。その後、既存の自動処理が#23をmainの`425bc87`へマージし、PRブランチを削除した。統合後のツリーは検証済みhead `adf2d4d`と完全一致。Open PRは0件で、#21のマージ済みheadと一致していた残存リモートブランチも削除した。自動マージでは今回のmain CIは新規起動しなかったため、この統合記録を通常プッシュした際のCIでmainを確認する。
 
 ## 2026-10-02の結果
 
