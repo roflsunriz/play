@@ -38,4 +38,4 @@ name = "org.jetbrains.kotlin:kotlin-gradle-plugin"
 version = "2.2.10"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "AGP requests 2.2.10 metadata, but the build classpath resolves and executes 2.4.20."
+reason = "AGP requests 2.2.10 metadata, but the build classpath resolves and executes 2.4.21."
