@@ -18,7 +18,7 @@
 
 ## ビルドキャッシュ
 
-Kotlinのビルドキャッシュメタデータに関する[CVE-2026-53914](https://github.com/advisories/GHSA-r937-wjx7-w2jp)への対策として、2026-09-12に安定版[2.4.20](https://kotlinlang.org/docs/whatsnew2420.html)へ更新しました。Gradleの解決結果でも実際のKotlin Gradle Pluginが2.4.20であることを確認し、この脆弱性に対する一律の検査除外を削除しました。
+Kotlinのビルドキャッシュメタデータに関する[CVE-2026-53914](https://github.com/advisories/GHSA-r937-wjx7-w2jp)への対策として、2026-09-12に安定版[2.4.20](https://kotlinlang.org/docs/whatsnew2420.html)へ更新し、この脆弱性に対する一律の検査除外を削除しました。現在の指定版は`gradle/libs.versions.toml`を正本とし、更新時には`buildEnvironment`で実際のKotlin Gradle Pluginの解決版も確認します。
 
 GradleビルドキャッシュとKotlinインクリメンタルコンパイルは引き続き無効です。信頼できない共有・外部提供のキャッシュを読み込みません。再有効化する場合は、修正版の利用とキャッシュの出所を確認して検証します。
 

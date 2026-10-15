@@ -1,5 +1,17 @@
 # 検証手順と結果
 
+## 2026-10-15の結果
+
+### #23 Kotlin更新PRの依存検証修正
+
+- 元のCIはCompose 2.4.21のプラグインマーカーPOMのSHA-256未登録で失敗していた。公式の[Kotlin 2.4.21リリース](https://github.com/JetBrains/kotlin/releases/tag/v2.4.21)を確認し、版カタログの共通Kotlin版を更新した。`buildEnvironment`ではAGPが要求するKotlin Gradle Plugin 2.2.10が2.4.21へ解決されることを確認し、OSVのメタデータ限定例外の理由も合わせた。
+- 空の専用Gradle home（`build/qa/pr23-gradle-home`）でGradleに検証値を生成させた。既存1,004アーティファクトのハッシュは変更・削除なし。追加56ファイルをMaven Centralの公式実ファイルと独立照合し、全SHA-256が一致した。リリースビルドと3OS用AAPT2解決の後も検証メタデータは不変。`build/qa/pr23-metadata-check.json`、`pr23-verification-before.xml`。
+- JDK 25で`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`が成功した。JVM281件、失敗0。lintはエラー0、従来の警告6件（VectorRaster 1件、UseKtx 5件）。JDK 17でもR8最適化を含む`assembleRelease`、`verifyPlatformTools`が成功した。`pr23-metadata-build.log`、`pr23-release-platforms.log`。
+- 生成モードを外し、通常の依存検証を有効にしたJDK 17で`testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest assembleRelease verifyPlatformTools`が成功した。`dependencyInsight`では`debugRuntimeClasspath`のKotlin標準ライブラリも2.4.21への解決を確認した。既存のAGP由来の`Configuration.setVisible`非推奨警告（Gradle 11で削除予定）とKotlinの既存警告は抑制していない。`pr23-strict-build.log`、`pr23-kotlin-runtime.log`。
+- 直接・ビルド依存22系列を公式Google Maven/Maven Centralの安定版と照合し、Kotlin以外の更新は不要。CIの`actions/setup-java`は[公式6.1.0](https://github.com/actions/setup-java/releases/tag/v6.1.0)へ更新し、CIとReleaseの両方へ反映した。ほかのActionsとGradle 9.8.1は公式最新版と一致した。前回までにマージ済みのGradle 9.8.1と成果物アップロード7.0.2の変更履歴も補正した。`pr23-dependency-updates.json`。
+- 公式SHA-256を照合したOSV-Scanner 2.7.0と当日取得のMaven公開DBを使用し、更新後634依存のローカル照合で既知脆弱性の検出0件。GitHubの未処理Dependabotアラートも0件。既存の版限定例外は`gradle/osv-scanner.toml`を維持し、検証自体を無効化していない。`pr23-osv.json`、`pr23-osv.log`。
+- workflow YAML全4件の構文確認とDependabotラベルのオフラインテストが成功した（10件成功、Bun非利用のため1件は対象外）。実機での表示・音声再生、インストール、ログイン変更は実行していない。公開リリース・タグも作成していない。
+
 ## 2026-10-02の結果
 
 ### #20 Gradleとビルド依存の更新
