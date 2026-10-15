@@ -22,16 +22,7 @@ Playからログアウトしても、ブラウザー側の音楽サービスに�
 
 ## ビルド
 
-ビルドには次の環境が必要です。
-
-- JDK 17以上
-- Android SDK Platform 37 / Build Tools 37.0.0
-
-```powershell
-.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
-```
-
-生成APKは `app/build/outputs/apk/debug/app-debug.apk` です。
+具体的な手順・構成・知見は [findings.md](<findings.md#readme-3>) に移動しました。着手前に該当条件を確認してください。
 
 ## 設計資料
 
@@ -46,4 +37,4 @@ Playからログアウトしても、ブラウザー側の音楽サービスに�
 
 ## 依存更新の自動処理
 
-Dependabot は対象の依存関係を毎週確認します。patch／minor／major 更新は PR のチェック（CI）が成功した後に自動で squash merge されます。CI の失敗ジョブは 1 回だけ再実行します。再失敗した PR は残して手動で修正します。
+具体的な手順・構成・知見は [findings.md](<findings.md#readme-5>) に移動しました。着手前に該当条件を確認してください。
