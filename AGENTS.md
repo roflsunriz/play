@@ -37,15 +37,15 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - 実アカウントの書き込みは明示許可された対象・範囲に限定し、既存プレイリスト、課金、公開には手を加えない。
 - 音声鍵・PCM・認証情報を抽出、保存、公開しない。再生位置だけを根拠に音声再生成功としない。
 
-具体的な手順・構成・知見は [findings.md](<findings.md#agents-4>) に移動しました。着手前に該当条件を確認してください。
+具体的な手順・構成・知見は [findings.md](findings.md) に集約しています。
 
 ## 調査・検証で確認した注意点
 
-具体的な手順・構成・知見は [findings.md](<findings.md#agents-5>) に移動しました。着手前に該当条件を確認してください。
+具体的な手順・構成・知見は [findings.md](findings.md) に集約しています。
 
 ## Dependabotラベルの運用
 
-具体的な手順・構成・知見は [findings.md](<findings.md#agents-6>) に移動しました。着手前に該当条件を確認してください。
+具体的な手順・構成・知見は [findings.md](findings.md) に集約しています。
 
 
 ## findings.md の確認と記録
