@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -24,7 +28,7 @@ jobs:
       - name: Android SDK
         run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
       - name: Test, lint, and build
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
+        run: ./gradlew --parallel --build-cache testDebugUnitTest lintDebug assembleDebug
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: play-debug-apk
