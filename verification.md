@@ -1,5 +1,10 @@
 # 検証手順と結果
 
+## 2026-10-31: Dependabot PR #27 の依存検証
+
+- 空の専用Gradle homeでOkHttp 5.5.1のSHA-256を生成し、既存値を変更・削除せず5アーティファクトを追加した。Maven Centralから別途取得した実ファイルのSHA-256はすべて一致した。
+- 検証値の生成を外した通常の依存検証でも `testDebugUnitTest lintDebug assembleDebug` が成功した。実機へのインストールと再生操作は行っていない。
+
 ## 2026-10-19: CI高速化
 
 - 変更したGitHub Actionsをactionlint 1.7.12で検査し、エラー0件を確認した。

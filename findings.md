@@ -2,6 +2,7 @@
 
 - 対象service固有名、音声鍵、PCM、認証情報をsource以外へ残さない。再生位置の進行だけで音声成功とせず、復号後の非無音levelを数値で確認する。
 - Gradle wrapper/plugin更新はapp依存だけでなくbuild classpath・plugin marker POMのverification metadataも必要。空のGradle user homeと `--no-configuration-cache` で全OS artifactを生成し、既存hashを削らない。
+- OkHttpの更新ではAndroid向けmodule・AARだけでなくJVM向けmodule・JARも依存検証の対象になる。生成したSHA-256をMaven Centralの実ファイルと照合してから通常の依存検証で再ビルドする。
 - URI identityはpercent encodingを1回だけdecodeし、`+` を空白へ変えない。不正escape・別identityを拒否する。
 - 認証refresh開始後はcancelを受けてもmutex内の `NonCancellable + IO` でrotated token保存まで完了する。失効済みtokenは復元できず、通常loginが必要。
 - library通信はnative protobuf契約。未知length fieldは長さを先に読み、その後positionを進める。playlist revision bytesとcollection timestamp整数、create OpList field 1とchange Delta field 2を流用しない。
